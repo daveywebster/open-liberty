@@ -733,5 +733,44 @@ public final class AttachmentUtil {
         }
         return propertyValue;
     }
+    
+    public static void holdTempFiles(Message message) throws IOException {
+        AttachmentDataSource attachmentDataSource = getAttachmentDataSource(message);
+        if (attachmentDataSource!= null) {
+            attachmentDataSource.hold(message);
+            if (LOG.isLoggable(Level.FINEST)) {
+                LOG.finest("Temporary file and stream are set to hold from removal.");
+             }
+        }
+    }    
+
+    public static void releaseTempFileHold(Message message) throws IOException {
+        AttachmentDataSource attachmentDataSource = getAttachmentDataSource(message);
+        if (attachmentDataSource!= null) {
+            attachmentDataSource.release();
+            if (LOG.isLoggable(Level.FINEST)) {
+                LOG.finest("Temporary file and stream holds are released. They will be removed.");
+             }
+        }
+    }
+    
+    private static AttachmentDataSource getAttachmentDataSource(Message message)        {
+        AttachmentDataSource attachmentDataSource = null;
+        Collection<Attachment> attachments = message.getAttachments();
+        if (attachments != null) {
+            for (Attachment attachment : attachments) {
+                if (attachment instanceof AttachmentImpl) {
+                    DataHandler dataHandler = attachment.getDataHandler();
+                    if (dataHandler != null) {
+                        DataSource dataSource = dataHandler.getDataSource();
+                        if (dataSource instanceof AttachmentDataSource) {
+                            attachmentDataSource = (AttachmentDataSource) dataSource;
+                        }
+                    }
+                }
+            }
+        }
+        return attachmentDataSource;
+    }
     // Liberty change end
 }
