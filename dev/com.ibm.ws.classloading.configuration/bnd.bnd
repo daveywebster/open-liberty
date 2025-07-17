@@ -40,4 +40,6 @@ Import-Package: \
 -buildpath: \
 	com.ibm.websphere.org.osgi.service.component,\
 	com.ibm.wsspi.org.osgi.service.component.annotations, \
-	com.ibm.ws.org.osgi.annotation.versioning;version=latest
+	com.ibm.ws.org.osgi.annotation.versioning;version=latest, \
+	com.ibm.ws.logging, \
+	com.ibm.ws.kernel.boot.core

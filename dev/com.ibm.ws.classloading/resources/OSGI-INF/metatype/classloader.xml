@@ -35,6 +35,16 @@
         ibm:reference="com.ibm.ws.classloading.sharedlibrary"
     />
 
+    <AD name="internal" description="internal use only"
+        id="patchLibraryRef"
+        ibm:beta="true"
+        required="false"
+        type="String"
+        cardinality="10000"
+        ibm:type="pid"
+        ibm:reference="com.ibm.ws.classloading.sharedlibrary"
+    />
+
     <AD name="%classloader.common.library.ref" description="%classloader.common.library.ref.desc"  
         id="commonLibraryRef" 
         required="false" 

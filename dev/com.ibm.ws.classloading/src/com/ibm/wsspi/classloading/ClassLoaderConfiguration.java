@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2014 IBM Corporation and others.
+ * Copyright (c) 2010, 2025 IBM Corporation and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License 2.0
  * which accompanies this distribution, and is available at
@@ -51,6 +51,9 @@ public interface ClassLoaderConfiguration {
     ClassLoaderConfiguration addSharedLibraries(String... libs);
 
     List<String> getSharedLibraries();
+
+    ClassLoaderConfiguration setPatchLibraries(List<String> libs);
+    List<String> getPatchLibraries();
 
     /** @param libs the names of common shared libraries that should be associated with this classloader */
     ClassLoaderConfiguration setCommonLibraries(List<String> libs);

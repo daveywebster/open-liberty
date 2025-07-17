@@ -16,6 +16,7 @@ import static com.ibm.ws.classloading.ClassLoaderConfigHelper.Attribute.apiTypeV
 import static com.ibm.ws.classloading.ClassLoaderConfigHelper.Attribute.classProviderRef;
 import static com.ibm.ws.classloading.ClassLoaderConfigHelper.Attribute.commonLibraryRef;
 import static com.ibm.ws.classloading.ClassLoaderConfigHelper.Attribute.delegation;
+import static com.ibm.ws.classloading.ClassLoaderConfigHelper.Attribute.patchLibraryRef;
 import static com.ibm.ws.classloading.ClassLoaderConfigHelper.Attribute.privateLibraryRef;
 import static com.ibm.wsspi.classloading.ApiType.API;
 import static com.ibm.wsspi.classloading.ApiType.IBMAPI;
@@ -31,6 +32,7 @@ import java.util.Dictionary;
 import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.osgi.framework.Constants;
 import org.osgi.framework.InvalidSyntaxException;
@@ -45,6 +47,7 @@ import com.ibm.ws.classloading.internal.ClassLoadingServiceImpl;
 import com.ibm.ws.container.service.app.deploy.NestedConfigHelper;
 import com.ibm.ws.ffdc.FFDCFilter;
 import com.ibm.ws.ffdc.annotation.FFDCIgnore;
+import com.ibm.ws.kernel.productinfo.ProductInfo;
 import com.ibm.wsspi.adaptable.module.Container;
 import com.ibm.wsspi.classloading.ApiType;
 import com.ibm.wsspi.classloading.ClassLoaderConfiguration;
@@ -66,7 +69,7 @@ public class ClassLoaderConfigHelper {
 
     @com.ibm.websphere.ras.annotation.Trivial
     enum Attribute {
-        apiTypeVisibility, delegation, privateLibraryRef, commonLibraryRef, classProviderRef
+        apiTypeVisibility, delegation, patchLibraryRef, privateLibraryRef, commonLibraryRef, classProviderRef
     };
 
     @SuppressWarnings("serial")
@@ -79,6 +82,7 @@ public class ClassLoaderConfigHelper {
 
     private static final EnumSet<ApiType> DEFAULT_API_TYPES = EnumSet.of(SPEC, IBMAPI, API, STABLE);
 
+    private final List<String> patchLibraries;
     private final List<String> sharedLibraries;
     private final List<String> commonLibraries;
     private final List<String> classProviders;
@@ -105,6 +109,7 @@ public class ClassLoaderConfigHelper {
             this.classLoaderConfigProps = null;
             this.apiTypes = DEFAULT_API_TYPES;
             this.isDelegateLast = false;
+            this.patchLibraries = Collections.emptyList();
             this.sharedLibraries = Collections.emptyList();
             this.commonLibraries = Collections.emptyList();
             this.classProviders = Collections.emptyList();
@@ -125,6 +130,7 @@ public class ClassLoaderConfigHelper {
         this.sharedLibrariesPids = (String[]) values.remove(privateLibraryRef);
         this.commonLibrariesPids = (String[]) values.remove(commonLibraryRef);
 
+        this.patchLibraries = getIds(configAdmin, (String[]) values.remove(patchLibraryRef));
         this.sharedLibraries = getIds(configAdmin, sharedLibrariesPids);
         this.commonLibraries = getIds(configAdmin, commonLibrariesPids);
         this.classProviders = getIds(configAdmin, (String[]) values.remove(classProviderRef));
@@ -256,6 +262,7 @@ public class ClassLoaderConfigHelper {
         gwConfig.setApiTypeVisibility(apiTypes);
         if (classLoaderConfigProps != null) {
             // if there is some <classloader> config, we need to read it out of the helper into the gateway and classloader configuration objects
+            config.setPatchLibraries(patchLibraries);
             config.addSharedLibraries(sharedLibraries);
             config.setCommonLibraries(commonLibraries);
             config.setClassProviders(classProviders);
