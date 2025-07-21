@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-	<name>com.ibm.ws.transaction.remote_fat.postgresql</name>
+	<name>io.openliberty.transaction.remote_fat</name>
 	<comment></comment>
 	<projects>
 	</projects>

@@ -8,7 +8,7 @@
  * Contributors:
  *     IBM Corporation - initial API and implementation
  *******************************************************************************/
-package com.ibm.ws.transaction.test;
+package tests;
 
 import java.security.AccessController;
 import java.security.PrivilegedExceptionAction;
@@ -22,7 +22,7 @@ import org.junit.runner.RunWith;
 
 import com.ibm.websphere.simplicity.ShrinkHelper;
 import com.ibm.websphere.simplicity.ShrinkHelper.DeployOptions;
-import com.ibm.ws.remoteEJB.web.RemoteEJBClient;
+import com.ibm.ws.remoteEJB.web.LocalEJBClient;
 import com.ibm.ws.transaction.fat.util.FATUtils;
 
 import componenttest.annotation.Server;
@@ -30,23 +30,20 @@ import componenttest.annotation.TestServlet;
 import componenttest.annotation.TestServlets;
 import componenttest.custom.junit.runner.FATRunner;
 import componenttest.topology.impl.LibertyServer;
-import componenttest.topology.utils.FATServletClient;
+import suite.FATSuite;
 
 @RunWith(FATRunner.class)
-public class RemoteEJBTest extends FATServletClient {
+public class LocalEJBTest extends EJBTest {
 
-    public static final String CLIENT_OF_REMOTE_BEAN_APP_NAME = "TestBeanClientOfRemoteBean";
+//    public static final String CLIENT_OF_REMOTE_BEAN_APP_NAME = "TestBeanClientOfRemoteBean";
     public static final String CLIENT_OF_LOCAL_BEAN_APP_NAME = "TestBeanClientOfLocalBean";
-    public static final String SERVER_APP_NAME = "TestBean";
+//    public static final String SERVER_APP_NAME = "TestBean";
 
     @Server("RemoteEJBClient")
     @TestServlets({
-                    @TestServlet(servlet = RemoteEJBClient.class, contextRoot = CLIENT_OF_REMOTE_BEAN_APP_NAME),
+                    @TestServlet(servlet = LocalEJBClient.class, contextRoot = CLIENT_OF_LOCAL_BEAN_APP_NAME),
     })
     public static LibertyServer client;
-
-    @Server("RemoteEJBServer")
-    public static LibertyServer server;
 
     @BeforeClass
     public static void setUp() throws Exception {
@@ -55,18 +52,14 @@ public class RemoteEJBTest extends FATServletClient {
         JavaArchive TestBeanEJBJar = ShrinkHelper.buildJavaArchive("TestBeanEJB.jar", "com.ibm.ws.remoteEJB.ejb", "com.ibm.ws.remoteEJB.shared");
         EnterpriseArchive TestBeanApp = ShrinkWrap.create(EnterpriseArchive.class, "TestBeanApp.ear");
         TestBeanApp.addAsModule(TestBeanEJBJar);
-        ShrinkHelper.exportAppToServer(server, TestBeanApp, DeployOptions.SERVER_ONLY);
 
         ShrinkHelper.exportDropinAppToServer(client, TestBeanApp, DeployOptions.SERVER_ONLY);
-        ShrinkHelper.defaultDropinApp(client, CLIENT_OF_REMOTE_BEAN_APP_NAME, "com.ibm.ws.remoteEJB.web", "com.ibm.ws.remoteEJB.shared");
+        ShrinkHelper.defaultDropinApp(client, CLIENT_OF_LOCAL_BEAN_APP_NAME, "com.ibm.ws.remoteEJB.web", "com.ibm.ws.remoteEJB.shared");
 
         client.setServerStartTimeout(FATUtils.LOG_SEARCH_TIMEOUT);
 
-        server.setServerStartTimeout(FATUtils.LOG_SEARCH_TIMEOUT);
-        server.useSecondaryHTTPPort();
-
-        FATSuite.setUp(client, server);
-        FATUtils.startServers(client, server);
+        FATSuite.setUp(client);
+        FATUtils.startServers(client);
     }
 
     @AfterClass
@@ -75,7 +68,7 @@ public class RemoteEJBTest extends FATServletClient {
 
             @Override
             public Void run() throws Exception {
-                FATUtils.stopServers(new String[] { "CNTR0019E" }, client, server);
+                FATUtils.stopServers(new String[] { "CNTR0019E" }, client);
                 ShrinkHelper.cleanAllExportedArchives();
                 return null;
             }
