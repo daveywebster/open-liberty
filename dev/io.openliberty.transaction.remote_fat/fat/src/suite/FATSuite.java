@@ -15,15 +15,14 @@ package suite;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
-import org.testcontainers.containers.wait.strategy.Wait;
 
 import com.ibm.websphere.simplicity.log.Log;
-import com.ibm.ws.transaction.fat.util.FATUtils;
 import com.ibm.ws.transaction.fat.util.PostgresqlContainerSuite;
 
 import componenttest.containers.SimpleLogConsumer;
 import componenttest.rules.repeater.FeatureReplacementAction;
 import componenttest.rules.repeater.RepeatTests;
+import componenttest.topology.database.container.DatabaseContainerType;
 import componenttest.topology.database.container.PostgreSQLContainer;
 import componenttest.topology.impl.LibertyServer;
 import tests.LocalEJBTest;
@@ -42,17 +41,15 @@ public class FATSuite extends PostgresqlContainerSuite {
                     .andWith(FeatureReplacementAction.EE9_FEATURES())
                     .andWith(FeatureReplacementAction.EE10_FEATURES());
 
-    @SuppressWarnings("resource")
-    public static void beforeSuite() throws Exception {
-
-        testContainer = new PostgreSQLContainer(PostgresqlContainerSuite.getPostgresqlImageName())
-                        .withDatabaseName(PostgresqlContainerSuite.POSTGRES_DB)
-                        .withUsername(PostgresqlContainerSuite.POSTGRES_USER)
-                        .withPassword(PostgresqlContainerSuite.POSTGRES_PASS)
+    static {
+        testContainer = new PostgreSQLContainer(getPostgresqlImageName())
+                        .withDatabaseName(POSTGRES_DB)
+                        .withUsername(POSTGRES_USER)
+                        .withPassword(POSTGRES_PASS)
                         .withSSL()
                         .withLogConsumer(new SimpleLogConsumer(FATSuite.class, "postgre-ssl"));
 
-        testContainer.withStartupTimeout(FATUtils.TESTCONTAINER_STARTUP_TIMEOUT).waitingFor(Wait.forLogMessage(".*database system is ready.*", 2)).start();
+        beforeSuite(DatabaseContainerType.Postgres);
     }
 
     public static void setUp(LibertyServer... servers) throws Exception {
@@ -71,10 +68,5 @@ public class FATSuite extends PostgresqlContainerSuite {
             server.addEnvVar("POSTGRES_PASS", POSTGRES_PASS);
             server.addEnvVar("POSTGRES_URL", jdbcURL);
         }
-    }
-
-    public static void afterSuite() {
-        Log.info(FATSuite.class, "afterSuite", "stop test container");
-        testContainer.stop();
     }
 }

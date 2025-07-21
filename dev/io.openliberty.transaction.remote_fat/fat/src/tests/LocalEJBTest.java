@@ -35,9 +35,7 @@ import suite.FATSuite;
 @RunWith(FATRunner.class)
 public class LocalEJBTest extends EJBTest {
 
-//    public static final String CLIENT_OF_REMOTE_BEAN_APP_NAME = "TestBeanClientOfRemoteBean";
     public static final String CLIENT_OF_LOCAL_BEAN_APP_NAME = "TestBeanClientOfLocalBean";
-//    public static final String SERVER_APP_NAME = "TestBean";
 
     @Server("RemoteEJBClient")
     @TestServlets({
@@ -47,8 +45,6 @@ public class LocalEJBTest extends EJBTest {
 
     @BeforeClass
     public static void setUp() throws Exception {
-        FATSuite.beforeSuite();
-
         JavaArchive TestBeanEJBJar = ShrinkHelper.buildJavaArchive("TestBeanEJB.jar", "com.ibm.ws.remoteEJB.ejb", "com.ibm.ws.remoteEJB.shared");
         EnterpriseArchive TestBeanApp = ShrinkWrap.create(EnterpriseArchive.class, "TestBeanApp.ear");
         TestBeanApp.addAsModule(TestBeanEJBJar);
@@ -73,7 +69,5 @@ public class LocalEJBTest extends EJBTest {
                 return null;
             }
         });
-
-        FATSuite.afterSuite();
     }
 }
