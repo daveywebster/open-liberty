@@ -42,12 +42,21 @@
                              ssl="true" sslfactory="org.postgresql.ssl.DefaultJavaSSLFactory" sslMode="verify-ca"/>
     </dataSource>
 
+  <keyStore password="liberty"/>
+
+    <!--
+  <ssl id="SSLConfig" keyStoreRef="defaultKeyStore" trustDefaultCerts="true"/>
+    -->
+
+
     <!-- Default SSL configuration enables trust for default certificates from the Java runtime --> 
+    <!--
     <ssl id="defaultSSLConfig" trustDefaultCerts="true"/>
 
     <sslDefault outboundSSLRef="outboundConfig"/>
     <ssl id="outboundConfig" keyStoreRef="outboundKeyStore"/>
     <keyStore id="outboundKeyStore" location="resources/security/outboundKeys.p12" password="liberty"/>
+    -->
 
 	<application location="TestBeanApp.ear">
 	        <classloader commonLibraryRef="PostgresLib"/>
