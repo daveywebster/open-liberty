@@ -61,7 +61,7 @@ public class RemoteEJBTest extends EJBTest {
         server.useSecondaryHTTPPort();
 
         FATSuite.setUp(client, server);
-        FATUtils.startServers(client, server);
+        FATUtils.startServers(runner, client, server);
     }
 
     @AfterClass

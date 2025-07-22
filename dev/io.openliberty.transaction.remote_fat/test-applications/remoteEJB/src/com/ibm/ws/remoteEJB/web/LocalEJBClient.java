@@ -33,6 +33,9 @@ public class LocalEJBClient extends EJBClient {
 
     @Override
     public void init() {
+        System.getProperties().entrySet().stream().forEach(e -> System.out.println("Prop: " + e.getKey() + " -> " + e.getValue()));
+        System.getenv().entrySet().stream().forEach(e -> System.out.println("Env: " + e.getKey() + " -> " + e.getValue()));
+
         try {
             Object found = new InitialContext()
                             .lookup("com.ibm.ws.remoteEJB.shared.TestBeanRemote");

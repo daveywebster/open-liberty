@@ -56,9 +56,9 @@ public class FATSuite extends PostgresqlContainerSuite {
     public static void setUp(LibertyServer... servers) throws Exception {
 
         @SuppressWarnings("deprecation")
-        String host = testContainer.getContainerIpAddress();
-        String port = String.valueOf(testContainer.getMappedPort(5432));
-        String jdbcURL = testContainer.getJdbcUrl() + "?user=" + POSTGRES_USER + "&password=" + POSTGRES_PASS;
+        final String host = testContainer.getContainerIpAddress();
+        final String port = String.valueOf(testContainer.getMappedPort(5432));
+        final String jdbcURL = testContainer.getJdbcUrl() + "?user=" + POSTGRES_USER + "&password=" + POSTGRES_PASS;
         Log.info(FATSuite.class, "setUp", "Using PostgreSQL properties: host=" + host + "  port=" + port + ",  URL=" + jdbcURL);
 
         for (LibertyServer server : servers) {

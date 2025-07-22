@@ -12,8 +12,28 @@
  *******************************************************************************/
 package tests;
 
+import com.ibm.ws.transaction.fat.util.SetupRunner;
+import com.ibm.ws.transaction.fat.util.TxTestContainerSuite;
+
+import componenttest.topology.database.container.DatabaseContainerType;
+import componenttest.topology.database.container.DatabaseContainerUtil;
+import componenttest.topology.impl.LibertyServer;
 import componenttest.topology.utils.FATServletClient;
 
 public class EJBTest extends FATServletClient {
 
+    static SetupRunner runner = new SetupRunner() {
+        @Override
+        public void run(LibertyServer s) throws Exception {
+            setUp(s);
+        }
+    };
+
+    static void setUp(LibertyServer server) throws Exception {
+        //Get driver name
+        server.addEnvVar("DB_DRIVER", DatabaseContainerType.valueOf(TxTestContainerSuite.testContainer).getDriverName());
+
+        //Setup server DataSource properties
+        DatabaseContainerUtil.build(server, TxTestContainerSuite.testContainer).withDatabaseProperties().modify();
+    }
 }

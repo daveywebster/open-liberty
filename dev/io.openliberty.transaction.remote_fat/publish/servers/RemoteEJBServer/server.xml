@@ -20,23 +20,24 @@
       recoverOnStartup="true"
       waitForRecovery="false"
       heuristicRetryInterval="10"
+      transactionLogDBTableSuffix="${wlp.server.name}"
     />
 
     <javaPermission name="*" actions="*" className="java.security.AllPermission"/>
 
-    <library id="PostgresLib">
-        <file name="${shared.resource.dir}/postgres/postgresql.jar"/>
+    <library id="AnonymousJDBCLib">
+        <fileset dir="${shared.resource.dir}/jdbc" includes="${env.DB_DRIVER}"/>
     </library>
 
-    <dataSource id="tranlogDataSource" jndiName="jdbc/tranlogDataSource" transactional="false">
-      <jdbcDriver libraryRef="PostgresLib" />
-      <properties.postgresql serverName="${POSTGRES_HOST}" portNumber="${POSTGRES_PORT}" databaseName="${POSTGRES_DB}" user="${POSTGRES_USER}" password="${POSTGRES_PASS}"
-                             ssl="true" sslfactory="org.postgresql.ssl.DefaultJavaSSLFactory" sslMode="verify-ca"/>
+    <dataSource id="tranlogDataSource" jndiName="jdbc/tranlogDataSource" transactional="false" containerAuthDataRef="auth1" fat.modify="true">
+      <jdbcDriver libraryRef="AnonymousJDBCLib" />
+      <!-- Properties modified by fat for database rotation -->
+      <properties.derby.embedded  createDatabase="create" databaseName="${shared.resource.dir}/data/tranlogdb"/>
     </dataSource>
 
-  <keyStore password="liberty"/>
+    <authData id="auth1" user="dbuser" password="dbpassword" fat.modify="true"/>
 
 	<application location="TestBeanApp.ear">
-	        <classloader commonLibraryRef="PostgresLib"/>
+        <classloader commonLibraryRef="AnonymousJDBCLib"/>
 	</application>
 </server>

@@ -55,7 +55,7 @@ public class LocalEJBTest extends EJBTest {
         ShrinkHelper.defaultDropinApp(client, CLIENT_OF_LOCAL_BEAN_APP_NAME, "com.ibm.ws.remoteEJB.web", "com.ibm.ws.remoteEJB.shared");
 
         FATSuite.setUp(client);
-        FATUtils.startServers(client);
+        FATUtils.startServers(runner, client);
     }
 
     @AfterClass
