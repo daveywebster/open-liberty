@@ -50,17 +50,14 @@ public class RemoteEJBTest extends EJBTest {
 
     @BeforeClass
     public static void setUp() throws Exception {
-        JavaArchive TestBeanEJBJar = ShrinkHelper.buildJavaArchive("TestBeanEJB.jar", "com.ibm.ws.remoteEJB.ejb", "com.ibm.ws.remoteEJB.shared");
-        EnterpriseArchive TestBeanApp = ShrinkWrap.create(EnterpriseArchive.class, "TestBeanApp.ear");
+        final JavaArchive TestBeanEJBJar = ShrinkHelper.buildJavaArchive("TestBeanEJB.jar", "com.ibm.ws.remoteEJB.ejb", "com.ibm.ws.remoteEJB.shared");
+        final EnterpriseArchive TestBeanApp = ShrinkWrap.create(EnterpriseArchive.class, "TestBeanApp.ear");
         TestBeanApp.addAsModule(TestBeanEJBJar);
         ShrinkHelper.exportAppToServer(server, TestBeanApp, DeployOptions.SERVER_ONLY);
 
         ShrinkHelper.exportDropinAppToServer(client, TestBeanApp, DeployOptions.SERVER_ONLY);
         ShrinkHelper.defaultDropinApp(client, CLIENT_OF_REMOTE_BEAN_APP_NAME, "com.ibm.ws.remoteEJB.web", "com.ibm.ws.remoteEJB.shared");
 
-        client.setServerStartTimeout(FATUtils.LOG_SEARCH_TIMEOUT);
-
-        server.setServerStartTimeout(FATUtils.LOG_SEARCH_TIMEOUT);
         server.useSecondaryHTTPPort();
 
         FATSuite.setUp(client, server);
