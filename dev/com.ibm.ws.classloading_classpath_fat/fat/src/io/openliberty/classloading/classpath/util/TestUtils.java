@@ -90,7 +90,7 @@ public class TestUtils {
         int i = 0;
         for (; i < expectedOrder.size(); i++) {
             assertTrue("No more resources found to match i=" + i + " for: " + expectedOrder.get(i), i < urls.size());
-            assertEquals("Wrong resource found for i=" + i, expectedOrder.get(i), readFromArchive(urls.get(i)));
+            assertEquals("Wrong resource found for i=" + i + " urls=" + urls, expectedOrder.get(i), readFromArchive(urls.get(i)));
         }
 
         if (i < urls.size()) {

@@ -43,7 +43,9 @@ src: \
 	test-applications/testRar1.rar/src, \
 	test-applications/testResourceAdaptor.jar/src, \
 	test-applications/testLibFileSet/src, \
-	test-applications/testParentLast/src
+	test-applications/testParentLast/src, \
+	test-applications/testLibDelegation.war/src, \
+	test-applications/testPatchLib.war/src
 
 fat.project: true
 
@@ -54,3 +56,4 @@ tested.features:
 	com.ibm.websphere.javaee.ejb.3.2, \
 	com.ibm.websphere.javaee.connector.1.7,\
 	com.ibm.websphere.javaee.annotation.1.3
+
