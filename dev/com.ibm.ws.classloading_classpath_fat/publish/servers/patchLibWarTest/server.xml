@@ -8,7 +8,7 @@
     <include location="../fatTestPorts.xml"/>
 
     <webApplication location="testPatchLib.war">
-        <classloader patchLibraryRef="testPatchA,testPatchB" commonLibraryRef="testPatchC,testPatchD"/>
+        <classloader patchLibraryRef="testPatchA,testPatchB" privateLibraryRef="testPatchC,testPatchD"/>
     </webApplication>
 
     <library id="testPatchA">
