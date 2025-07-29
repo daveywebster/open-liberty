@@ -2269,8 +2269,10 @@ public class JakartaDataRecreateServlet extends FATServlet {
         em.persist(tp3);
         tx.commit();
 
+        List<TaxPayer> result;
+        
         try {
-            List<TaxPayer> result = em.createQuery(
+            result = em.createQuery(
                                     "SELECT o FROM TaxPayer o WHERE (o.bankAccounts IS NOT EMPTY) ORDER BY o.ssn", TaxPayer.class)
                             .setParameter(1, account1)
                             .getResultList();
