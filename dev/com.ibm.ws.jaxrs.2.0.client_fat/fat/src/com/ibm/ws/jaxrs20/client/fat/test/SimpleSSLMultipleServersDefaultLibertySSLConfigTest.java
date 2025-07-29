@@ -52,6 +52,7 @@ public class SimpleSSLMultipleServersDefaultLibertySSLConfigTest extends FATServ
         // already started server
         try {
             server.startServer("server.log", true);
+            server.waitForSSLStart();
             assertNotNull("The server did not start", server.waitForStringInLog("CWWKF0011I"));
             assertNotNull("FeatureManager did not report update was complete", server.waitForStringInLog("CWWKF0008I"));
 
