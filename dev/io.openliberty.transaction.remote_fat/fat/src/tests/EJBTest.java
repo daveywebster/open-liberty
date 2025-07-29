@@ -12,6 +12,12 @@
  *******************************************************************************/
 package tests;
 
+import java.security.AccessController;
+import java.security.PrivilegedActionException;
+import java.security.PrivilegedExceptionAction;
+
+import com.ibm.websphere.simplicity.ShrinkHelper;
+import com.ibm.ws.transaction.fat.util.FATUtils;
 import com.ibm.ws.transaction.fat.util.SetupRunner;
 import com.ibm.ws.transaction.fat.util.TxTestContainerSuite;
 
@@ -37,5 +43,21 @@ public class EJBTest extends FATServletClient {
 
         //Setup server DataSource properties
         DatabaseContainerUtil.build(server, TxTestContainerSuite.testContainer).withDatabaseProperties().modify();
+    }
+
+    /**
+     * @param servers
+     * @throws PrivilegedActionException
+     */
+    public static void afterClass(LibertyServer... servers) throws PrivilegedActionException {
+        AccessController.doPrivileged(new PrivilegedExceptionAction<Void>() {
+
+            @Override
+            public Void run() throws Exception {
+                FATUtils.stopServers(new String[] { "CNTR0019E" }, servers);
+                ShrinkHelper.cleanAllExportedArchives();
+                return null;
+            }
+        });
     }
 }

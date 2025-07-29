@@ -10,7 +10,7 @@
  * Contributors:
  *     IBM Corporation - initial API and implementation
  *******************************************************************************/
-package com.ibm.ws.remoteEJB.shared;
+package shared;
 
 import javax.transaction.SystemException;
 

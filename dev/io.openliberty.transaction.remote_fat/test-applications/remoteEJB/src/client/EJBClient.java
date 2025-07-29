@@ -10,7 +10,7 @@
  * Contributors:
  *     IBM Corporation - initial API and implementation
  *******************************************************************************/
-package com.ibm.ws.remoteEJB.client;
+package client;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -30,16 +30,14 @@ import javax.transaction.HeuristicRollbackException;
 import javax.transaction.NotSupportedException;
 import javax.transaction.RollbackException;
 import javax.transaction.SystemException;
-import javax.transaction.Transaction;
 import javax.transaction.UserTransaction;
 
 import org.junit.Test;
 
-import com.ibm.tx.jta.TransactionManagerFactory;
-import com.ibm.ws.remoteEJB.shared.TestBeanRemote;
-
 import componenttest.annotation.ExpectedFFDC;
 import componenttest.app.FATServlet;
+import shared.TestBeanRemote;
+import shared.Util;
 
 @SuppressWarnings("serial")
 public abstract class EJBClient extends FATServlet {
@@ -51,22 +49,6 @@ public abstract class EJBClient extends FATServlet {
 
     protected TestBeanRemote bean;
 
-    private String tranID() throws SystemException {
-        Transaction t = TransactionManagerFactory.getTransactionManager().getTransaction();
-
-        if (null != t) {
-            String strID = t.toString();
-            System.out.println("Tran ID: " + strID);
-            int start = strID.indexOf("#tid=") + 5;
-            int end = strID.indexOf(",");
-            strID = strID.substring(start, end);
-            System.out.println("tid: " + strID);
-            return strID;
-        }
-
-        return null;
-    }
-
     @Test
     public void testMandatoryWith(HttpServletRequest request,
                                   HttpServletResponse response) throws NotSupportedException, SystemException, NamingException {
@@ -74,7 +56,7 @@ public abstract class EJBClient extends FATServlet {
 
         String id = bean.mandatory();
         assertNotNull("Mandatory method ran without a tran", id);
-        assertTrue("Mandatory method ran under a different tran", id.equals(tranID()));
+        assertTrue("Mandatory method ran under a different tran", id.equals(Util.tranID()));
 
         // Let's allow the runtime to complete the transaction
     }
@@ -136,7 +118,7 @@ public abstract class EJBClient extends FATServlet {
 
         String id = bean.required();
         assertNotNull("Required method ran without a tran", id);
-        assertTrue("Required method ran under a different tran", id.equals(tranID()));
+        assertTrue("Required method ran under a different tran", id.equals(Util.tranID()));
 
         // Let's allow the runtime to complete the transaction
     }
@@ -154,7 +136,7 @@ public abstract class EJBClient extends FATServlet {
 
         String id = bean.requiresNew();
         assertNotNull("RequiresNew method ran without a tran", id);
-        assertFalse("RequiresNew method ran under same tran", id.equals(tranID()));
+        assertFalse("RequiresNew method ran under same tran", id.equals(Util.tranID()));
 
         // Let's allow the runtime to complete the transaction
     }
@@ -172,7 +154,7 @@ public abstract class EJBClient extends FATServlet {
 
         String id = bean.supports();
         assertNotNull("Supports method ran without a tran", id);
-        assertEquals("Supports method ran under same tran", id, tranID());
+        assertEquals("Supports method ran under same tran", id, Util.tranID());
 
         // Let's allow the runtime to complete the transaction
     }

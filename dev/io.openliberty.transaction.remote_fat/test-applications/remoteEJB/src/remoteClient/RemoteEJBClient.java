@@ -10,7 +10,7 @@
  * Contributors:
  *     IBM Corporation - initial API and implementation
  *******************************************************************************/
-package com.ibm.ws.remoteEJB.remoteClient;
+package remoteClient;
 
 import static org.junit.Assert.assertFalse;
 
@@ -25,8 +25,8 @@ import javax.transaction.SystemException;
 
 import org.junit.Test;
 
-import com.ibm.ws.remoteEJB.client.EJBClient;
-import com.ibm.ws.remoteEJB.shared.TestBeanRemote;
+import client.EJBClient;
+import shared.TestBeanRemote;
 
 @SuppressWarnings("serial")
 @WebServlet("/RemoteEJBClient")
@@ -40,12 +40,14 @@ public class RemoteEJBClient extends EJBClient {
         final int remoteIIOPPort = Integer.getInteger("bvt.prop.IIOP.secondary");
 
         try {
+            String lookup = "corbaname:iiop:localhost:" + remoteIIOPPort
+                            + "/NameService#ejb/global/TestBeanApp/TestBeanEJB/TestBean!shared\\.TestBeanRemote";
+            System.out.println("Looking up: " + lookup);
             Object found = new InitialContext()
-                            .lookup("corbaname:iiop:localhost:" + remoteIIOPPort
-                                    + "/NameService#ejb/global/TestBeanApp/TestBeanEJB/TestBean!com.ibm.ws.remoteEJB.shared.TestBeanRemote");
+                            .lookup(lookup);
             bean = (TestBeanRemote) PortableRemoteObject.narrow(found, TestBeanRemote.class);
-        } catch (NamingException e) {
-            e.printStackTrace();
+        } catch (Throwable t) {
+            t.printStackTrace();
         }
     }
 

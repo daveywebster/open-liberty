@@ -12,9 +12,6 @@
  *******************************************************************************/
 package tests;
 
-import java.security.AccessController;
-import java.security.PrivilegedExceptionAction;
-
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.EnterpriseArchive;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -24,7 +21,6 @@ import org.junit.runner.RunWith;
 
 import com.ibm.websphere.simplicity.ShrinkHelper;
 import com.ibm.websphere.simplicity.ShrinkHelper.DeployOptions;
-import com.ibm.ws.remoteEJB.localClient.LocalEJBClient;
 import com.ibm.ws.transaction.fat.util.FATUtils;
 
 import componenttest.annotation.Server;
@@ -32,6 +28,7 @@ import componenttest.annotation.TestServlet;
 import componenttest.annotation.TestServlets;
 import componenttest.custom.junit.runner.FATRunner;
 import componenttest.topology.impl.LibertyServer;
+import localClient.LocalEJBClient;
 import suite.FATSuite;
 
 @RunWith(FATRunner.class)
@@ -45,12 +42,12 @@ public class LocalEJBTest extends EJBTest {
 
     @BeforeClass
     public static void setUp() throws Exception {
-        final JavaArchive TestBeanEJBJar = ShrinkHelper.buildJavaArchive("TestBeanEJB.jar", "com.ibm.ws.remoteEJB.ejb", "com.ibm.ws.remoteEJB.shared");
+        final JavaArchive TestBeanEJBJar = ShrinkHelper.buildJavaArchive("TestBeanEJB.jar", "ejb", "shared");
         final EnterpriseArchive TestBeanApp = ShrinkWrap.create(EnterpriseArchive.class, "TestBeanApp.ear");
         TestBeanApp.addAsModule(TestBeanEJBJar);
         ShrinkHelper.exportDropinAppToServer(client, TestBeanApp, DeployOptions.SERVER_ONLY);
 
-        ShrinkHelper.defaultApp(client, CLIENT_APP_NAME, "com.ibm.ws.remoteEJB.client", "com.ibm.ws.remoteEJB.localClient", "com.ibm.ws.remoteEJB.shared");
+        ShrinkHelper.defaultApp(client, CLIENT_APP_NAME, "client", "localClient", "shared");
 
         FATSuite.setUp(client);
         FATUtils.startServers(runner, client);
@@ -58,14 +55,6 @@ public class LocalEJBTest extends EJBTest {
 
     @AfterClass
     public static void tearDown() throws Exception {
-        AccessController.doPrivileged(new PrivilegedExceptionAction<Void>() {
-
-            @Override
-            public Void run() throws Exception {
-                FATUtils.stopServers(new String[] { "CNTR0019E" }, client);
-                ShrinkHelper.cleanAllExportedArchives();
-                return null;
-            }
-        });
+        EJBTest.afterClass(client);
     }
 }

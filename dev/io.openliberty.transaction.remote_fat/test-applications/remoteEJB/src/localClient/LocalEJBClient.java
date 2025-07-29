@@ -10,7 +10,7 @@
  * Contributors:
  *     IBM Corporation - initial API and implementation
  *******************************************************************************/
-package com.ibm.ws.remoteEJB.localClient;
+package localClient;
 
 import static org.junit.Assert.assertTrue;
 
@@ -25,8 +25,8 @@ import javax.transaction.SystemException;
 
 import org.junit.Test;
 
-import com.ibm.ws.remoteEJB.client.EJBClient;
-import com.ibm.ws.remoteEJB.shared.TestBeanRemote;
+import client.EJBClient;
+import shared.TestBeanRemote;
 
 @SuppressWarnings("serial")
 @WebServlet("/LocalEJBClient")
@@ -39,7 +39,7 @@ public class LocalEJBClient extends EJBClient {
 
         try {
             Object found = new InitialContext()
-                            .lookup("com.ibm.ws.remoteEJB.shared.TestBeanRemote");
+                            .lookup("shared.TestBeanRemote");
             bean = (TestBeanRemote) PortableRemoteObject.narrow(found, TestBeanRemote.class);
         } catch (NamingException e) {
             e.printStackTrace();
