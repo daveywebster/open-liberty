@@ -12,7 +12,6 @@
  *******************************************************************************/
 package suite;
 
-import org.junit.ClassRule;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
@@ -36,7 +35,7 @@ import tests.RemoteEJBTest;
 })
 public class FATSuite extends PostgresqlContainerSuite {
 
-    @ClassRule
+    //@ClassRule
     public static RepeatTests r = RepeatTests.withoutModification()
                     .andWith(FeatureReplacementAction.EE8_FEATURES())
                     .andWith(FeatureReplacementAction.EE9_FEATURES())

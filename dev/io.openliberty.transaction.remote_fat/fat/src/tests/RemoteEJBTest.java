@@ -24,7 +24,7 @@ import org.junit.runner.RunWith;
 
 import com.ibm.websphere.simplicity.ShrinkHelper;
 import com.ibm.websphere.simplicity.ShrinkHelper.DeployOptions;
-import com.ibm.ws.remoteEJB.web.RemoteEJBClient;
+import com.ibm.ws.remoteEJB.remoteClient.RemoteEJBClient;
 import com.ibm.ws.transaction.fat.util.FATUtils;
 
 import componenttest.annotation.Server;
@@ -37,11 +37,9 @@ import suite.FATSuite;
 @RunWith(FATRunner.class)
 public class RemoteEJBTest extends EJBTest {
 
-    public static final String CLIENT_OF_REMOTE_BEAN_APP_NAME = "TestBeanClientOfRemoteBean";
-
     @Server("RemoteEJBClient")
     @TestServlets({
-                    @TestServlet(servlet = RemoteEJBClient.class, contextRoot = CLIENT_OF_REMOTE_BEAN_APP_NAME),
+                    @TestServlet(servlet = RemoteEJBClient.class, contextRoot = CLIENT_APP_NAME),
     })
     public static LibertyServer client;
 
@@ -55,8 +53,7 @@ public class RemoteEJBTest extends EJBTest {
         TestBeanApp.addAsModule(TestBeanEJBJar);
         ShrinkHelper.exportAppToServer(server, TestBeanApp, DeployOptions.SERVER_ONLY);
 
-        ShrinkHelper.exportDropinAppToServer(client, TestBeanApp, DeployOptions.SERVER_ONLY);
-        ShrinkHelper.defaultDropinApp(client, CLIENT_OF_REMOTE_BEAN_APP_NAME, "com.ibm.ws.remoteEJB.web", "com.ibm.ws.remoteEJB.shared");
+        ShrinkHelper.defaultApp(client, CLIENT_APP_NAME, "com.ibm.ws.remoteEJB.client", "com.ibm.ws.remoteEJB.remoteClient", "com.ibm.ws.remoteEJB.shared");
 
         server.useSecondaryHTTPPort();
 

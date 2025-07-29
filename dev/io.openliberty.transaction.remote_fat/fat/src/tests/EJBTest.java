@@ -22,6 +22,8 @@ import componenttest.topology.utils.FATServletClient;
 
 public class EJBTest extends FATServletClient {
 
+    static final String CLIENT_APP_NAME = "TestBeanClient";
+
     static SetupRunner runner = new SetupRunner() {
         @Override
         public void run(LibertyServer s) throws Exception {

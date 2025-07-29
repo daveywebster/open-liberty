@@ -10,7 +10,7 @@
  * Contributors:
  *     IBM Corporation - initial API and implementation
  *******************************************************************************/
-package com.ibm.ws.remoteEJB.web;
+package com.ibm.ws.remoteEJB.client;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;

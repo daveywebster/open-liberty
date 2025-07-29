@@ -44,4 +44,8 @@
     </dataSource>
 
     <authData id="auth1" user="dbuser" password="dbpassword" fat.modify="true"/>
+
+	<application location="TestBeanClient.war">
+        <classloader commonLibraryRef="AnonymousJDBCLib"/>
+	</application>
 </server>
