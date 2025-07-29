@@ -1439,7 +1439,8 @@ public class DataJPATestServlet extends FATServlet {
                                                  .map(t -> t.ssn)
                                                  .collect(Collectors.toList()));
 
-        // TODO enable once issue #31558 is fixed in EclipseLink
+        // TODO enable once issue #31558 and
+        // TODO subsequently #32263 is fixed in EclipseLink
         if (false)
             assertIterableEquals(List.of(789007890L),
                                  taxpayers.findByBankAccountsNotEmpty()
@@ -4777,17 +4778,18 @@ public class DataJPATestServlet extends FATServlet {
                                              .map(Arrays::toString)
                                              .collect(Collectors.toList()));
 
-        // page of array attribute 
-         
-        /*To-do Enable once #32246 is fixed.
-         * 
+        // page of array attribute
+
+        /*
+         * TODO Enable once #32246 is fixed.
+         *
          * assertIterableEquals(List.of(Arrays.toString(wabashaZipCodes), Arrays.toString(winonaZipCodes)),
          * counties.findZipCodesByNameStartsWith("W", PageRequest.ofSize(10))
          * .stream()
          * .map(Arrays::toString)
          * .collect(Collectors.toList()));
          */
-        
+
         // optional iterator of array attribute
         Iterator<int[]> it = counties.findZipCodesByPopulationLessThanEqual(50000);
         assertIterableEquals(List.of(Arrays.toString(fillmoreZipCodes), Arrays.toString(wabashaZipCodes), Arrays.toString(winonaZipCodes)),
