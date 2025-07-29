@@ -1,0 +1,30 @@
+/*******************************************************************************
+ * Copyright (c) 2022, 2023 IBM Corporation and others.
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * http://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     IBM Corporation - initial API and implementation
+ *******************************************************************************/
+package io.openliberty.security.jakartasec;
+
+import java.util.Set;
+
+import jakarta.security.enterprise.identitystore.IdentityStore.ValidationType;
+
+/**
+ * Constants for Java EE Security - for 4.0, they all relate to the InMemoryIdentityStore.
+ */
+public class JakartaSec40Constants extends JakartaSec30Constants {
+
+    // key of the InMemoryIdentityStoreDefinition attribute modelling the Credentials.
+    public static final String VALUE = "value";
+
+    // InMemoryIdentityStoreDefinition spec defaults
+    public static final int SPEC_DEFAULT_PRIORITY = 90;
+    public static final Set<ValidationType> SPEC_DEFAULT_VALIDATION_TYPES = Set.of(ValidationType.VALIDATE, ValidationType.PROVIDE_GROUPS);
+}
