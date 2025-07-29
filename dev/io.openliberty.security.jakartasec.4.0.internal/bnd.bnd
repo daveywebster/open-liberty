@@ -38,10 +38,12 @@ instrument.classesExcludes: io/openliberty/security/jakartasec/internal/resource
 
 -buildpath: \
     io.openliberty.security.jakartasec.3.0.internal;version=latest,\
+    io.openliberty.jakarta.cdi.4.1,\
     com.ibm.ws.kernel.boot;version=latest,\
     com.ibm.ws.kernel.service;version=latest,\
     com.ibm.ws.logging;version=latest,\
     com.ibm.ws.logging.core;version=latest,\
+    com.ibm.wsspi.org.osgi.service.component.annotations,\
     com.ibm.ws.org.osgi.annotation.versioning;version=latest,\
     io.openliberty.security.jakartasec.2.0.internal,\
     io.openliberty.jakarta.security.4.0,\
