@@ -359,5 +359,3 @@
 
 6183=The mapping type {1} for attribute {2} from {0} is not supported with Query By Example functionality.  If the attribute can safely be ignored then add it to the ignore list or set example validation to false in the policy.
 
-6184=The {0} value type passed to the constructor expression is incorrect. Complex types like arrays, collections, and objects are not supported.
-
