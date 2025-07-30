@@ -4779,16 +4779,11 @@ public class DataJPATestServlet extends FATServlet {
                                              .collect(Collectors.toList()));
 
         // page of array attribute
-
-        /*
-         * TODO Enable once #32246 is fixed.
-         *
-         * assertIterableEquals(List.of(Arrays.toString(wabashaZipCodes), Arrays.toString(winonaZipCodes)),
-         * counties.findZipCodesByNameStartsWith("W", PageRequest.ofSize(10))
-         * .stream()
-         * .map(Arrays::toString)
-         * .collect(Collectors.toList()));
-         */
+        assertIterableEquals(List.of(Arrays.toString(wabashaZipCodes), Arrays.toString(winonaZipCodes)),
+                             counties.findZipCodesByNameStartsWith("W", PageRequest.ofSize(10))
+                                             .stream()
+                                             .map(Arrays::toString)
+                                             .collect(Collectors.toList()));
 
         // optional iterator of array attribute
         Iterator<int[]> it = counties.findZipCodesByPopulationLessThanEqual(50000);
