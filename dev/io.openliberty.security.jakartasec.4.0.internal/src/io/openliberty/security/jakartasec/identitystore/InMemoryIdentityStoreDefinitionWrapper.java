@@ -13,7 +13,9 @@
 package io.openliberty.security.jakartasec.identitystore;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -36,24 +38,26 @@ import jakarta.security.enterprise.identitystore.InMemoryIdentityStoreDefinition
  * The methods in this class will evaluate any EL expressions provided in the
  * {@link InMemoryIdentityStoreDefinition} first and if no EL expressions are provided,
  * return the literal value instead.
+ *
+ * As a reminder, here is an example of an in memory identity store annotation:
+ *
+ * @InMemoryIdentityStoreDefinition(
+ * priority = 10,
+ * priorityExpression = "#{80/20}",
+ * useFor = {VALIDATE, PROVIDE_GROUPS},
+ * useForExpression = "#{'VALIDATE'}",
+ * value = {
+ *
+ * @Credentials(callerName = "bill", password = "secret1", groups = { "foo", "bar" }),
+ * @Credentials(callerName = "sally", password = "secret1", groups = { "user" }),
+ * @Credentials(callerName = "dave", password = "secret1", groups = { "caller", "user", "foo", "bar" })
+ *                         })
  */
 
 public class InMemoryIdentityStoreDefinitionWrapper {
 
-    // TODO: convert Credentials into an internal Hashmap
-    // TODO: evaluate password: support both expression and literal value
-
-    class ELHelperWrapper extends ELHelper {
-        @Override
-        public Set<ValidationType> processUseFor(String useForExpression, ValidationType[] useFor, boolean immediateOnly) {
-            return super.processUseFor(useForExpression, useFor, immediateOnly);
-        }
-
-        @Override
-        public Stream<String> processStringStream(String name, String expression, boolean immediateOnly, boolean mask) {
-            return super.processStringStream(name, expression, immediateOnly, mask);
-        }
-    }
+    // TODO: evaluate password: support both expression and literal value, see evaluatePassword()
+    // TODO: use a ProtectedString for password
 
     private static final TraceComponent tc = Tr.register(InMemoryIdentityStoreDefinitionWrapper.class);
 
@@ -70,7 +74,8 @@ public class InMemoryIdentityStoreDefinitionWrapper {
     /** The ValidationTypes this IdentityStore can be used for. Will be null when set by a deferred EL expression. */
     private final Set<ValidationType> useFor;
 
-    private final Credentials[] creds;
+    /** the raw credentials into a key/value map = <callerName = [password, groups]> */
+    private final HashMap<String, CredentialValue> credentials;
 
     private final ELHelperWrapper elHelper;
 
@@ -87,21 +92,42 @@ public class InMemoryIdentityStoreDefinitionWrapper {
             throw new IllegalArgumentException("The InMemoryIdentityStoreDefinition cannot be null.");
         }
         this.inMemoryIdentityStoreDefinition = inMemoryIdentityStoreDefinition;
-        this.elHelper = new ELHelperWrapper();
+        elHelper = new ELHelperWrapper();
 
         /*
          * Evaluate the configuration. The values will be non-null if the setting is NOT
          * a deferred EL expression. If it is a deferred EL expression, we will dynamically
          * evaluate it at call time.
          */
-        this.priority = evaluatePriority(false);
-        this.useFor = evaluateUseFor(false);
+
+        priority = evaluatePriority(false);
+        useFor = evaluateUseFor(false);
 
         if ((inMemoryIdentityStoreDefinition.value() == null) || (inMemoryIdentityStoreDefinition.value().length == 0)) {
-            this.creds = new Credentials[0];
+            credentials = new HashMap<String, CredentialValue>(0);
         } else {
-            this.creds = Arrays.copyOf(inMemoryIdentityStoreDefinition.value(), inMemoryIdentityStoreDefinition.value().length);
+            int credentialsLength = inMemoryIdentityStoreDefinition.value().length;
+            Credentials[] creds = Arrays.copyOf(inMemoryIdentityStoreDefinition.value(), credentialsLength);
+
+            // convert raw credentials into an easily search-able HashMap with standard Java types
+            credentials = new HashMap<String, CredentialValue>(credentialsLength);
+            for (int i = 0; i < credentialsLength; i++) {
+                CredentialValue credential = new CredentialValue(evaluatePassword(creds[i].password(), false), creds[i].groups());
+                credentials.put(creds[i].callerName(), credential);
+            }
         }
+    }
+
+    /**
+     * Evaluate and return the password.
+     *
+     * @param password
+     * @param immediateOnly
+     * @return
+     */
+//    @FFDCIgnore(IllegalArgumentException.class)
+    private String evaluatePassword(String password, boolean immediateOnly) {
+        return password;
     }
 
     /**
@@ -232,18 +258,86 @@ public class InMemoryIdentityStoreDefinitionWrapper {
     }
 
     /**
-     * Get the Credentials for the {@link IdentityStore}.
+     * Get the Credentials for the {@link IdentityStore} as a {@HashMap}.
      *
-     * @return The Credentials, or an empty Credentials array if not set.
+     * @return The annotations Credentials as a {@HashMap}, with the
+     *         each Map element of the following:
      *
-     * @see InMemoryIdentityStoreDefinition#Credentials()
+     *         key = String (callerValue) / value = CredentialValue ({String password, String[] groups})
+     *
+     *         or an empty {@HashMap} if no annotations
+     *
+     * @see InMemoryIdentityStoreDefinition#CredentialValue()
      */
-    Credentials[] getCredentials() {
-        return (this.creds.length != 0) ? Arrays.copyOf(this.creds, this.creds.length) : new Credentials[0];
+    Map<String, CredentialValue> getCredentials() {
+        return (credentials.size() != 0) ? credentials : new HashMap<String, CredentialValue>(0);
     }
 
+    /**
+     * Credentials[] getCreds1() {
+     * return (creds.length != 0) ? Arrays.copyOf(creds, creds.length) : new Credentials[0];
+     * }
+     **/
     @Override
     public String toString() {
-        return "InMemoryIdentityStoreDefinitionWrapper [priority=" + priority + ", useFor=" + useFor + ", creds=" + Arrays.toString(creds) + "]";
+        StringBuffer credentialsString = new StringBuffer();
+        credentials.entrySet().stream().forEach(s -> credentialsString.append(s.toString() + ","));
+        credentialsString.deleteCharAt(credentialsString.length() - 1); // remove last comma
+        return "InMemoryIdentityStoreDefinitionWrapper [priority=" + priority + ", useFor=" + useFor + ", creds=" + credentialsString + "]";
     }
+
+    /***********************************************************************
+     * Helper classes
+     ***********************************************************************/
+
+    private class ELHelperWrapper extends ELHelper {
+        @Override
+        public Set<ValidationType> processUseFor(String useForExpression, ValidationType[] useFor, boolean immediateOnly) {
+            return super.processUseFor(useForExpression, useFor, immediateOnly);
+        }
+
+        @Override
+        public Stream<String> processStringStream(String name, String expression, boolean immediateOnly, boolean mask) {
+            return super.processStringStream(name, expression, immediateOnly, mask);
+        }
+    }
+
+    /**
+     * This structure models the Credentials interface, but just the password and
+     * groups values, with the presumption that it is going into a
+     * search-able {@HashMap) (key = callerName).
+     *
+     */
+
+    public class CredentialValue {
+        private final String password;
+        private final String[] groups;
+
+        public CredentialValue(final String password, final String[] groups) {
+            this.password = password;
+            this.groups = Arrays.copyOf(groups, groups.length);
+        }
+
+        public String getPassword() {
+            return password;
+        }
+
+        public String[] getGroups() {
+            if ((groups == null) || (groups.length == 0)) {
+                return new String[0];
+            }
+            return Arrays.copyOf(groups, groups.length);
+        }
+
+        @Override
+        public String toString() {
+            return "CredentialValue [password=" + password + ", groups=" + Arrays.toString(groups) + "]";
+        }
+    }
+
+    /*
+     * We also evaluate the password value and resolve expressions to the actual value.
+     * (i.e. if it is a reference to a server.env variable).
+     */
+
 }

@@ -14,10 +14,8 @@ package io.openliberty.security.jakartasec.identitystore;
 
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
-
-import javax.naming.InitialContext;
-import javax.naming.NamingException;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.ConfigurationPolicy;
@@ -27,6 +25,7 @@ import com.ibm.websphere.ras.Tr;
 import com.ibm.websphere.ras.TraceComponent;
 import com.ibm.websphere.ras.annotation.Sensitive;
 
+import io.openliberty.security.jakartasec.identitystore.InMemoryIdentityStoreDefinitionWrapper.CredentialValue;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Default;
 import jakarta.security.enterprise.credential.CallerOnlyCredential;
@@ -36,8 +35,6 @@ import jakarta.security.enterprise.identitystore.CredentialValidationResult;
 import jakarta.security.enterprise.identitystore.IdentityStore;
 import jakarta.security.enterprise.identitystore.InMemoryIdentityStoreDefinition;
 import jakarta.security.enterprise.identitystore.InMemoryIdentityStoreDefinition.Credentials;
-
-//import jakarta.security.enterprise.identitystore.IdentityStore.IdentityStorePermission;
 
 /**
  * Liberty's InMemory {@link IdentityStore} implementation.
@@ -57,8 +54,6 @@ public class InMemoryIdentityStore implements IdentityStore {
     /** The definitions for this IdentityStore. */
     private final InMemoryIdentityStoreDefinitionWrapper inMemoryIdentityStoreDefinitionWrapper;
 
-    private InitialContext initialContext = null;
-
     private String getIdStoreDefinitionAsString(InMemoryIdentityStoreDefinition inMemoryIdentityStoreDefinition) {
 
         Tr.info(tc, "InMemoryIdentityStore", "getIdStoreDefinitionAsString");
@@ -75,24 +70,25 @@ public class InMemoryIdentityStore implements IdentityStore {
     }
 
     /**
-     * Construct a new {@link InMemoryIdentityStore} instance using the specified definitions.
+     * Construct a new {@link InMemoryIdentityStore} instance using the specified definitions
+     * from the annotation.
      *
-     * @param idStoreDefinition The definitions to use to configure the {@link IdentityStore}.
+     * @param inMemoryIdentityStoreDefinition The definitions to use to configure the {@link IdentityStore}.
      */
 
-    public InMemoryIdentityStore(InMemoryIdentityStoreDefinition idStoreDefinition) {
+    public InMemoryIdentityStore(InMemoryIdentityStoreDefinition inMemoryIdentityStoreDefinition) {
 
         Tr.info(tc, "InMemoryIdentityStore", "DAVE40: InMemoryIdentityStore constructor called with idStoreDefinition1 ...");
         System.out.println("DAVE40: InMemoryIdentityStore constructor called wth idStoreDefinition1 ...");
 
         Tr.info(tc, "InMemoryIdentityStore", "----------------------------");
-        Tr.info(tc, "InMemoryIdentityStore", "DAVE40: " + getIdStoreDefinitionAsString(idStoreDefinition));
+        Tr.info(tc, "InMemoryIdentityStore", "DAVE40: " + getIdStoreDefinitionAsString(inMemoryIdentityStoreDefinition));
         Tr.info(tc, "InMemoryIdentityStore", "----------------------------");
         System.out.println("----------------------------");
-        System.out.println("DAVE40: " + getIdStoreDefinitionAsString(idStoreDefinition));
+        System.out.println("DAVE40: " + getIdStoreDefinitionAsString(inMemoryIdentityStoreDefinition));
         System.out.println("----------------------------");
 
-        this.inMemoryIdentityStoreDefinitionWrapper = new InMemoryIdentityStoreDefinitionWrapper(idStoreDefinition);
+        this.inMemoryIdentityStoreDefinitionWrapper = new InMemoryIdentityStoreDefinitionWrapper(inMemoryIdentityStoreDefinition);
 
         Tr.info(tc, "InMemoryIdentityStore", "----------------------------");
         Tr.info(tc, "InMemoryIdentityStore", "DAVE40 (DefinitionWrapper): " + this.inMemoryIdentityStoreDefinitionWrapper.toString());
@@ -100,13 +96,6 @@ public class InMemoryIdentityStore implements IdentityStore {
         System.out.println("----------------------------");
         System.out.println("DAVE40 (DefinitionWrapper): " + this.inMemoryIdentityStoreDefinitionWrapper.toString());
         System.out.println("----------------------------");
-        try {
-            initialContext = new InitialContext();
-        } catch (NamingException e) {
-            if (tc.isEventEnabled()) {
-                Tr.event(tc, "Setting up InitializeContext failed, will try later.", e);
-            }
-        }
     }
 
     @Override
@@ -115,10 +104,6 @@ public class InMemoryIdentityStore implements IdentityStore {
         if (!validationTypes().contains(ValidationType.PROVIDE_GROUPS)) {
             return groups;
         }
-//        SecurityManager securityManager = System.getSecurityManager();
-//        if (securityManager != null) {
-//            securityManager.checkPermission(new IdentityStorePermission(JavaEESecConstants.GET_GROUPS_PERMISSION));
-//        }
 
         String caller = validationResult.getCallerPrincipal().getName();
         if (caller == null) {
@@ -128,14 +113,21 @@ public class InMemoryIdentityStore implements IdentityStore {
             return groups;
         }
 
-        // get and return the groups
-        Credentials[] creds = inMemoryIdentityStoreDefinitionWrapper.getCredentials();
-        for (Credentials cred : creds) {
-            if (cred.callerName().equals(caller)) {
-                return Set.of(cred.groups());
-            }
+        Map<String, CredentialValue> credentials = inMemoryIdentityStoreDefinitionWrapper.getCredentials();
+        CredentialValue credentialValue = credentials.get(caller);
+        if (credentialValue != null) {
+            // found a caller, so set groups
+            groups = Set.of(credentialValue.getGroups());
         }
 
+        /**
+         * Credentials[] creds = inMemoryIdentityStoreDefinitionWrapper.getCreds();
+         * for (Credentials cred : creds) {
+         * if (cred.callerName().equals(caller)) {
+         * return Set.of(cred.groups());
+         * }
+         * }
+         **/
         return groups;
     }
 
@@ -201,22 +193,26 @@ public class InMemoryIdentityStore implements IdentityStore {
     }
 
     private boolean isValid(String caller, ProtectedString password) {
-        Credentials[] creds = inMemoryIdentityStoreDefinitionWrapper.getCredentials();
 
-        for (Credentials cred : creds) {
-            if (cred.callerName().equals(caller)) {
-                char[] pchars = password.getChars();
-                StringBuffer pwd = new StringBuffer(pchars.length);
-                for (char p : pchars) {
-                    pwd.append(p);
-                }
-                if (pwd.toString().equals(cred.password())) {
-                    return true;
-                }
-            }
+        Map<String, CredentialValue> credentials = inMemoryIdentityStoreDefinitionWrapper.getCredentials();
+
+        CredentialValue credentialValue = credentials.get(caller);
+        if (credentialValue == null) {
+            // caller not in annotation values
+            return false;
         }
 
-        // TODO
+        // TODO: Use the UserRegistry code to validate the password
+        char[] pchars = password.getChars();
+        StringBuffer pwd = new StringBuffer(pchars.length);
+        for (char p : pchars) {
+            pwd.append(p);
+        }
+        if (pwd.toString().equals(credentialValue.getPassword())) {
+            return true; // caller and password match
+        }
+
+        // caller in annotation value, but incorrect password
         return false;
     }
 
