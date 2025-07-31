@@ -558,6 +558,8 @@ public class InstallUtils {
             targetFileName.contains("/lafiles/") ||
             targetFileName.contains("/checksums/")) {
             // skip check md5
+            // FIPS 140-3: Algorithm assessment complete; no changes required.
+            // because it uses SHA-1 or MD5 for file checksums, this likely can't be changed
             return true;
         }
         if (inputChecksum != null) {
