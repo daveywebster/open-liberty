@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2017, 2022 IBM Corporation and others.
+ * Copyright (c) 2017, 2025 IBM Corporation and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License 2.0
  * which accompanies this distribution, and is available at
@@ -19,6 +19,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import com.ibm.websphere.ras.ProtectedString;
 import com.ibm.websphere.ras.Tr;
 import com.ibm.websphere.ras.TraceComponent;
 import com.ibm.ws.ffdc.annotation.FFDCIgnore;
@@ -123,11 +124,54 @@ public class InMemoryIdentityStoreDefinitionWrapper {
      *
      * @param password
      * @param immediateOnly
-     * @return
+     * @return will return a ProtectedString representing the raw credential password
+     *         or an empty ProtectedString if it wasn't in the annotation.
      */
 //    @FFDCIgnore(IllegalArgumentException.class)
-    private String evaluatePassword(String password, boolean immediateOnly) {
-        return password;
+    private ProtectedString evaluatePassword(String password, boolean immediateOnly) {
+        ProtectedString ps = null;
+        if ((password != null) && (password.length() > 0)) {
+            ps = new ProtectedString(password.toCharArray());
+        } else {
+            ps = new ProtectedString(new char[0]);
+        }
+
+        return ps;
+    }
+
+    /**
+     * Evaluate and return the bindDnPassword.
+     *
+     * @param immediateOnly If true, only return a non-null value if the setting is either an
+     *                          immediate EL expression or not set by an EL expression. If false, return the
+     *                          value regardless of where it is evaluated.
+     * @return The bindDnPassword or null if immediateOnly==true AND the value is not evaluated
+     *         from a deferred EL expression.
+     */
+    @FFDCIgnore(IllegalArgumentException.class)
+    private ProtectedString evaluatePassword1(String password, boolean immediateOnly) {
+        String result;
+        try {
+            result = elHelper.processString("bindDnPassword", password, immediateOnly, true);
+
+        } catch (IllegalArgumentException e) {
+            /*
+             * If deferred expression and called during initialization, return null so the expression can be re-evaluated
+             * again later.
+             */
+            if (immediateOnly && ELHelper.isDeferredExpression(password)) {
+                if (TraceComponent.isAnyTracingEnabled() && tc.isDebugEnabled()) {
+                    Tr.debug(tc, "evaluateBindDnPassword", "Returning null since bindDnPassword is a deferred expression and this is called on initialization.");
+                }
+                return null;
+            }
+
+            if (TraceComponent.isAnyTracingEnabled() && tc.isWarningEnabled()) {
+                Tr.warning(tc, "JAVAEESEC_WARNING_IDSTORE_CONFIG", new Object[] { "bindDnPassword", "" });
+            }
+            result = ""; /* Default value from spec. */
+        }
+        return (result == null) ? null : new ProtectedString(result.toCharArray());
     }
 
     /**
@@ -141,8 +185,8 @@ public class InMemoryIdentityStoreDefinitionWrapper {
      */
     @FFDCIgnore(IllegalArgumentException.class)
     private Integer evaluatePriority(boolean immediateOnly) {
-        String priorityExpression = this.inMemoryIdentityStoreDefinition.priorityExpression();
-        int priority = this.inMemoryIdentityStoreDefinition.priority();
+        String priorityExpression = inMemoryIdentityStoreDefinition.priorityExpression();
+        int priority = inMemoryIdentityStoreDefinition.priority();
         Tr.info(tc, "evaluatePriority", "priorityExpression is ["
                                         + priorityExpression
                                         + "] , priority is ["
@@ -192,8 +236,8 @@ public class InMemoryIdentityStoreDefinitionWrapper {
     @FFDCIgnore(IllegalArgumentException.class)
     private Set<ValidationType> evaluateUseFor(boolean immediateOnly) {
 
-        String useForExpression = this.inMemoryIdentityStoreDefinition.useForExpression();
-        ValidationType[] useFor = this.inMemoryIdentityStoreDefinition.useFor();
+        String useForExpression = inMemoryIdentityStoreDefinition.useForExpression();
+        ValidationType[] useFor = inMemoryIdentityStoreDefinition.useFor();
         Tr.info(tc, "evaluateUseFor", "useForExpression is ["
                                       + useForExpression
                                       + "], useFor is ["
@@ -310,15 +354,15 @@ public class InMemoryIdentityStoreDefinitionWrapper {
      */
 
     public class CredentialValue {
-        private final String password;
+        private final ProtectedString password;
         private final String[] groups;
 
-        public CredentialValue(final String password, final String[] groups) {
+        public CredentialValue(final ProtectedString password, final String[] groups) {
             this.password = password;
             this.groups = Arrays.copyOf(groups, groups.length);
         }
 
-        public String getPassword() {
+        public ProtectedString getPassword() {
             return password;
         }
 
@@ -331,13 +375,8 @@ public class InMemoryIdentityStoreDefinitionWrapper {
 
         @Override
         public String toString() {
+            // will output the ProtectedString value of "****" for passwords
             return "CredentialValue [password=" + password + ", groups=" + Arrays.toString(groups) + "]";
         }
     }
-
-    /*
-     * We also evaluate the password value and resolve expressions to the actual value.
-     * (i.e. if it is a reference to a server.env variable).
-     */
-
 }
