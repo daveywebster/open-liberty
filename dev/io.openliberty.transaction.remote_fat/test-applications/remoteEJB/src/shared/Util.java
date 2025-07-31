@@ -23,13 +23,10 @@ public class Util {
         final Transaction t = TransactionManagerFactory.getTransactionManager().getTransaction();
 
         if (t instanceof Transaction) {
-            String strID = t.toString();
-            System.out.println("Tran ID: " + strID);
+            final String strID = t.toString();
             final int start = strID.indexOf("#tid=") + 5;
             final int end = strID.indexOf(",");
-            strID = strID.substring(start, end);
-            System.out.println("tid: " + strID);
-            return strID;
+            return strID.substring(start, end);
         }
 
         return null;

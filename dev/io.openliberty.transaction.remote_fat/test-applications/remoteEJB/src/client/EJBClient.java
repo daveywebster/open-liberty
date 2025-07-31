@@ -49,6 +49,12 @@ public abstract class EJBClient extends FATServlet {
 
     protected TestBeanRemote bean;
 
+    @Override
+    protected void before() {
+        System.getProperties().entrySet().stream().forEach(e -> System.out.println("Prop: " + e.getKey() + " -> " + e.getValue()));
+        System.getenv().entrySet().stream().forEach(e -> System.out.println("Env: " + e.getKey() + " -> " + e.getValue()));
+    }
+
     @Test
     public void testMandatoryWith(HttpServletRequest request,
                                   HttpServletResponse response) throws NotSupportedException, SystemException, NamingException {

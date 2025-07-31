@@ -7,43 +7,16 @@
         <feature>jdbc-4.0</feature>
         <feature>localConnector-1.0</feature>
         <feature>servlet-3.1</feature>
-        <feature>transportSecurity-1.0</feature>
     </featureManager>
 
-    <include location="../fatTestCommon.xml" />
-
-    <httpEndpoint id="defaultHttpEndpoint"
-                  host="*"
-                  httpPort="${bvt.prop.HTTP_default}"
-                  httpsPort="${bvt.prop.HTTP_default.secure}">
-      <tcpOptions portOpenRetries="100000"/>
-    </httpEndpoint>
-
-    <iiopEndpoint id="defaultIiopEndpoint" iiopPort="${bvt.prop.IIOP}">
-        <iiopsOptions  iiopsPort="${bvt.prop.IIOP.secure}" sslRef="defaultSSLConfig"/>
-    </iiopEndpoint>
+    <include location="../fatTestPorts.xml" />
 
     <transaction
-      dataSourceRef="tranlogDataSource"
       recoverOnStartup="true"
       waitForRecovery="false"
-      heuristicRetryInterval="10"
-      transactionLogDBTableSuffix="${wlp.server.name}"
     />
 
     <javaPermission name="*" actions="*" className="java.security.AllPermission"/>
-
-    <library id="AnonymousJDBCLib">
-        <fileset dir="${shared.resource.dir}/jdbc" includes="${env.DB_DRIVER}"/>
-    </library>
-  
-    <dataSource id="tranlogDataSource" jndiName="jdbc/tranlogDataSource" transactional="false" containerAuthDataRef="auth1" fat.modify="true">
-      <jdbcDriver libraryRef="AnonymousJDBCLib" />
-      <!-- Properties modified by fat for database rotation -->
-      <properties.derby.embedded  createDatabase="create" databaseName="${shared.resource.dir}/data/tranlogdb"/>
-    </dataSource>
-
-    <authData id="auth1" user="dbuser" password="dbpassword" fat.modify="true"/>
 
 	<application location="TestBeanClient.war">
         <classloader commonLibraryRef="AnonymousJDBCLib"/>

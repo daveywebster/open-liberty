@@ -29,7 +29,6 @@ import componenttest.annotation.TestServlets;
 import componenttest.custom.junit.runner.FATRunner;
 import componenttest.topology.impl.LibertyServer;
 import remoteClient.RemoteEJBClient;
-import suite.FATSuite;
 
 @RunWith(FATRunner.class)
 public class RemoteEJBTest extends EJBTest {
@@ -54,8 +53,7 @@ public class RemoteEJBTest extends EJBTest {
 
         server.useSecondaryHTTPPort();
 
-        FATSuite.setUp(client, server);
-        FATUtils.startServers(runner, client, server);
+        FATUtils.startServers(client, server);
     }
 
     @AfterClass

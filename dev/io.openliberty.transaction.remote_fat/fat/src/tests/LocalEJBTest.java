@@ -29,7 +29,6 @@ import componenttest.annotation.TestServlets;
 import componenttest.custom.junit.runner.FATRunner;
 import componenttest.topology.impl.LibertyServer;
 import localClient.LocalEJBClient;
-import suite.FATSuite;
 
 @RunWith(FATRunner.class)
 public class LocalEJBTest extends EJBTest {
@@ -49,8 +48,7 @@ public class LocalEJBTest extends EJBTest {
 
         ShrinkHelper.defaultApp(client, CLIENT_APP_NAME, "client", "localClient", "shared");
 
-        FATSuite.setUp(client);
-        FATUtils.startServers(runner, client);
+        FATUtils.startServers(client);
     }
 
     @AfterClass

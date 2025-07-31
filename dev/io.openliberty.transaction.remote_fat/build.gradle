@@ -17,5 +17,4 @@ dependencies {
 File sharedDir = new File(autoFvtDir, 'publish/shared/resources')
 
 addRequiredLibraries.dependsOn copyJdbcDrivers
-addRequiredLibraries.dependsOn copyTestContainers
 addRequiredLibraries.dependsOn addJakartaTransformer

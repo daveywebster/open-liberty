@@ -51,6 +51,4 @@ tested.features:\
 	com.ibm.ws.transaction.test.util,\
 	com.ibm.ws.tx.embeddable,\
 	com.ibm.wsspi.org.osgi.service.component.annotations,\
-	io.openliberty.org.apache.commons.logging,\
-	io.openliberty.org.testcontainers,\
-	org.postgresql:postgresql;version=42.2.5
+	io.openliberty.org.apache.commons.logging

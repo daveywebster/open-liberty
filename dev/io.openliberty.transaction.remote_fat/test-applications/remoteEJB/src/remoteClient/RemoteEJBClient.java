@@ -17,6 +17,7 @@ import static org.junit.Assert.assertFalse;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 import javax.rmi.PortableRemoteObject;
+import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -33,21 +34,20 @@ import shared.TestBeanRemote;
 public class RemoteEJBClient extends EJBClient {
 
     @Override
-    public void init() {
-        System.getProperties().entrySet().stream().forEach(e -> System.out.println("Prop: " + e.getKey() + " -> " + e.getValue()));
-        System.getenv().entrySet().stream().forEach(e -> System.out.println("Env: " + e.getKey() + " -> " + e.getValue()));
+    public void init() throws ServletException {
 
         final int remoteIIOPPort = Integer.getInteger("bvt.prop.IIOP.secondary");
 
+        final String lookup = "corbaname:iiop:localhost:" + remoteIIOPPort
+                              + "/NameService#ejb/global/TestBeanApp/TestBeanEJB/TestBean!shared\\.TestBeanRemote";
+        System.out.println("Looking up: " + lookup);
+
         try {
-            String lookup = "corbaname:iiop:localhost:" + remoteIIOPPort
-                            + "/NameService#ejb/global/TestBeanApp/TestBeanEJB/TestBean!shared\\.TestBeanRemote";
-            System.out.println("Looking up: " + lookup);
-            Object found = new InitialContext()
+            final Object found = new InitialContext()
                             .lookup(lookup);
             bean = (TestBeanRemote) PortableRemoteObject.narrow(found, TestBeanRemote.class);
-        } catch (Throwable t) {
-            t.printStackTrace();
+        } catch (NamingException e) {
+            throw new ServletException(e);
         }
     }
 

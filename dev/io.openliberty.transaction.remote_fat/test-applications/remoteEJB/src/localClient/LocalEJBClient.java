@@ -17,6 +17,7 @@ import static org.junit.Assert.assertTrue;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 import javax.rmi.PortableRemoteObject;
+import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -33,16 +34,13 @@ import shared.TestBeanRemote;
 public class LocalEJBClient extends EJBClient {
 
     @Override
-    public void init() {
-        System.getProperties().entrySet().stream().forEach(e -> System.out.println("Prop: " + e.getKey() + " -> " + e.getValue()));
-        System.getenv().entrySet().stream().forEach(e -> System.out.println("Env: " + e.getKey() + " -> " + e.getValue()));
-
+    public void init() throws ServletException {
         try {
-            Object found = new InitialContext()
+            final Object found = new InitialContext()
                             .lookup("shared.TestBeanRemote");
             bean = (TestBeanRemote) PortableRemoteObject.narrow(found, TestBeanRemote.class);
         } catch (NamingException e) {
-            e.printStackTrace();
+            throw new ServletException(e);
         }
     }
 
