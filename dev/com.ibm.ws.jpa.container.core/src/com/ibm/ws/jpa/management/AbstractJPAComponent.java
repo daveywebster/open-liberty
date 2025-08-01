@@ -16,6 +16,7 @@ import static com.ibm.ws.jpa.management.JPAConstants.JPA_RESOURCE_BUNDLE_NAME;
 import static com.ibm.ws.jpa.management.JPAConstants.JPA_TRACE_GROUP;
 
 import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -28,6 +29,7 @@ import java.util.TreeSet;
 import javax.naming.Reference;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
+import javax.persistence.spi.PersistenceUnitInfo;
 
 import com.ibm.websphere.csi.J2EEName;
 import com.ibm.websphere.ras.Tr;
@@ -452,5 +454,76 @@ public abstract class AbstractJPAComponent
         {
             return new TreeSet<String>(appNames);
         }
+    }
+    
+    @Override
+    public List<JPAPUnitInfo> getPersistenceUnits(J2EEName j2eeName) {
+        List<JPAPUnitInfo> filteredAppList = new ArrayList<>();
+        String appName = null;
+        String modName = null;
+        if(j2eeName!=null) {
+            if(j2eeName.getApplication()!=null && !j2eeName.getApplication().isEmpty()) {
+                appName = j2eeName.getApplication();  
+            }
+            if(j2eeName.getModule()!=null && !j2eeName.getModule().isEmpty()) {
+                modName = j2eeName.getModule();
+            }
+            
+            filteredAppList = getPersistenceUnitsForApp(appName,modName);
+        }       
+        return filteredAppList;
+    }  
+    
+    public List<JPAPUnitInfo> getPersistenceUnitsForApp(String appName, String modName) {
+        List<JPAPUnitInfo> matchedUnits = new ArrayList<>(); 
+        synchronized (applList) {
+           for(JPAApplInfo applInfo : applList.values()) {
+               Map<String, JPAScopeInfo> puScopes= applInfo.getPuScopes();
+               if (puScopes == null || puScopes.isEmpty()) {
+                   continue;
+               }
+               for (JPAScopeInfo scope : puScopes.values()) {
+                   Map<String, JPAPxmlInfo> xmlInfos = scope.getPxmlsInfo();
+                   if (xmlInfos == null || xmlInfos.isEmpty())
+                       continue;
+
+                   for (JPAPxmlInfo xmlInfo : xmlInfos.values()) {
+                       Map<String, JPAPUnitInfo> puMap = xmlInfo.getIvPuList();
+                       if (puMap == null || puMap.isEmpty())
+                           continue;
+
+                       for (JPAPUnitInfo unitInfo : puMap.values()) {
+                           String unitAppName = unitInfo.getApplName();
+                           if (appName.equals(unitAppName)) {
+                               if (modName != null) {
+                                   String modUnitName = unitInfo.getIvArchivePuId().getModJarName();
+                                   if (modUnitName != null && modName.equals(modName)) {
+                                       matchedUnits.add(unitInfo);
+                                   }
+                               } else {
+                                   matchedUnits.add(unitInfo);
+                               }
+
+                           }
+                       }
+                   }
+               }  
+           }
+           
+        }
+            
+     
+
+        return matchedUnits;
+    }
+
+    @Override
+    public EntityManagerFactory getEntityManagerFactory(String persistenceUnitName) {
+        return null;
+    }
+
+    @Override
+    public EntityManager getEntityManager(String persistenceUnitName) {
+        return null;
     }
 }

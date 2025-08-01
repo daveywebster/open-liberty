@@ -4,7 +4,7 @@
  * are made available under the terms of the Eclipse Public License 2.0
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-2.0/
- * 
+ *
  * SPDX-License-Identifier: EPL-2.0
  *
  * Contributors:
@@ -20,8 +20,10 @@ import java.util.Set;
 
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
+import javax.persistence.spi.PersistenceUnitInfo;
 
 import com.ibm.websphere.csi.J2EEName;
+import com.ibm.ws.jpa.management.JPAPUnitInfo;
 import com.ibm.wsspi.injectionengine.InjectionBinding;
 
 /**
@@ -68,6 +70,8 @@ public interface JPAComponent {
 
     public JPAVersion getJPAVersion();
 
+    public List<JPAPUnitInfo> getPersistenceUnits(J2EEName j2eeName);
+
     /**
      * Returns the EntityManagerFactory defines by the application/module/persistence unit spcified.
      * This is used by the resolver and naming object factory to retrieve the factory for
@@ -86,6 +90,8 @@ public interface JPAComponent {
     public EntityManagerFactory getEntityManagerFactory(JPAPuId puId,
                                                         J2EEName j2eeName, // d510184
                                                         boolean getEmfWrapper); // d416151.3.1
+
+    public EntityManagerFactory getEntityManagerFactory(String persistenceUnitName);
 
     /**
      * Returns the EntityManager defines by the application/module/persistence unit specified. This
@@ -113,6 +119,8 @@ public interface JPAComponent {
                                           boolean isExtendedContextType,
                                           boolean isUnsynchronized,
                                           Map<?, ?> properties);
+
+    public EntityManager getEntityManager(String persistenceUnitName);
 
     /**
      * Determine and collect the Persistence Unit Ids associated to @PersistencContext(type=Extended)
