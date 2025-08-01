@@ -20,7 +20,6 @@ import java.util.Set;
 
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
-import javax.persistence.spi.PersistenceUnitInfo;
 
 import com.ibm.websphere.csi.J2EEName;
 import com.ibm.ws.jpa.management.JPAPUnitInfo;
@@ -91,7 +90,7 @@ public interface JPAComponent {
                                                         J2EEName j2eeName, // d510184
                                                         boolean getEmfWrapper); // d416151.3.1
 
-    public EntityManagerFactory getEntityManagerFactory(String persistenceUnitName);
+    public EntityManagerFactory getEntityManagerFactory(J2EEName j2eeName, JPAPUnitInfo persistenceUnitInfo);
 
     /**
      * Returns the EntityManager defines by the application/module/persistence unit specified. This
@@ -120,7 +119,7 @@ public interface JPAComponent {
                                           boolean isUnsynchronized,
                                           Map<?, ?> properties);
 
-    public EntityManager getEntityManager(String persistenceUnitName);
+    public EntityManager getEntityManager(J2EEName j2eeName, JPAPUnitInfo persistenceUnitInfo);
 
     /**
      * Determine and collect the Persistence Unit Ids associated to @PersistencContext(type=Extended)

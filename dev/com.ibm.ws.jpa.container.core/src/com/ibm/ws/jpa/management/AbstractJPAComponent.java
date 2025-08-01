@@ -511,19 +511,17 @@ public abstract class AbstractJPAComponent
            }
            
         }
-            
-     
-
         return matchedUnits;
     }
 
     @Override
-    public EntityManagerFactory getEntityManagerFactory(String persistenceUnitName) {
-        return null;
+    public EntityManagerFactory getEntityManagerFactory(J2EEName j2eeName, JPAPUnitInfo persistenceUnitInfo) {
+        return persistenceUnitInfo.getEntityManagerFactory(j2eeName);
     }
 
     @Override
-    public EntityManager getEntityManager(String persistenceUnitName) {
-        return null;
+    public EntityManager getEntityManager(J2EEName j2eeName, JPAPUnitInfo persistenceUnitInfo) {
+        return getEntityManagerFactory(j2eeName, persistenceUnitInfo).createEntityManager();
+
     }
 }
