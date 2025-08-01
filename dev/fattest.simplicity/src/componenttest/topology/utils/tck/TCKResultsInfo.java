@@ -214,7 +214,7 @@ public class TCKResultsInfo {
         }
     }
 
-    private String getSpecNameForURL() {       
+    private String getSpecNameForURL() {
         return specName.toLowerCase().replace(" ", "-");
     }
 
@@ -263,8 +263,8 @@ public class TCKResultsInfo {
     public String getTCKURL() {
         switch (type) {
             case JAKARTA:
-                return "https://download.eclipse.org/ee4j/" + getSpecNameForTCKURL() + "/jakartaee"
-                       + platformVersion + "/promoted/eftl/" + getSpecNameForTCKURL() + "-tck-"
+                return "https://download.eclipse.org/ee4j/" + getSpecNameForURL() + "/jakartaee"
+                       + platformVersion + "/promoted/eftl/" + getSpecNameForURL() + "-tck-"
                        + getSpecVersion() + ".zip";
             case MICROPROFILE:
                 return "https://repo1.maven.org/maven2/org/eclipse/microprofile/" + getSpecNameForTCKURLDirectory()
