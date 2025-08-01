@@ -52,9 +52,6 @@ public interface ClassLoaderConfiguration {
 
     List<String> getSharedLibraries();
 
-    ClassLoaderConfiguration setPatchLibraries(List<String> libs);
-    List<String> getPatchLibraries();
-
     /** @param libs the names of common shared libraries that should be associated with this classloader */
     ClassLoaderConfiguration setCommonLibraries(List<String> libs);
 

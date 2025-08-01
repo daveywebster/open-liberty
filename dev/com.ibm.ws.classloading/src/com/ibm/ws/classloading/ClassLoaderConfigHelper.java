@@ -42,6 +42,7 @@ import org.osgi.service.cm.ConfigurationAdmin;
 import com.ibm.websphere.ras.Tr;
 import com.ibm.websphere.ras.TraceComponent;
 import com.ibm.websphere.ras.annotation.Trivial;
+import com.ibm.ws.classloading.internal.ClassLoaderConfigurationExtended;
 import com.ibm.ws.classloading.internal.ClassLoadingConstants;
 import com.ibm.ws.classloading.internal.ClassLoadingServiceImpl;
 import com.ibm.ws.container.service.app.deploy.NestedConfigHelper;
@@ -262,7 +263,13 @@ public class ClassLoaderConfigHelper {
         gwConfig.setApiTypeVisibility(apiTypes);
         if (classLoaderConfigProps != null) {
             // if there is some <classloader> config, we need to read it out of the helper into the gateway and classloader configuration objects
-            config.setPatchLibraries(patchLibraries);
+            if (!patchLibraries.isEmpty()) {
+                try {
+                    ((ClassLoaderConfigurationExtended) config).setPatchLibraries(patchLibraries);
+                } catch (ClassCastException e) {
+                    // auto-ffdc; nobody should be doing this
+                }
+            }
             config.addSharedLibraries(sharedLibraries);
             config.setCommonLibraries(commonLibraries);
             config.setClassProviders(classProviders);

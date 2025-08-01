@@ -26,7 +26,7 @@ import com.ibm.wsspi.adaptable.module.Container;
 import com.ibm.wsspi.classloading.ClassLoaderConfiguration;
 import com.ibm.wsspi.classloading.ClassLoaderIdentity;
 
-class ClassLoaderConfigurationImpl implements ClassLoaderConfiguration {
+class ClassLoaderConfigurationImpl implements ClassLoaderConfiguration, ClassLoaderConfigurationExtended {
     private final static ProtectionDomain DEFAULT_PROTECTION_DOMAIN = new ProtectionDomain(new CodeSource((URL) null, (Certificate[]) null), null);
     private boolean delegateLast;
     private boolean includeAppExtensions;

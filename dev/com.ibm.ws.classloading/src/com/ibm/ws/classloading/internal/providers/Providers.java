@@ -28,6 +28,7 @@ import org.osgi.framework.ServiceReference;
 import com.ibm.websphere.ras.Tr;
 import com.ibm.websphere.ras.TraceComponent;
 import com.ibm.ws.classloading.configuration.GlobalClassloadingConfiguration.LibraryPrecedence;
+import com.ibm.ws.classloading.internal.ClassLoaderConfigurationExtended;
 import com.ibm.ws.classloading.internal.DeclaredApiAccess;
 import com.ibm.ws.classloading.internal.LibertyLoader;
 import com.ibm.ws.classloading.internal.util.BlockingList;
@@ -62,7 +63,8 @@ public class Providers {
         return getLibraries(config.getId().getId(), config.getSharedLibraries());
     }
     public static List<Library> getPatchLibraries(ClassLoaderConfiguration config) {
-        return getLibraries(config.getId().getId(), config.getPatchLibraries());
+        List<String> patchLibraries = (config instanceof ClassLoaderConfigurationExtended) ? ((ClassLoaderConfigurationExtended) config).getPatchLibraries() : Collections.emptyList();
+        return getLibraries(config.getId().getId(), patchLibraries);
     }
     public static List<Library> getLibraries(String ownerId, List<String> libraryIds) {
         if (libraryIds == null || libraryIds.isEmpty()) {
