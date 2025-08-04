@@ -19,9 +19,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import com.ibm.websphere.crypto.PasswordUtil;
 import com.ibm.websphere.ras.ProtectedString;
 import com.ibm.websphere.ras.Tr;
 import com.ibm.websphere.ras.TraceComponent;
+import com.ibm.websphere.ras.annotation.Sensitive;
 import com.ibm.ws.ffdc.annotation.FFDCIgnore;
 import com.ibm.ws.security.javaeesec.identitystore.ELHelper;
 
@@ -113,65 +115,94 @@ public class InMemoryIdentityStoreDefinitionWrapper {
             // convert raw credentials into an easily search-able HashMap with standard Java types
             credentials = new HashMap<String, CredentialValue>(credentialsLength);
             for (int i = 0; i < credentialsLength; i++) {
-                CredentialValue credential = new CredentialValue(evaluatePassword(creds[i].password(), false), creds[i].groups());
+                CredentialValue credential = getCredential(creds[i].password(), creds[i].groups());
                 credentials.put(creds[i].callerName(), credential);
             }
         }
     }
 
-    /**
-     * Evaluate and return the password.
-     *
-     * @param password
-     * @param immediateOnly
-     * @return will return a ProtectedString representing the raw credential password
-     *         or an empty ProtectedString if it wasn't in the annotation.
-     */
-//    @FFDCIgnore(IllegalArgumentException.class)
-    private ProtectedString evaluatePassword(String password, boolean immediateOnly) {
-        ProtectedString ps = null;
-        if ((password != null) && (password.length() > 0)) {
-            ps = new ProtectedString(password.toCharArray());
-        } else {
-            ps = new ProtectedString(new char[0]);
-        }
+    private CredentialValue getCredential(@Sensitive String password, String[] groups) {
+        String storedPassword = decodePassword(evaluatePassword(password, false));
+        CredentialValue credential = new CredentialValue(storedPassword, groups);
 
-        return ps;
+        boolean isHashed = PasswordUtil.isHashed(password);
+
+//        Tr.info(tc, "evaluatePassword", "DAVE40: isHashed is [" + isHashed + "] for password[0..5] [" + password.substring(0, 5) + "].");
+//        System.out.println("DAVE40: isHashed is [" + isHashed + "] for password[0..5] [" + password.substring(0, 5) + "].");
+//        if (!isHashed) {
+//            // the password might still be encoded though (xor, aes)
+//            password = PasswordUtil.passwordDecode(password);
+//            Tr.info(tc, "evaluatePassword", "DAVE40: decoding non-hashed password, new decoded password is [" + password + "].");
+//            System.out.println("DAVE40: decoding non-hashed password, new decoded password is [" + password + "].");
+//        } else {
+//            // store isHashed boolean, crypto algorithm (i.e. {hash}) string and evaluatedPassword
+//        }
+
+        return credential;
     }
 
     /**
-     * Evaluate and return the bindDnPassword.
+     * With the password value, if it is NOT hashed, store this boolean to
+     * used later when we compare the credential value.
+     *
+     * @param password
+     * @return
+     */
+    private String decodePassword(@Sensitive String password) {
+        boolean isHashed = PasswordUtil.isHashed(password);
+        Tr.info(tc, "evaluatePassword", "DAVE40: isHashed is [" + isHashed + "] for password[0..5] [" + password.substring(0, 5) + "].");
+        System.out.println("DAVE40: isHashed is [" + isHashed + "] for password[0..5] [" + password.substring(0, 5) + "].");
+        if (!isHashed) {
+            // the password might still be encoded though (xor, aes)
+            password = PasswordUtil.passwordDecode(password);
+            Tr.info(tc, "evaluatePassword", "DAVE40: decoding non-hashed password, new decoded password is [" + password + "].");
+            System.out.println("DAVE40: decoding non-hashed password, new decoded password is [" + password + "].");
+        } else {
+            // store isHashed boolean, crypto algorithm (i.e. {hash}) string and evaluatedPassword
+        }
+
+        return (password == null) ? "" : password;
+    }
+
+    /**
+     * Evaluate and return the password.
      *
      * @param immediateOnly If true, only return a non-null value if the setting is either an
      *                          immediate EL expression or not set by an EL expression. If false, return the
      *                          value regardless of where it is evaluated.
-     * @return The bindDnPassword or null if immediateOnly==true AND the value is not evaluated
+     * @return The password or null if immediateOnly==true AND the value is not evaluated
      *         from a deferred EL expression.
      */
     @FFDCIgnore(IllegalArgumentException.class)
-    private ProtectedString evaluatePassword1(String password, boolean immediateOnly) {
-        String result;
+    private String evaluatePassword(@Sensitive String password, boolean immediateOnly) {
+        String evaluatedPassword;
+
+        // first, process any EL express OR environment variable specification, i.e.
+        // ${expr}           - evaluate expression
+        // env:BILL_PASSWORD - evaluate BILL_PASSWORD environment variable
+
         try {
-            result = elHelper.processString("bindDnPassword", password, immediateOnly, true);
+            evaluatedPassword = elHelper.processString("password", password, immediateOnly, true);
 
         } catch (IllegalArgumentException e) {
             /*
              * If deferred expression and called during initialization, return null so the expression can be re-evaluated
              * again later.
              */
-            if (immediateOnly && ELHelper.isDeferredExpression(password)) {
+            if (immediateOnly && ELHelperWrapper.isDeferredExpression(password)) {
                 if (TraceComponent.isAnyTracingEnabled() && tc.isDebugEnabled()) {
-                    Tr.debug(tc, "evaluateBindDnPassword", "Returning null since bindDnPassword is a deferred expression and this is called on initialization.");
+                    Tr.debug(tc, "evaluatePassword", "Returning null since password is a deferred expression and this is called on initialization.");
                 }
                 return null;
             }
 
             if (TraceComponent.isAnyTracingEnabled() && tc.isWarningEnabled()) {
-                Tr.warning(tc, "JAVAEESEC_WARNING_IDSTORE_CONFIG", new Object[] { "bindDnPassword", "" });
+                Tr.warning(tc, "JAVAEESEC_WARNING_IDSTORE_CONFIG", new Object[] { "password", "" });
             }
-            result = ""; /* Default value from spec. */
+            evaluatedPassword = ""; /* Default value from spec. */
         }
-        return (result == null) ? null : new ProtectedString(result.toCharArray());
+
+        return evaluatedPassword;
     }
 
     /**
@@ -210,7 +241,7 @@ public class InMemoryIdentityStoreDefinitionWrapper {
              * If deferred expression and called during initialization, return null so the expression can be re-evaluated
              * again later.
              */
-            if (immediateOnly && ELHelper.isDeferredExpression(priorityExpression)) {
+            if (immediateOnly && ELHelperWrapper.isDeferredExpression(priorityExpression)) {
                 if (TraceComponent.isAnyTracingEnabled() && tc.isDebugEnabled()) {
                     Tr.debug(tc, "evaluatePriority", "Returning null since priorityExpression is a deferred expression and this is called on initialization.");
                 }
@@ -260,7 +291,7 @@ public class InMemoryIdentityStoreDefinitionWrapper {
              * If deferred expression and called during initialization, return null so the expression can be re-evaluated
              * again later.
              */
-            if (immediateOnly && ELHelper.isDeferredExpression(useForExpression)) {
+            if (immediateOnly && ELHelperWrapper.isDeferredExpression(useForExpression)) {
                 if (TraceComponent.isAnyTracingEnabled() && tc.isDebugEnabled()) {
                     Tr.debug(tc, "evaluateUseFor", "Returning null since useForExpression is a deferred expression and this is called on initialization.");
                 }
@@ -306,8 +337,7 @@ public class InMemoryIdentityStoreDefinitionWrapper {
      *
      * @return The annotations Credentials as a {@HashMap}, with the
      *         each Map element of the following:
-     *
-     *         key = String (callerValue) / value = CredentialValue ({String password, String[] groups})
+     *         key = String (callerValue) / value = CredentialValue ({String ProtectedPassword, String[] groups})
      *
      *         or an empty {@HashMap} if no annotations
      *
@@ -317,11 +347,6 @@ public class InMemoryIdentityStoreDefinitionWrapper {
         return (credentials.size() != 0) ? credentials : new HashMap<String, CredentialValue>(0);
     }
 
-    /**
-     * Credentials[] getCreds1() {
-     * return (creds.length != 0) ? Arrays.copyOf(creds, creds.length) : new Credentials[0];
-     * }
-     **/
     @Override
     public String toString() {
         StringBuffer credentialsString = new StringBuffer();
@@ -335,6 +360,9 @@ public class InMemoryIdentityStoreDefinitionWrapper {
      ***********************************************************************/
 
     private class ELHelperWrapper extends ELHelper {
+
+        private final String ENV_PREFIX = "env:";
+
         @Override
         public Set<ValidationType> processUseFor(String useForExpression, ValidationType[] useFor, boolean immediateOnly) {
             return super.processUseFor(useForExpression, useFor, immediateOnly);
@@ -343,6 +371,24 @@ public class InMemoryIdentityStoreDefinitionWrapper {
         @Override
         public Stream<String> processStringStream(String name, String expression, boolean immediateOnly, boolean mask) {
             return super.processStringStream(name, expression, immediateOnly, mask);
+        }
+
+        @Override
+        public String processString(String name, String expression, boolean immediateOnly, boolean mask) throws IllegalArgumentException {
+            String theExpression;
+            if (expression.startsWith(ENV_PREFIX) == true) {
+                String variable = expression.substring(ENV_PREFIX.length(), expression.length());
+                theExpression = System.getenv(variable);
+                System.out.println("DAVE40: Just read environment variable value [" + theExpression + "] for environment variable ["
+                                   + variable + "].");
+                if (theExpression == null) {
+                    throw new IllegalArgumentException("Expected enviroment variable '" + variable + "' to be set, but it was empty.");
+                }
+            } else {
+                theExpression = expression;
+            }
+            // TODO: check if there is any need to call this - do passwords support EL expressions?
+            return super.processString(name, theExpression, immediateOnly, mask);
         }
     }
 
@@ -355,11 +401,13 @@ public class InMemoryIdentityStoreDefinitionWrapper {
 
     public class CredentialValue {
         private final ProtectedString password;
+        private String hash;
         private final String[] groups;
 
-        public CredentialValue(final ProtectedString password, final String[] groups) {
-            this.password = password;
+        public CredentialValue(final @Sensitive String password, final String[] groups) {
+            this.password = new ProtectedString(password.toCharArray());
             this.groups = Arrays.copyOf(groups, groups.length);
+
         }
 
         public ProtectedString getPassword() {
@@ -375,8 +423,7 @@ public class InMemoryIdentityStoreDefinitionWrapper {
 
         @Override
         public String toString() {
-            // will output the ProtectedString value of "****" for passwords
-            return "CredentialValue [password=" + password + ", groups=" + Arrays.toString(groups) + "]";
+            return "CredentialValue [password=" + "****" + ", groups=" + Arrays.toString(groups) + "]";
         }
     }
 }

@@ -35,6 +35,7 @@ import jakarta.security.enterprise.identitystore.CredentialValidationResult;
 import jakarta.security.enterprise.identitystore.IdentityStore;
 import jakarta.security.enterprise.identitystore.InMemoryIdentityStoreDefinition;
 import jakarta.security.enterprise.identitystore.InMemoryIdentityStoreDefinition.Credentials;
+//import com.ibm.ws.security.registry.basic.internal.BasicRegistry;
 
 /**
  * Liberty's InMemory {@link IdentityStore} implementation.
@@ -48,7 +49,15 @@ import jakarta.security.enterprise.identitystore.InMemoryIdentityStoreDefinition
 public class InMemoryIdentityStore implements IdentityStore {
 
     // TODO: Use the UserRegistry utilty code to validate the password
-    /***
+    // add these to the bnd.bnd
+//    +    com.ibm.ws.security.registry;version=latest,\
+//    +    com.ibm.ws.security.registry.basic;version=latest,\
+    // and this to the imports
+// import com.ibm.ws.security.registry.basic.internal.BasicRegistry;
+
+//    private class XX implements UserRegistry {}
+
+    /**
      * private class InMemoryCallerRegistry extends BasicRegistry {
      *
      * public InMemoryCallerRegistry() {
@@ -60,9 +69,9 @@ public class InMemoryIdentityStore implements IdentityStore {
      * super();
      * }
      * }
+     *
      * private final InMemoryCallerRegistry inMemoryCallerRegistry;
-     ***/
-
+     **/
     private static final TraceComponent tc = Tr.register(InMemoryIdentityStore.class);
 
     /** The definitions for this IdentityStore. */
@@ -113,7 +122,6 @@ public class InMemoryIdentityStore implements IdentityStore {
 
         // convert credentials into a basic registry also for password validation
 //        inMemoryCallerRegistry = new InMemoryCallerRegistry(inMemoryIdentityStoreDefinitionWrapper.getCredentials());
-
     }
 
     @Override
@@ -207,7 +215,6 @@ public class InMemoryIdentityStore implements IdentityStore {
         } else {
             return CredentialValidationResult.INVALID_RESULT;
         }
-
     }
 
     private boolean isValid(String caller, ProtectedString password) {
@@ -220,13 +227,14 @@ public class InMemoryIdentityStore implements IdentityStore {
             return false;
         }
 
+        // TODO: Use the UserRegistry code to validate the password
+        // caller found, so check ProtectedString passwords
         ProtectedString credentialPassword = credentialValue.getPassword();
         if ((credentialPassword.isEmpty() == false) &&
             (password.equals(credentialValue.getPassword()))) {
             return true;
         }
 
-        // TODO: Use the UserRegistry code to validate the password
 //        char[] pchars = password.getChars();
 //        StringBuffer pwd = new StringBuffer(pchars.length);
 //        for (char p : pchars) {

@@ -52,6 +52,9 @@ instrument.classesExcludes: io/openliberty/security/jakartasec/internal/resource
     io.openliberty.jakarta.servlet.6.1,\
     com.ibm.ws.org.jose4j;version=latest,\
     com.ibm.ws.security;version=latest,\
+    com.ibm.ws.security.registry;version=latest,\
+    com.ibm.ws.security.registry.basic;version=latest,\
     io.openliberty.jakarta.expressionLanguage.6.0;version=latest,\
     com.ibm.json4j;version=latest,\
+    com.ibm.ws.crypto.passwordutil;version=latest,\
     io.openliberty.cdi.4.0.internal.interfaces;version=latest
