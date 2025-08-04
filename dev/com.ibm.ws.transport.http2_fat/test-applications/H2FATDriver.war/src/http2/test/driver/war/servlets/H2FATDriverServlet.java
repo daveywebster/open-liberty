@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2018, 2024 IBM Corporation and others.
+ * Copyright (c) 2018, 2025 IBM Corporation and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License 2.0
  * which accompanies this distribution, and is available at
@@ -4824,6 +4824,29 @@ public class H2FATDriverServlet extends FATServlet {
         }
 
         blockUntilConnectionIsDone.await(10000, TimeUnit.MILLISECONDS);
+        handleErrors(h2Client, testName);
+
+    }
+
+    public void testGetRequestSocketInsecure(HttpServletRequest request, HttpServletResponse response) throws InterruptedException, Exception {
+
+        if (LOGGER.isLoggable(Level.INFO)) {
+            LOGGER.logp(Level.INFO, this.getClass().getName(), "testGetRequestSocketInsecure", "Started!");
+            LOGGER.logp(Level.INFO, this.getClass().getName(), "testGetRequestSocketInsecure",
+                        "Connecting to = " + request.getParameter("hostName") + ":" + request.getParameter("port"));
+        }
+
+        CountDownLatch blockUntilConnectionIsDone = new CountDownLatch(1);
+        String testName = "testGetRequestSocketInsecure";
+
+        Http2Client h2Client = getDefaultH2Client(request, response, blockUntilConnectionIsDone);
+        String expectedResponse = "RequestSocket called from socket LocalPort: " + request.getParameter("port") + System.lineSeparator();
+
+        h2Client.addExpectedFrame(new FrameData(1, expectedResponse.getBytes(), 0, false, false, false));
+
+        setupDefaultUpgradedConnection(h2Client, "/H2TestModule/GetRequestSocketServlet");
+
+        blockUntilConnectionIsDone.await();
         handleErrors(h2Client, testName);
 
     }
