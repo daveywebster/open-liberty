@@ -8,6 +8,8 @@
       recoveryGroup="defaultGroup"
       leaseLength="20"
       leaseCheckInterval="25"
+      leaseRenewalThreshold="50"
+      leaseExpiryThreshold="50"
     />
 
     <featureManager>
