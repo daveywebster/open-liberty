@@ -89,7 +89,7 @@ public class InMemoryIdentityStoreDefinitionWrapper {
      *
      * @param inMemoryIdentityStoreDefinition The {@link InMemoryIdentityStoreDefinition} to wrap.
      */
-    InMemoryIdentityStoreDefinitionWrapper(InMemoryIdentityStoreDefinition inMemoryIdentityStoreDefinition) {
+    public InMemoryIdentityStoreDefinitionWrapper(InMemoryIdentityStoreDefinition inMemoryIdentityStoreDefinition) {
 
         if (inMemoryIdentityStoreDefinition == null) {
             throw new IllegalArgumentException("The InMemoryIdentityStoreDefinition cannot be null.");
@@ -122,46 +122,37 @@ public class InMemoryIdentityStoreDefinitionWrapper {
     }
 
     private CredentialValue getCredential(@Sensitive String password, String[] groups) {
-        String storedPassword = decodePassword(evaluatePassword(password, false));
-        CredentialValue credential = new CredentialValue(storedPassword, groups);
+        //    String decodedPassword = decodePassword(evaluatePassword(password, false));
+//      CredentialValue credential = new CredentialValue(decodedPassword, groups);
 
-        boolean isHashed = PasswordUtil.isHashed(password);
+        CredentialValue credential = null;
 
-//        Tr.info(tc, "evaluatePassword", "DAVE40: isHashed is [" + isHashed + "] for password[0..5] [" + password.substring(0, 5) + "].");
-//        System.out.println("DAVE40: isHashed is [" + isHashed + "] for password[0..5] [" + password.substring(0, 5) + "].");
-//        if (!isHashed) {
-//            // the password might still be encoded though (xor, aes)
-//            password = PasswordUtil.passwordDecode(password);
-//            Tr.info(tc, "evaluatePassword", "DAVE40: decoding non-hashed password, new decoded password is [" + password + "].");
-//            System.out.println("DAVE40: decoding non-hashed password, new decoded password is [" + password + "].");
-//        } else {
-//            // store isHashed boolean, crypto algorithm (i.e. {hash}) string and evaluatedPassword
-//        }
+        String evaluatedPassword = evaluatePassword(password, false);
+
+        /***
+         * boolean isHashed = PasswordUtil.isHashed(evaluatedPassword);
+         *
+         * Tr.info(tc, "evaluatePassword", "DAVE40: isHashed is [" + isHashed + "] for password[0..7] [" + password.substring(0, 7) + "].");
+         * System.out.println("DAVE40: isHashed is [" + isHashed + "] for password[0..7] [" + password.substring(0, 7) + "].");
+         *
+         *
+         * String passwordToStore = "";
+         * if (!isHashed) {
+         * // not hashed, but the password might still be encoded though (xor, aes)
+         *
+         * passwordToStore = PasswordUtil.passwordDecode(evaluatedPassword);
+         *
+         * Tr.info(tc, "evaluatePassword", "DAVE40: decoding non-hashed password, new decoded password is [" + passwordToStore + "].");
+         * System.out.println("DAVE40: decoding non-hashed password, new decoded password is [" + passwordToStore + "].");
+         *
+         * } else {
+         * // is hashed, so store the hashed password
+         * passwordToStore = evaluatedPassword;
+         * }
+         ***/
+        credential = new CredentialValue((evaluatedPassword == null) ? "" : evaluatedPassword, groups);
 
         return credential;
-    }
-
-    /**
-     * With the password value, if it is NOT hashed, store this boolean to
-     * used later when we compare the credential value.
-     *
-     * @param password
-     * @return
-     */
-    private String decodePassword(@Sensitive String password) {
-        boolean isHashed = PasswordUtil.isHashed(password);
-        Tr.info(tc, "evaluatePassword", "DAVE40: isHashed is [" + isHashed + "] for password[0..5] [" + password.substring(0, 5) + "].");
-        System.out.println("DAVE40: isHashed is [" + isHashed + "] for password[0..5] [" + password.substring(0, 5) + "].");
-        if (!isHashed) {
-            // the password might still be encoded though (xor, aes)
-            password = PasswordUtil.passwordDecode(password);
-            Tr.info(tc, "evaluatePassword", "DAVE40: decoding non-hashed password, new decoded password is [" + password + "].");
-            System.out.println("DAVE40: decoding non-hashed password, new decoded password is [" + password + "].");
-        } else {
-            // store isHashed boolean, crypto algorithm (i.e. {hash}) string and evaluatedPassword
-        }
-
-        return (password == null) ? "" : password;
     }
 
     /**
@@ -382,6 +373,7 @@ public class InMemoryIdentityStoreDefinitionWrapper {
                 System.out.println("DAVE40: Just read environment variable value [" + theExpression + "] for environment variable ["
                                    + variable + "].");
                 if (theExpression == null) {
+                    Tr.error(tc, "processString", "Expected enviroment variable '" + variable + "' to be set, but it was empty.");
                     throw new IllegalArgumentException("Expected enviroment variable '" + variable + "' to be set, but it was empty.");
                 }
             } else {
@@ -393,28 +385,21 @@ public class InMemoryIdentityStoreDefinitionWrapper {
     }
 
     /**
-     * This structure models the Credentials interface, but just the password and
-     * groups values, with the presumption that it is going into a
-     * search-able {@HashMap) (key = callerName).
-     *
+     * This structure models the Credentials interface, but is specific for use within
+     * the identitystore package, modelling the data, and providing minimal APIs for
+     * external use.
      */
 
-    public class CredentialValue {
-        private final ProtectedString password;
-        private String hash;
+    protected final class CredentialValue extends CredentialPassword {
+
         private final String[] groups;
 
-        public CredentialValue(final @Sensitive String password, final String[] groups) {
-            this.password = new ProtectedString(password.toCharArray());
+        CredentialValue(final @Sensitive String password, final String[] groups) {
+            super(password);
             this.groups = Arrays.copyOf(groups, groups.length);
-
         }
 
-        public ProtectedString getPassword() {
-            return password;
-        }
-
-        public String[] getGroups() {
+        String[] getGroups() {
             if ((groups == null) || (groups.length == 0)) {
                 return new String[0];
             }
@@ -423,7 +408,65 @@ public class InMemoryIdentityStoreDefinitionWrapper {
 
         @Override
         public String toString() {
-            return "CredentialValue [password=" + "****" + ", groups=" + Arrays.toString(groups) + "]";
+            return "CredentialValue [password=" + "*****" + ", groups=" + Arrays.toString(groups) + "]";
+        }
+
+    }
+
+    private class CredentialPassword {
+
+        private final ProtectedString password;
+        private final String hashedPassword;
+
+        private CredentialPassword(final @Sensitive String password) throws IllegalArgumentException {
+
+            if ((password == null) || (password.length() == 0)) {
+                throw new IllegalArgumentException("Credential password is empty.");
+            }
+
+            boolean isHashed = PasswordUtil.isHashed(password);
+
+            Tr.info(tc, "evaluatePassword", "DAVE40: isHashed is [" + isHashed + "] for password[0..7] [" + password.substring(0, 7) + "].");
+            System.out.println("DAVE40: isHashed is [" + isHashed + "] for password[0..7] [" + password.substring(0, 7) + "].");
+
+            if (!isHashed) {
+                // not hashed, but the password might still be encoded though (xor, aes)
+                this.password = new ProtectedString(PasswordUtil.passwordDecode(password).toCharArray());
+                this.hashedPassword = "";
+            } else {
+                // is unprotected, but a hash value which cannot be decoded
+                this.password = ProtectedString.EMPTY_PROTECTED_STRING;
+                this.hashedPassword = password;
+            }
+        }
+
+        private boolean isHashed() {
+            return (hashedPassword.length() > 0);
+        }
+
+        protected boolean validate(@Sensitive ProtectedString otherPassword) {
+
+            if ((otherPassword == null) || (otherPassword.isEmpty() == true)) {
+                return false;
+            }
+
+            // if our credential password is hashed, then encode the otherPassword for comparison
+            if (isHashed() == true) {
+                String encodedPassword = "";
+                HashMap<String, String> props = new HashMap<String, String>();
+                props.put(PasswordUtil.PROPERTY_HASH_ENCODED, hashedPassword);
+                try {
+//                    String x = String.copyValueOf(otherPassword.getValue());
+                    encodedPassword = PasswordUtil.encode(new String(otherPassword.getChars()), PasswordUtil.getCryptoAlgorithm(hashedPassword), props);
+                } catch (Exception e) {
+                    //fail to encode password.
+                    throw new IllegalArgumentException("password encoding failure : " + e.getMessage());
+                }
+                return hashedPassword.equals(encodedPassword);
+            } else {
+                return password.equals(otherPassword);
+            }
+
         }
     }
 }

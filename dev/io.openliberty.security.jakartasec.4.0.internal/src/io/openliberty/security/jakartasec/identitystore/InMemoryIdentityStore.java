@@ -196,7 +196,6 @@ public class InMemoryIdentityStore implements IdentityStore {
         }
 
         // validate the credentials against the stored data
-
         char[] pchars = password.getChars();
         Tr.info(tc, "validate", "DAVE40: caller is [" + caller + "], and password is [" + password + "].");
 
@@ -217,7 +216,7 @@ public class InMemoryIdentityStore implements IdentityStore {
         }
     }
 
-    private boolean isValid(String caller, ProtectedString password) {
+    private boolean isValid(String caller, @Sensitive ProtectedString password) {
 
         Map<String, CredentialValue> credentials = inMemoryIdentityStoreDefinitionWrapper.getCredentials();
 
@@ -229,11 +228,14 @@ public class InMemoryIdentityStore implements IdentityStore {
 
         // TODO: Use the UserRegistry code to validate the password
         // caller found, so check ProtectedString passwords
-        ProtectedString credentialPassword = credentialValue.getPassword();
-        if ((credentialPassword.isEmpty() == false) &&
-            (password.equals(credentialValue.getPassword()))) {
-            return true;
-        }
+
+///        ProtectedString credentialPassword = credentialValue.getPassword();
+//        if ((credentialPassword.isEmpty() == false) &&
+//            (password.equals(credentialPassword))) {
+//            return true;
+//        }
+
+        return credentialValue.validate(password);
 
 //        char[] pchars = password.getChars();
 //        StringBuffer pwd = new StringBuffer(pchars.length);
@@ -245,7 +247,7 @@ public class InMemoryIdentityStore implements IdentityStore {
 //        }
 
         // caller in annotation value, but incorrect password
-        return false;
+//        return false;
     }
 
     @Override
