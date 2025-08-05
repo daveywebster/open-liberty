@@ -3964,7 +3964,7 @@ public class LibertyServer implements LogMonitorClient {
                         Log.info(c, "runJextract stderr", output.getStderr());
                         Log.info(c, "runJextract", "rc = " + output.getReturnCode());
                     } else {
-                        Log.info(c, "runJextract stdout", "Skipping, unable to find jpackcore or jextract to run");
+                        Log.info(c, "runJextract", "Skipping, unable to find jpackcore or jextract to run");
                     }
                 }
             }
