@@ -42,10 +42,10 @@ import com.ibm.wsspi.kernel.service.utils.FilterUtils;
 import com.ibm.wsspi.library.Library;
 
 public class Providers {
-    public static final class LibraryInfo {
+    public static final class LoaderInfo {
         public final LibertyLoader loader;
         public final LibraryPrecedence precedence;
-        LibraryInfo(LibertyLoader loader, LibraryPrecedence precedence) {
+        LoaderInfo(LibertyLoader loader, LibraryPrecedence precedence) {
             this.loader = loader;
             this.precedence = precedence;
         }
@@ -62,11 +62,13 @@ public class Providers {
     public static List<Library> getPrivateLibraries(ClassLoaderConfiguration config) {
         return getLibraries(config.getId().getId(), config.getSharedLibraries());
     }
+
     public static List<Library> getPatchLibraries(ClassLoaderConfiguration config) {
         List<String> patchLibraries = (config instanceof ClassLoaderConfigurationExtended) ? ((ClassLoaderConfigurationExtended) config).getPatchLibraries() : Collections.emptyList();
         return getLibraries(config.getId().getId(), patchLibraries);
     }
-    public static List<Library> getLibraries(String ownerId, List<String> libraryIds) {
+
+    private static List<Library> getLibraries(String ownerId, List<String> libraryIds) {
         if (libraryIds == null || libraryIds.isEmpty()) {
             if (tc.isDebugEnabled())
                 Tr.debug(tc, "RETURN (libraryIds == null || libraryIds.isEmpty())");
@@ -84,7 +86,7 @@ public class Providers {
         return BlockingListMaker.defineList().waitFor(10, SECONDS).fetchElements(getLibraries).listenForElements(getLibraries).log(LOGGER).useKeys(libraryIds).make();
     }
 
-    public static List<Providers.LibraryInfo> getCommonLibraryLoaders(ClassLoaderConfiguration config, DeclaredApiAccess apiAccess, LibraryPrecedence precedence) {
+    public static List<Providers.LoaderInfo> getCommonLibraryLoaders(ClassLoaderConfiguration config, DeclaredApiAccess apiAccess, LibraryPrecedence precedence) {
         List<String> commonLibIds = config.getCommonLibraries();
         if (commonLibIds == null || commonLibIds.isEmpty()) {
             if (tc.isDebugEnabled())
@@ -107,7 +109,7 @@ public class Providers {
         return BlockingListMaker.defineList().waitFor(10, SECONDS).fetchElements(getLibraryLoaders).listenForElements(getLibraryLoaders).log(LOGGER).useKeys(commonLibIds).make();
     }
 
-    public static List<Providers.LibraryInfo> getProviderLoaders(ClassLoaderConfiguration config, DeclaredApiAccess apiAccess) {
+    public static List<Providers.LoaderInfo> getProviderLoaders(ClassLoaderConfiguration config, DeclaredApiAccess apiAccess) {
         final String methodName = "getProviderLoaders(): ";
         List<String> providerIds = config.getClassProviders();
         if (providerIds == null || providerIds.isEmpty()) {
@@ -132,8 +134,8 @@ public class Providers {
     }
 
     @SuppressWarnings("unchecked")
-    public static Iterable<Providers.LibraryInfo> getDelegateLoaders(ClassLoaderConfiguration config, DeclaredApiAccess apiAccess, LibraryPrecedence precedence) {
-        return new CompositeIterable<Providers.LibraryInfo>(getCommonLibraryLoaders(config, apiAccess, precedence), getProviderLoaders(config, apiAccess));
+    public static Iterable<Providers.LoaderInfo> getDelegateLoaders(ClassLoaderConfiguration config, DeclaredApiAccess apiAccess, LibraryPrecedence precedence) {
+        return new CompositeIterable<Providers.LoaderInfo>(getCommonLibraryLoaders(config, apiAccess, precedence), getProviderLoaders(config, apiAccess));
     }
 
     /**

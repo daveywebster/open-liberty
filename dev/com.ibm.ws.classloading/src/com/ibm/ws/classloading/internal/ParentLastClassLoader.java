@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2010, 2024 IBM Corporation and others.
+ * Copyright (c) 2010, 2025 IBM Corporation and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License 2.0
  * which accompanies this distribution, and is available at
@@ -76,7 +76,7 @@ class ParentLastClassLoader extends AppClassLoader {
     @Override
     @Trivial
     public Enumeration<URL> getResources(String resName) throws IOException {
-        // search order: 1)  my class path 2) parent loader
+        // search order: 1) beforeApp common libraries 2)  my class path and afterApp common libraries 3) parent loader
         return findResourcesCommonLibraryClassLoaders(resName, new CompositeEnumeration<>(), beforeApp) //
                         .add(this.findResources(resName)) //
                         .add(this.parent.getResources(resName));

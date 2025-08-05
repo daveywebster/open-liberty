@@ -61,7 +61,7 @@ import com.ibm.ws.classloading.ClassGenerator;
 import com.ibm.ws.classloading.configuration.GlobalClassloadingConfiguration;
 import com.ibm.ws.classloading.configuration.GlobalClassloadingConfiguration.LibraryPrecedence;
 import com.ibm.ws.classloading.internal.providers.Providers;
-import com.ibm.ws.classloading.internal.providers.Providers.LibraryInfo;
+import com.ibm.ws.classloading.internal.providers.Providers.LoaderInfo;
 import com.ibm.ws.classloading.internal.util.ClassRedefiner;
 import com.ibm.ws.classloading.internal.util.FeatureSuggestion;
 import com.ibm.ws.ffdc.annotation.FFDCIgnore;
@@ -201,7 +201,7 @@ public class AppClassLoader extends ContainerClassLoader implements SpringLoader
 
         List<LibertyLoader> tmpBeforeApp = new ArrayList<>();
         List<LibertyLoader> tmpAfterApp = new ArrayList<>();
-        for (LibraryInfo loaderInfo : Providers.getDelegateLoaders(config, apiAccess, libraryPrecedence)) {
+        for (LoaderInfo loaderInfo : Providers.getDelegateLoaders(config, apiAccess, libraryPrecedence)) {
             switch (loaderInfo.precedence) {
                 case afterApp:
                     tmpAfterApp.add(loaderInfo.loader);

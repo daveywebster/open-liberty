@@ -38,7 +38,7 @@ import com.ibm.ws.classloading.internal.util.ElementNotValidException;
 import com.ibm.ws.ffdc.annotation.FFDCIgnore;
 import com.ibm.wsspi.classloading.ApiType;
 
-public class GetProviderLoaders implements Retriever<String, Providers.LibraryInfo>, Listener<String, Providers.LibraryInfo> {
+public class GetProviderLoaders implements Retriever<String, Providers.LoaderInfo>, Listener<String, Providers.LoaderInfo> {
     static final TraceComponent tc = Tr.register(GetProviderLoaders.class);
 
     private final String id;
@@ -50,7 +50,7 @@ public class GetProviderLoaders implements Retriever<String, Providers.LibraryIn
     }
 
     @Override
-    public void listenFor(final String providerId, final Slot<? super Providers.LibraryInfo> slot) {
+    public void listenFor(final String providerId, final Slot<? super Providers.LoaderInfo> slot) {
         String filterString = String.format("(&(%s=%s)(id=%s))",
                                             OBJECTCLASS,
                                             ClassProvider.class.getName(),
@@ -84,7 +84,7 @@ public class GetProviderLoaders implements Retriever<String, Providers.LibraryIn
     }
 
     @Override
-    public Providers.LibraryInfo fetch(String pid) throws ElementNotReadyException, ElementNotValidException {
+    public Providers.LoaderInfo fetch(String pid) throws ElementNotReadyException, ElementNotValidException {
         final String methodName = "fetch(): ";
         if (bundleContext == null) {
             throw new ElementNotValidException("Cannot retrieve providers outside OSGi framework");
@@ -111,7 +111,7 @@ public class GetProviderLoaders implements Retriever<String, Providers.LibraryIn
         return getLoaderFromProvider(pid, refs.iterator().next());
     }
 
-    private Providers.LibraryInfo getLoaderFromProvider(String providerId, ServiceReference<ClassProvider> providerRef)
+    private Providers.LoaderInfo getLoaderFromProvider(String providerId, ServiceReference<ClassProvider> providerRef)
                     throws ElementNotReadyException, ElementNotValidException {
         final String methodName = "getLoaderFromProvider(): ";
 
@@ -143,7 +143,7 @@ public class GetProviderLoaders implements Retriever<String, Providers.LibraryIn
         }
 
         // Class providers are always afterApp for now
-        return new Providers.LibraryInfo(ll, afterApp);
+        return new Providers.LoaderInfo(ll, afterApp);
     }
 
 }

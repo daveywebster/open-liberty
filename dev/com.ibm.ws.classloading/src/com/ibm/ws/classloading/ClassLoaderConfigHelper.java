@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2011, 2014 IBM Corporation and others.
+ * Copyright (c) 2011, 2025 IBM Corporation and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License 2.0
  * which accompanies this distribution, and is available at
@@ -32,7 +32,6 @@ import java.util.Dictionary;
 import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.osgi.framework.Constants;
 import org.osgi.framework.InvalidSyntaxException;
@@ -48,7 +47,6 @@ import com.ibm.ws.classloading.internal.ClassLoadingServiceImpl;
 import com.ibm.ws.container.service.app.deploy.NestedConfigHelper;
 import com.ibm.ws.ffdc.FFDCFilter;
 import com.ibm.ws.ffdc.annotation.FFDCIgnore;
-import com.ibm.ws.kernel.productinfo.ProductInfo;
 import com.ibm.wsspi.adaptable.module.Container;
 import com.ibm.wsspi.classloading.ApiType;
 import com.ibm.wsspi.classloading.ClassLoaderConfiguration;

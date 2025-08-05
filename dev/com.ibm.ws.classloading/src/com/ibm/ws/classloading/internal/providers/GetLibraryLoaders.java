@@ -31,7 +31,7 @@ import com.ibm.wsspi.library.Library;
  * It holds no references to the AppClassLoader object, so it cannot prevent
  * the AppClassLoader from being collected.
  */
-public class GetLibraryLoaders implements Retriever<String, Providers.LibraryInfo>, Listener<String, Providers.LibraryInfo> {
+public class GetLibraryLoaders implements Retriever<String, Providers.LoaderInfo>, Listener<String, Providers.LoaderInfo> {
 
     static final TraceComponent tc = Tr.register(GetLibraryLoaders.class);
     private final EnumSet<ApiType> ownerAPIs;
@@ -46,18 +46,18 @@ public class GetLibraryLoaders implements Retriever<String, Providers.LibraryInf
     }
 
     @Override
-    public Providers.LibraryInfo fetch(String id) throws ElementNotReadyException, ElementNotValidException {
+    public Providers.LoaderInfo fetch(String id) throws ElementNotReadyException, ElementNotValidException {
         Library lib = Providers.getSharedLibrary(id);
         if (lib == null)
             throw new ElementNotReadyException(id);
         if (libraryAndLoaderApiTypesDoNotMatch(lib))
             throw new ElementNotValidException();
-        return new Providers.LibraryInfo((LibertyLoader) lib.getClassLoader(), precedence);
+        return new Providers.LoaderInfo((LibertyLoader) lib.getClassLoader(), precedence);
     }
 
     /** invoked by the blocking list when a synchronous fetch operation fails */
     @Override
-    public void listenFor(final String libraryId, final Slot<? super Providers.LibraryInfo> slot) {
+    public void listenFor(final String libraryId, final Slot<? super Providers.LoaderInfo> slot) {
         // Create a shared library listener
         new AbstractLibraryListener(libraryId, ownerID, Providers.bundleContext) {
             @Override
@@ -78,7 +78,7 @@ public class GetLibraryLoaders implements Retriever<String, Providers.LibraryInf
                     slot.delete();
                 } else {
                     final LibertyLoader libCL = (LibertyLoader) library.getClassLoader();
-                    slot.fill(new Providers.LibraryInfo(libCL, precedence));
+                    slot.fill(new Providers.LoaderInfo(libCL, precedence));
                 }
                 deregister();
             }
