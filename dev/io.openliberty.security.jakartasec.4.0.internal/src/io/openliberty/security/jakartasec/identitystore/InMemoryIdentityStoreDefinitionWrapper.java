@@ -33,7 +33,7 @@ import jakarta.security.enterprise.identitystore.IdentityStore.ValidationType;
 import jakarta.security.enterprise.identitystore.InMemoryIdentityStoreDefinition;
 import jakarta.security.enterprise.identitystore.InMemoryIdentityStoreDefinition.Credentials;
 
-/**
+/*-
  * A wrapper class that offers convenience methods for retrieving configuration
  * from an {@link InMemoryIdentityStoreDefinition} instance.
  *
@@ -43,24 +43,20 @@ import jakarta.security.enterprise.identitystore.InMemoryIdentityStoreDefinition
  * return the literal value instead.
  *
  * As a reminder, here is an example of an in memory identity store annotation:
- *
  * @InMemoryIdentityStoreDefinition(
- * priority = 10,
- * priorityExpression = "#{80/20}",
- * useFor = {VALIDATE, PROVIDE_GROUPS},
- * useForExpression = "#{'VALIDATE'}",
- * value = {
- *
- * @Credentials(callerName = "bill", password = "secret1", groups = { "foo", "bar" }),
- * @Credentials(callerName = "sally", password = "secret1", groups = { "user" }),
- * @Credentials(callerName = "dave", password = "secret1", groups = { "caller", "user", "foo", "bar" })
- *                         })
+ *     priority = 10,
+ *     priorityExpression = "#{80/20}",
+ *     useFor = {VALIDATE, PROVIDE_GROUPS},
+ *     useForExpression = "#{'VALIDATE'}",
+ *     value = {
+ *         @Credentials(callerName = "bill", password = "secret1", groups = { "foo", "bar" }),
+ *         @Credentials(callerName = "sally", password = "secret1", groups = { "user" }),
+ *         @Credentials(callerName = "dave", password = "secret1", groups = { "caller", "user", "foo", "bar" })
+ *     }
+ * )
  */
 
 public class InMemoryIdentityStoreDefinitionWrapper {
-
-    // TODO: evaluate password: support both expression and literal value, see evaluatePassword()
-    // TODO: use a ProtectedString for password
 
     private static final TraceComponent tc = Tr.register(InMemoryIdentityStoreDefinitionWrapper.class);
 
@@ -74,10 +70,11 @@ public class InMemoryIdentityStoreDefinitionWrapper {
 
     /** The priority for this IdentityStore. Will be null when set by a deferred EL expression. */
     private final Integer priority;
+
     /** The ValidationTypes this IdentityStore can be used for. Will be null when set by a deferred EL expression. */
     private final Set<ValidationType> useFor;
 
-    /** the raw credentials into a key/value map = <callerName = [password, groups]> */
+    /** the annotations credentials in a key/value map: callerName = {password, groups[]} */
     private final HashMap<String, CredentialValue> credentials;
 
     private final ELHelperWrapper elHelper;
@@ -112,47 +109,18 @@ public class InMemoryIdentityStoreDefinitionWrapper {
             int credentialsLength = inMemoryIdentityStoreDefinition.value().length;
             Credentials[] creds = Arrays.copyOf(inMemoryIdentityStoreDefinition.value(), credentialsLength);
 
-            // convert raw credentials into an easily search-able HashMap with standard Java types
+            // convert annotation credentials into an easily search-able HashMap with standard Java types
             credentials = new HashMap<String, CredentialValue>(credentialsLength);
             for (int i = 0; i < credentialsLength; i++) {
-                CredentialValue credential = getCredential(creds[i].password(), creds[i].groups());
+                CredentialValue credential = getCredential(creds[i].callerName(), creds[i].password(), creds[i].groups());
                 credentials.put(creds[i].callerName(), credential);
             }
         }
     }
 
-    private CredentialValue getCredential(@Sensitive String password, String[] groups) {
-        //    String decodedPassword = decodePassword(evaluatePassword(password, false));
-//      CredentialValue credential = new CredentialValue(decodedPassword, groups);
-
-        CredentialValue credential = null;
-
+    private CredentialValue getCredential(String callerName, @Sensitive String password, String[] groups) {
         String evaluatedPassword = evaluatePassword(password, false);
-
-        /***
-         * boolean isHashed = PasswordUtil.isHashed(evaluatedPassword);
-         *
-         * Tr.info(tc, "evaluatePassword", "DAVE40: isHashed is [" + isHashed + "] for password[0..7] [" + password.substring(0, 7) + "].");
-         * System.out.println("DAVE40: isHashed is [" + isHashed + "] for password[0..7] [" + password.substring(0, 7) + "].");
-         *
-         *
-         * String passwordToStore = "";
-         * if (!isHashed) {
-         * // not hashed, but the password might still be encoded though (xor, aes)
-         *
-         * passwordToStore = PasswordUtil.passwordDecode(evaluatedPassword);
-         *
-         * Tr.info(tc, "evaluatePassword", "DAVE40: decoding non-hashed password, new decoded password is [" + passwordToStore + "].");
-         * System.out.println("DAVE40: decoding non-hashed password, new decoded password is [" + passwordToStore + "].");
-         *
-         * } else {
-         * // is hashed, so store the hashed password
-         * passwordToStore = evaluatedPassword;
-         * }
-         ***/
-        credential = new CredentialValue((evaluatedPassword == null) ? "" : evaluatedPassword, groups);
-
-        return credential;
+        return new CredentialValue(callerName, (evaluatedPassword == null) ? "" : evaluatedPassword, groups);
     }
 
     /**
@@ -168,9 +136,9 @@ public class InMemoryIdentityStoreDefinitionWrapper {
     private String evaluatePassword(@Sensitive String password, boolean immediateOnly) {
         String evaluatedPassword;
 
-        // first, process any EL express OR environment variable specification, i.e.
-        // ${expr}           - evaluate expression
+        // first, process any environment variable specification OR EL expressions.
         // env:BILL_PASSWORD - evaluate BILL_PASSWORD environment variable
+        // ${expr}           - evaluate expression
 
         try {
             evaluatedPassword = elHelper.processString("password", password, immediateOnly, true);
@@ -209,22 +177,6 @@ public class InMemoryIdentityStoreDefinitionWrapper {
     private Integer evaluatePriority(boolean immediateOnly) {
         String priorityExpression = inMemoryIdentityStoreDefinition.priorityExpression();
         int priority = inMemoryIdentityStoreDefinition.priority();
-        Tr.info(tc, "evaluatePriority", "priorityExpression is ["
-                                        + priorityExpression
-                                        + "] , priority is ["
-                                        + priority
-                                        + "], immediatelyOnly is ["
-                                        + immediateOnly
-                                        + "].");
-
-        System.out.println("DAVE40: priorityExpression is ["
-                           + priorityExpression
-                           + "] , priority is ["
-                           + priority
-                           + "], immediatelyOnly is ["
-                           + immediateOnly
-                           + "].");
-
         try {
             return elHelper.processInt("priorityExpression", priorityExpression, priority, immediateOnly);
         } catch (IllegalArgumentException e) {
@@ -260,21 +212,6 @@ public class InMemoryIdentityStoreDefinitionWrapper {
 
         String useForExpression = inMemoryIdentityStoreDefinition.useForExpression();
         ValidationType[] useFor = inMemoryIdentityStoreDefinition.useFor();
-        Tr.info(tc, "evaluateUseFor", "useForExpression is ["
-                                      + useForExpression
-                                      + "], useFor is ["
-                                      + Arrays.toString(useFor)
-                                      + "], immediatelyOnly is ["
-                                      + immediateOnly
-                                      + "].");
-
-        System.out.println("DAVE40: useForExpression is ["
-                           + useForExpression
-                           + "], useFor is ["
-                           + Arrays.toString(useFor)
-                           + "], immediatelyOnly is ["
-                           + immediateOnly
-                           + "].");
         try {
             return elHelper.processUseFor(useForExpression, useFor, immediateOnly);
         } catch (IllegalArgumentException e) {
@@ -323,19 +260,22 @@ public class InMemoryIdentityStoreDefinitionWrapper {
         return (this.useFor != null) ? this.useFor : evaluateUseFor(false);
     }
 
-    /**
+    /*-
      * Get the Credentials for the {@link IdentityStore} as a {@HashMap}.
      *
-     * @return The annotations Credentials as a {@HashMap}, with the
-     *         each Map element of the following:
-     *         key = String (callerValue) / value = CredentialValue ({String ProtectedPassword, String[] groups})
+     * @return The annotation Credentials as a {@HashMap}, with each Map element
+     *         keyed on the callerName.  An an empty {@HashMap} is returned
+     *         if no annotations are found.
      *
-     *         or an empty {@HashMap} if no annotations
+     *         NOTE: The caller password is stored internally based on
+     *         if it was an encoded or hashed value.  This internal representation
+     *         is not visible to the client, but the validate() method can
+     *         be used for safe password comparisons.
      *
      * @see InMemoryIdentityStoreDefinition#CredentialValue()
      */
     Map<String, CredentialValue> getCredentials() {
-        return (credentials.size() != 0) ? credentials : new HashMap<String, CredentialValue>(0);
+        return ((credentials == null) || (credentials.size() != 0)) ? credentials : new HashMap<String, CredentialValue>(0);
     }
 
     @Override
@@ -367,11 +307,12 @@ public class InMemoryIdentityStoreDefinitionWrapper {
         @Override
         public String processString(String name, String expression, boolean immediateOnly, boolean mask) throws IllegalArgumentException {
             String theExpression;
+
+            // if the value starts with ENV_PREFIX, then it is an environment variable, so
+            //   perform an evaluation of the environment variable value.
             if (expression.startsWith(ENV_PREFIX) == true) {
                 String variable = expression.substring(ENV_PREFIX.length(), expression.length());
                 theExpression = System.getenv(variable);
-                System.out.println("DAVE40: Just read environment variable value [" + theExpression + "] for environment variable ["
-                                   + variable + "].");
                 if (theExpression == null) {
                     Tr.error(tc, "processString", "Expected enviroment variable '" + variable + "' to be set, but it was empty.");
                     throw new IllegalArgumentException("Expected enviroment variable '" + variable + "' to be set, but it was empty.");
@@ -385,17 +326,19 @@ public class InMemoryIdentityStoreDefinitionWrapper {
     }
 
     /**
-     * This structure models the Credentials interface, but is specific for use within
+     * This class models the Credentials interface, but is specific for use within
      * the identitystore package, modelling the data, and providing minimal APIs for
      * external use.
      */
 
     protected final class CredentialValue extends CredentialPassword {
 
+        private final String callerName;
         private final String[] groups;
 
-        CredentialValue(final @Sensitive String password, final String[] groups) {
+        CredentialValue(final String callerName, final @Sensitive String password, final String[] groups) {
             super(password);
+            this.callerName = callerName;
             this.groups = Arrays.copyOf(groups, groups.length);
         }
 
@@ -408,10 +351,16 @@ public class InMemoryIdentityStoreDefinitionWrapper {
 
         @Override
         public String toString() {
-            return "CredentialValue [password=" + "*****" + ", groups=" + Arrays.toString(groups) + "]";
+            return "CredentialValue [callerName=" + callerName + ", password=" + "*****" + ", groups=" + Arrays.toString(groups) + "]";
         }
 
     }
+
+    /**
+     * This class models just the credential password, but the internal details are
+     * hidden from any client as passwords are stored as ProtectedString where possible,
+     * and password validation against a client value is handled internally.
+     */
 
     private class CredentialPassword {
 
@@ -421,20 +370,18 @@ public class InMemoryIdentityStoreDefinitionWrapper {
         private CredentialPassword(final @Sensitive String password) throws IllegalArgumentException {
 
             if ((password == null) || (password.length() == 0)) {
+                Tr.error(tc, "CredentialPassword", "Credential password is empty.");
                 throw new IllegalArgumentException("Credential password is empty.");
             }
 
             boolean isHashed = PasswordUtil.isHashed(password);
-
-            Tr.info(tc, "evaluatePassword", "DAVE40: isHashed is [" + isHashed + "] for password[0..7] [" + password.substring(0, 7) + "].");
-            System.out.println("DAVE40: isHashed is [" + isHashed + "] for password[0..7] [" + password.substring(0, 7) + "].");
 
             if (!isHashed) {
                 // not hashed, but the password might still be encoded though (xor, aes)
                 this.password = new ProtectedString(PasswordUtil.passwordDecode(password).toCharArray());
                 this.hashedPassword = "";
             } else {
-                // is unprotected, but a hash value which cannot be decoded
+                // hash, so store as a String (unprotected), but the hash value which cannot be decoded
                 this.password = ProtectedString.EMPTY_PROTECTED_STRING;
                 this.hashedPassword = password;
             }
@@ -456,10 +403,10 @@ public class InMemoryIdentityStoreDefinitionWrapper {
                 HashMap<String, String> props = new HashMap<String, String>();
                 props.put(PasswordUtil.PROPERTY_HASH_ENCODED, hashedPassword);
                 try {
-//                    String x = String.copyValueOf(otherPassword.getValue());
                     encodedPassword = PasswordUtil.encode(new String(otherPassword.getChars()), PasswordUtil.getCryptoAlgorithm(hashedPassword), props);
                 } catch (Exception e) {
                     //fail to encode password.
+                    Tr.error(tc, "validate", "password encoding failure : " + e.getMessage());
                     throw new IllegalArgumentException("password encoding failure : " + e.getMessage());
                 }
                 return hashedPassword.equals(encodedPassword);

@@ -34,19 +34,13 @@ Import-Package: \
 	!com.ibm.ws.kernel.boot.cmdline,\
 	javax.security.auth,\
 	!javax.*,\
-	jakarta.security.auth.message;version="[3.0,4)", \
-	jakarta.security.enterprise.credential;version="[3.0,5)", \
-	jakarta.security.enterprise.identitystore.openid;version="[3.0,5)", \
-	jakarta.security.enterprise.identitystore;version="[3.0,5)", \
-	jakarta.security.enterprise;version="[3.0,5)", \
-	*
+        *
 
 Private-Package: \
     io.openliberty.security.jakartasec.cdi.internal.*
 
 Include-Resource: \
     META-INF=resources/META-INF
-#    OSGI-INF=resources/OSGI-INF
 
 src: src, resources
 

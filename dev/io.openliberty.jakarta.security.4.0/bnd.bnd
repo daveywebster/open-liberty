@@ -38,9 +38,9 @@ publish.wlp.jar.suffix: dev/api/spec
   @${repo;jakarta.security.enterprise:jakarta.security.enterprise-api;4.0.0;EXACT}!/!(META-INF/maven/*|module-info.class|beans_*.xsd|exclude-common.xml)
 
 -buildpath: \
-    io.openliberty.jakarta.cdi.4.0;version=latest, \
+    io.openliberty.jakarta.cdi.4.1;version=latest, \
     io.openliberty.jakarta.interceptor.2.1;version=latest, \
-    io.openliberty.jakarta.authentication.3.0;version=latest, \
-    io.openliberty.jakarta.servlet.6.0;version=latest, \
+    io.openliberty.jakarta.authentication.3.1;version=latest, \
+    io.openliberty.jakarta.servlet.6.1;version=latest, \
     io.openliberty.jakarta.jsonp.2.1;version=latest, \
     jakarta.security.enterprise:jakarta.security.enterprise-api;version=4.0.0;strategy=exact

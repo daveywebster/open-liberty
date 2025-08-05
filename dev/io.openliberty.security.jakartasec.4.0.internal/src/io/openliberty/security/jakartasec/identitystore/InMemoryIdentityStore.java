@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2017, 2021 IBM Corporation and others.
+ * Copyright (c) 2017, 2025 IBM Corporation and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License 2.0
  * which accompanies this distribution, and is available at
@@ -12,7 +12,6 @@
  *******************************************************************************/
 package io.openliberty.security.jakartasec.identitystore;
 
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -34,7 +33,6 @@ import jakarta.security.enterprise.credential.UsernamePasswordCredential;
 import jakarta.security.enterprise.identitystore.CredentialValidationResult;
 import jakarta.security.enterprise.identitystore.IdentityStore;
 import jakarta.security.enterprise.identitystore.InMemoryIdentityStoreDefinition;
-import jakarta.security.enterprise.identitystore.InMemoryIdentityStoreDefinition.Credentials;
 //import com.ibm.ws.security.registry.basic.internal.BasicRegistry;
 
 /**
@@ -48,49 +46,10 @@ import jakarta.security.enterprise.identitystore.InMemoryIdentityStoreDefinition
            property = "service.vendor=IBM")
 public class InMemoryIdentityStore implements IdentityStore {
 
-    // TODO: Use the UserRegistry utilty code to validate the password
-    // add these to the bnd.bnd
-//    +    com.ibm.ws.security.registry;version=latest,\
-//    +    com.ibm.ws.security.registry.basic;version=latest,\
-    // and this to the imports
-// import com.ibm.ws.security.registry.basic.internal.BasicRegistry;
-
-//    private class XX implements UserRegistry {}
-
-    /**
-     * private class InMemoryCallerRegistry extends BasicRegistry {
-     *
-     * public InMemoryCallerRegistry() {
-     * super();
-     * super.activate(null);
-     * }
-     *
-     * public InMemoryCallerRegistry(Map<String, CredentialValue> credentials) {
-     * super();
-     * }
-     * }
-     *
-     * private final InMemoryCallerRegistry inMemoryCallerRegistry;
-     **/
     private static final TraceComponent tc = Tr.register(InMemoryIdentityStore.class);
 
     /** The definitions for this IdentityStore. */
     private final InMemoryIdentityStoreDefinitionWrapper inMemoryIdentityStoreDefinitionWrapper;
-
-    private String getIdStoreDefinitionAsString(InMemoryIdentityStoreDefinition inMemoryIdentityStoreDefinition) {
-
-        Tr.info(tc, "InMemoryIdentityStore", "getIdStoreDefinitionAsString");
-        System.out.println("getIdStoreDefinitionAsString");
-
-        int priority = inMemoryIdentityStoreDefinition.priority();
-        String priorityExpression = inMemoryIdentityStoreDefinition.priorityExpression();
-        ValidationType[] useFor = inMemoryIdentityStoreDefinition.useFor();
-        String useForExpression = inMemoryIdentityStoreDefinition.useForExpression();
-        Credentials[] creds = inMemoryIdentityStoreDefinition.value();
-
-        return ("priority = [" + priority + "], priorityExpression = [" + priorityExpression + "], useFor = [" + Arrays.toString(useFor)
-                + "], useForExpression = [" + useForExpression + "], creds = [" + Arrays.toString(creds) + "].");
-    }
 
     /**
      * Construct a new {@link InMemoryIdentityStore} instance using the specified definitions
@@ -100,28 +59,7 @@ public class InMemoryIdentityStore implements IdentityStore {
      */
 
     public InMemoryIdentityStore(InMemoryIdentityStoreDefinition inMemoryIdentityStoreDefinition) {
-
-        Tr.info(tc, "InMemoryIdentityStore", "DAVE40: InMemoryIdentityStore constructor called with idStoreDefinition1 ...");
-        System.out.println("DAVE40: InMemoryIdentityStore constructor called wth idStoreDefinition1 ...");
-
-        Tr.info(tc, "InMemoryIdentityStore", "----------------------------");
-        Tr.info(tc, "InMemoryIdentityStore", "DAVE40: " + getIdStoreDefinitionAsString(inMemoryIdentityStoreDefinition));
-        Tr.info(tc, "InMemoryIdentityStore", "----------------------------");
-        System.out.println("----------------------------");
-        System.out.println("DAVE40: " + getIdStoreDefinitionAsString(inMemoryIdentityStoreDefinition));
-        System.out.println("----------------------------");
-
         inMemoryIdentityStoreDefinitionWrapper = new InMemoryIdentityStoreDefinitionWrapper(inMemoryIdentityStoreDefinition);
-
-        Tr.info(tc, "InMemoryIdentityStore", "----------------------------");
-        Tr.info(tc, "InMemoryIdentityStore", "DAVE40 (DefinitionWrapper): " + inMemoryIdentityStoreDefinitionWrapper.toString());
-        Tr.info(tc, "InMemoryIdentityStore", "----------------------------");
-        System.out.println("----------------------------");
-        System.out.println("DAVE40 (DefinitionWrapper): " + inMemoryIdentityStoreDefinitionWrapper.toString());
-        System.out.println("----------------------------");
-
-        // convert credentials into a basic registry also for password validation
-//        inMemoryCallerRegistry = new InMemoryCallerRegistry(inMemoryIdentityStoreDefinitionWrapper.getCredentials());
     }
 
     @Override
@@ -146,14 +84,6 @@ public class InMemoryIdentityStore implements IdentityStore {
             groups = Set.of(credentialValue.getGroups());
         }
 
-        /**
-         * Credentials[] creds = inMemoryIdentityStoreDefinitionWrapper.getCreds();
-         * for (Credentials cred : creds) {
-         * if (cred.callerName().equals(caller)) {
-         * return Set.of(cred.groups());
-         * }
-         * }
-         **/
         return groups;
     }
 
@@ -197,25 +127,31 @@ public class InMemoryIdentityStore implements IdentityStore {
 
         // validate the credentials against the stored data
         char[] pchars = password.getChars();
-        Tr.info(tc, "validate", "DAVE40: caller is [" + caller + "], and password is [" + password + "].");
 
         StringBuffer pwd = new StringBuffer(pchars.length);
         for (char p : pchars) {
             pwd.append(p);
         }
-        System.out.println("DAVE40: caller is [" + caller + "], and password is [" + pwd.toString() + "].");
 
         // if password is valid, then return success with groups
         if (isValid(caller, password)) {
             Set<String> groups = getCallerGroups(new CredentialValidationResult(null, caller, null, caller, null));
-            Tr.info(tc, "validate", "DAVE40: groups are [" + groups.toString() + "].");
-            System.out.println("DAVE40: groups are [" + groups.toString() + "].");
             return new CredentialValidationResult(null, caller, null, caller, groups);
         } else {
             return CredentialValidationResult.INVALID_RESULT;
         }
     }
 
+    /**
+     * Validate a client password given the caller name. The caller's existing
+     * credentials (from the annotation) are fetched and compared with the passed
+     * client password.
+     *
+     * @param caller   is the caller credential
+     * @param password is the password credential
+     * @return true if the caller exists as an annotation and the password matches
+     *         the annotation password. False else.
+     */
     private boolean isValid(String caller, @Sensitive ProtectedString password) {
 
         Map<String, CredentialValue> credentials = inMemoryIdentityStoreDefinitionWrapper.getCredentials();
@@ -226,33 +162,12 @@ public class InMemoryIdentityStore implements IdentityStore {
             return false;
         }
 
-        // TODO: Use the UserRegistry code to validate the password
         // caller found, so check ProtectedString passwords
-
-///        ProtectedString credentialPassword = credentialValue.getPassword();
-//        if ((credentialPassword.isEmpty() == false) &&
-//            (password.equals(credentialPassword))) {
-//            return true;
-//        }
-
         return credentialValue.validate(password);
-
-//        char[] pchars = password.getChars();
-//        StringBuffer pwd = new StringBuffer(pchars.length);
-//        for (char p : pchars) {
-//            pwd.append(p);
-//        }
-//        if (pwd.toString().equals(credentialValue.getPassword())) {
-//            return true; // caller and password match
-//        }
-
-        // caller in annotation value, but incorrect password
-//        return false;
     }
 
     @Override
     public Set<ValidationType> validationTypes() {
         return inMemoryIdentityStoreDefinitionWrapper.getUseFor();
     }
-
 }

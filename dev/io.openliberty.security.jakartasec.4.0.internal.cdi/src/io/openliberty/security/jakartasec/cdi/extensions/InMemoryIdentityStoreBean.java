@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2017, 2022 IBM Corporation and others.
+ * Copyright (c) 2017, 2025 IBM Corporation and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License 2.0
  * which accompanies this distribution, and is available at
@@ -18,9 +18,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-import com.ibm.websphere.ras.Tr;
-import com.ibm.websphere.ras.TraceComponent;
-
 import io.openliberty.security.jakartasec.identitystore.InMemoryIdentityStore;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.context.spi.CreationalContext;
@@ -38,8 +35,6 @@ import jakarta.security.enterprise.identitystore.InMemoryIdentityStoreDefinition
 /**
  */
 public class InMemoryIdentityStoreBean implements Bean<IdentityStore>, PassivationCapable {
-
-    private static final TraceComponent tc = Tr.register(InMemoryIdentityStoreBean.class);
 
     private final Set<Annotation> qualifiers;
     private final Type type;
@@ -61,14 +56,10 @@ public class InMemoryIdentityStoreBean implements Bean<IdentityStore>, Passivati
         types = Collections.singleton(type);
         name = this.getClass().getName() + "@" + this.hashCode() + "[" + type + "]";
         id = beanManager.hashCode() + "#" + this.name;
-        Tr.info(tc, id, "InMemoryIdentityStoreBean:: constructor()");
-        System.out.println("InMemoryIdentityStoreBean:: constructor()");
     }
 
     @Override
     public IdentityStore create(CreationalContext<IdentityStore> arg0) {
-        Tr.info(tc, id, "InMemoryIdentityStoreBean:: create()");
-        System.out.println("InMemoryIdentityStoreBean:: create()");
         return new InMemoryIdentityStore(inMemoryIdentityStoreDefinition);
     }
 
