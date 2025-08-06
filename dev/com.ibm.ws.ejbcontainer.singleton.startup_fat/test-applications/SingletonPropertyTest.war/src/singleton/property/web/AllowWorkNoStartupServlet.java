@@ -67,7 +67,8 @@ public class AllowWorkNoStartupServlet extends FATServlet {
      * thread to signal it to continue. This allows us to have the application startup processing to
      * be held indefinitely, which allows the test to attempt bean access before startup completes.
      */
-    // @Test - TODO : com.ibm.websphere.ejbcontainer.blockWorkUntilAppStarted not supported on Liberty
+    @Test
+    @Ignore("com.ibm.websphere.ejbcontainer.blockWorkUntilAppStarted not supported on Liberty") //TODO
     public void testAllowedStartupAllowsClientsWithNoStartupBean() throws Exception {
 
         svLogger.info("---> Entering testStartupAllowsClients()");
