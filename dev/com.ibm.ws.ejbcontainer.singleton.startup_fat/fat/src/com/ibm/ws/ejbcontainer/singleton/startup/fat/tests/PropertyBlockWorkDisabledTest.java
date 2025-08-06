@@ -65,7 +65,7 @@ public class PropertyBlockWorkDisabledTest extends FATServletClient {
         // Use ShrinkHelper to build the ears
 
         // -------------- SingletonPropertyIntf ------------
-        JavaArchive SingletonPropertyIntf = ShrinkHelper.buildJavaArchive("SingletonPropertyIntf.jar", "singleton.property.shared.");
+        JavaArchive SingletonPropertyIntf = ShrinkHelper.buildJavaArchive("SingletonPropertyIntf.jar", "singleton.property.shared");
         ShrinkHelper.exportToServer(server, "lib", SingletonPropertyIntf, DeployOptions.SERVER_ONLY);
 
         // -------------- SingletonPropertyStartup ------------
