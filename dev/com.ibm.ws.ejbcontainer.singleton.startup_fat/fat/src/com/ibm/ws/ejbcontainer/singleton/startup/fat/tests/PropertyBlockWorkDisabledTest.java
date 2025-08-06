@@ -47,7 +47,7 @@ import singleton.property.web.AllowWorkStartupServlet;
  * During application startup of an application that does not contain a Startup Singleton bean,
  * outside work will not be blocked.
  *
- * The following property values have been set in the TestBuild.xml:
+ * The following property values have been set in the jvm.options:
  * -Dcom.ibm.websphere.ejbcontainer.blockWorkUntilAppStartedWaitTime=20
  * -Dcom.ibm.websphere.ejbcontainer.blockWorkUntilAppStarted=false
  */
