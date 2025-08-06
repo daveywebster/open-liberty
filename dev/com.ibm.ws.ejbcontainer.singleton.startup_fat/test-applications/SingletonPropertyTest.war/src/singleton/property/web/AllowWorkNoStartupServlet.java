@@ -23,6 +23,9 @@ import javax.naming.InitialContext;
 import javax.naming.NamingException;
 import javax.servlet.annotation.WebServlet;
 
+import org.junit.Test;
+import org.junit.Ignore;
+
 import componenttest.app.FATServlet;
 import singleton.property.shared.StartupHelperSingleton;
 import singleton.property.shared.TestData;
