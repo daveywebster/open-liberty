@@ -39,7 +39,7 @@ import singleton.property.shared.TestData;
  * property is set then outside work will be blocked until the application has completed
  * startup processing or until the "blockWorkUntilAppStartedWaitTime" threshold has been met.
  *
- * The following property values have been set in the TestBuild.xml:
+ * The following property values have been set in the jvm.options:
  * -Dcom.ibm.websphere.ejbcontainer.blockWorkUntilAppStartedWaitTime=20
  */
 @SuppressWarnings("serial")
