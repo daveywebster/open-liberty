@@ -33,6 +33,7 @@ import com.ibm.wsspi.rest.handler.RESTRequest;
 
 /**
  * This class is designed to hold utility methods that different parts of the server side UI will need to use.
+ * The algorithm assessment of FIPS 140-3 by updating SHA512 message digest algorithm is based on slack discussion with component SMEs.
  */
 public class Utils {
     private static final TraceComponent tc = Tr.register(Utils.class);

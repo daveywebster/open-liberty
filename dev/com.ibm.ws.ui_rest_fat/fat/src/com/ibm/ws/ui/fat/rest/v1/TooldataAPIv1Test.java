@@ -39,7 +39,7 @@ import componenttest.custom.junit.runner.Mode;
 import componenttest.custom.junit.runner.Mode.TestMode;
 
 /**
- *
+ * The algorithm assessment of FIPS 140-3 by updating SHA512 checksum is based on slack discussion with component SMEs.   
  */
 @RunWith(FATRunner.class)
 @Mode(TestMode.LITE)

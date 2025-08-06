@@ -49,6 +49,8 @@ import com.ibm.ws.common.crypto.CryptoUtils;
  * the returned tool data.</p>
  *
  * <p>Maps to host:port/ibm/api/adminCenter/v1/tooldata</p>
+ *
+ * The algorithm assessment of FIPS 140-3 by updating SHA512 checksum is based on slack discussion with component SMEs.
  */
 public class ToolDataAPI extends CommonRESTHandler implements V1Constants {
     private final IToolDataService toolDataService;
@@ -96,7 +98,7 @@ public class ToolDataAPI extends CommonRESTHandler implements V1Constants {
 
     /**
      * Gets the tool data of for the giving tool/user.
-     * When the tool data is returned, a sha5125 checksum of the data is also returned using the Response's HTTP header Etag.
+     * When the tool data is returned, a sha512 checksum of the data is also returned using the Response's HTTP header Etag.
      *
      *
      * {@inheritDoc}
