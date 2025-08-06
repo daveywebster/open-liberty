@@ -41,7 +41,7 @@ import singleton.property.shared.TestData;
  * blocked until the application has completed startup processing or until the
  * "blockWorkUntilAppStartedWaitTime" threshold has been met.
  *
- * The following property values have been set in the TestBuild.xml:
+ * The following property values have been set in the jvm.options:
  * -Dcom.ibm.websphere.ejbcontainer.blockWorkUntilAppStartedWaitTime=20
  * -Dcom.ibm.websphere.ejbcontainer.blockWorkUntilAppStarted=false
  */
