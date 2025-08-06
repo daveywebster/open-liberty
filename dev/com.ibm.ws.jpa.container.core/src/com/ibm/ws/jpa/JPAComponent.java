@@ -20,9 +20,9 @@ import java.util.Set;
 
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
+import javax.persistence.spi.PersistenceUnitInfo;
 
 import com.ibm.websphere.csi.J2EEName;
-import com.ibm.ws.jpa.management.JPAPUnitInfo;
 import com.ibm.wsspi.injectionengine.InjectionBinding;
 
 /**
@@ -69,7 +69,17 @@ public interface JPAComponent {
 
     public JPAVersion getJPAVersion();
 
-    public List<JPAPUnitInfo> getPersistenceUnits(J2EEName j2eeName);
+    /**
+     * Retrieves the list of persistence units associated with the given J2EE module name.
+     * This method acts as a filter on the available persistence units registered in the runtime.
+     * It extracts the application name and module name (if present) from the given J2EEName
+     * and will call the method getPersistenceUnitsForApp(String, String)} to perform the actual lookup.
+     *
+     * @param j2eeName the J2EE name contains application and module values.
+     * @return a list of PersistenceUnitInfo objects matching the specified application
+     *         and module, or an empty list if no matches are found.
+     */
+    public List<PersistenceUnitInfo> getPersistenceUnits(J2EEName j2eeName);
 
     /**
      * Returns the EntityManagerFactory defines by the application/module/persistence unit spcified.
@@ -90,7 +100,16 @@ public interface JPAComponent {
                                                         J2EEName j2eeName, // d510184
                                                         boolean getEmfWrapper); // d416151.3.1
 
-    public EntityManagerFactory getEntityManagerFactory(J2EEName j2eeName, JPAPUnitInfo persistenceUnitInfo);
+    /**
+     * Returns the EntityManagerFactory associated with the given persistence unit.
+     * This method looks up the persistence unit based on the provided J2EE name
+     * and delegates the request to the underlying persistence unit implementation.
+     *
+     * @param j2eeName            ,the J2EE module name used for identifying the persistence unit
+     * @param persistenceUnitInfo the persistence unit information
+     * @return the EntityManagerFactory for the specified persistence unit
+     */
+    public EntityManagerFactory getEntityManagerFactory(J2EEName j2eeName, PersistenceUnitInfo persistenceUnitInfo);
 
     /**
      * Returns the EntityManager defines by the application/module/persistence unit specified. This
@@ -119,7 +138,16 @@ public interface JPAComponent {
                                           boolean isUnsynchronized,
                                           Map<?, ?> properties);
 
-    public EntityManager getEntityManager(J2EEName j2eeName, JPAPUnitInfo persistenceUnitInfo);
+    /**
+     * Creates and returns a new EntityManager for the given persistence unit.
+     * This method first obtains the EntityManagerFactory for the provided J2EE name
+     * and persistence unit, and then uses it to create a new EntityManager instance.
+     *
+     * @param j2eeName            the J2EE module name used for identifying the persistence unit
+     * @param persistenceUnitInfo the persistence unit information
+     * @return a newly created EntityManager associated with the specified persistence unit
+     */
+    public EntityManager getEntityManager(J2EEName j2eeName, PersistenceUnitInfo persistenceUnitInfo);
 
     /**
      * Determine and collect the Persistence Unit Ids associated to @PersistencContext(type=Extended)
