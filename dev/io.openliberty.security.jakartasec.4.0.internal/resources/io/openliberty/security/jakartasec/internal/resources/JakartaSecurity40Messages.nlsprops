@@ -1,0 +1,30 @@
+###############################################################################
+# Copyright (c) 2022, 2025 IBM Corporation and others.
+# All rights reserved. This program and the accompanying materials
+# are made available under the terms of the Eclipse Public License 2.0
+# which accompanies this distribution, and is available at
+# http://www.eclipse.org/legal/epl-2.0/
+# 
+# SPDX-License-Identifier: EPL-2.0
+#
+# Contributors:
+#     IBM Corporation - initial API and implementation
+###############################################################################
+#CMVCPATHNAME io.openliberty.security.jakartasec.4.0.internal/resources/io/openliberty/security/jakartasec/internal/resources/JakartaSecurity40Messages.nlsprops
+#COMPONENTPREFIX CWWKS
+#COMPONENTNAMEFOR WebSphere Application Server Jakarta Security 4.0
+#ISMESSAGEFILE TRUE
+#NLS_MESSAGEFORMAT_VAR
+#NLS_ENCODING=UNICODE
+# -------------------------------------------------------------------------------------------------
+
+# Message prefix block: 2600-2610
+
+#Note to translator, do not translate EL
+JAKARTASEC_WARNING_ENV_VARIABLE_NOT_SET=CWWKS2600W: Expected environment variable {0} to be set, but it was empty or unset.  Any subsequent authentication request validations using the associated caller will fail.
+JAKARTASEC_WARNING_ENV_VARIABLE_NOT_SET.explanation=An environment variable was used as the value of a password field in the @Credential annotation, but this variable is not set externally, or is set to an empty string.
+JAKARTASEC_WARNING_ENV_VARIABLE_NOT_SET.useraction=Make sure you set the environment variable referenced in the annotation, typically specified in server.env.
+
+JAKARTASEC_WARNING_PRODUCTION_USE=CWWKS2600W: An identity store configured using an @InMemoryIdentityStoreDefinition annotation was detected within this application.  It is NOT RECOMMENDED that this definition be used in a production environment.
+JAKARTASEC_WARNING_PRODUCTION_USE.explanation=Jakarta make this clear that the use of the @InMemoryIdentityStoreDefinition within the application should be used for development, testing and debugging purposes only.
+JAKARTASEC_WARNING_PRODUCTION_USE.useraction=Ensure that if and when your application goes into production, you remove the @InMemoryIdentityStoreDefinition and replace it with a supported production-grade identity store such as LDAP or Database.

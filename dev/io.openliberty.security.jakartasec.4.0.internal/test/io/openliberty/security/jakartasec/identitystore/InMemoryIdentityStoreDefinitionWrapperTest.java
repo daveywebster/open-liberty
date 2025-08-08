@@ -219,7 +219,7 @@ public class InMemoryIdentityStoreDefinitionWrapperTest {
         TestInMemoryIdentityStoreDefinition defaultDefinition = new TestInMemoryIdentityStoreDefinition() {
             @Override
             public int priority() {
-                return 90;
+                return JakartaSec40Constants.SPEC_DEFAULT_PRIORITY;
             }
 
             @Override

@@ -28,6 +28,7 @@ import com.ibm.ws.ffdc.annotation.FFDCIgnore;
 import com.ibm.ws.security.javaeesec.identitystore.ELHelper;
 
 import io.openliberty.security.jakartasec.JakartaSec40Constants;
+import jakarta.el.PropertyNotFoundException;
 import jakarta.security.enterprise.identitystore.IdentityStore;
 import jakarta.security.enterprise.identitystore.IdentityStore.ValidationType;
 import jakarta.security.enterprise.identitystore.InMemoryIdentityStoreDefinition;
@@ -93,6 +94,8 @@ public class InMemoryIdentityStoreDefinitionWrapper {
         }
         this.inMemoryIdentityStoreDefinition = inMemoryIdentityStoreDefinition;
         elHelper = new ELHelperWrapper();
+
+        Tr.warning(tc, "JAKARTASEC_WARNING_PRODUCTION_USE");
 
         /*
          * Evaluate the configuration. The values will be non-null if the setting is NOT
@@ -173,12 +176,17 @@ public class InMemoryIdentityStoreDefinitionWrapper {
      * @return The priority or null if immediateOnly==true AND the value is not evaluated
      *         from a deferred EL expression.
      */
-    @FFDCIgnore(IllegalArgumentException.class)
+    @FFDCIgnore({ IllegalArgumentException.class, PropertyNotFoundException.class })
     private Integer evaluatePriority(boolean immediateOnly) {
         String priorityExpression = inMemoryIdentityStoreDefinition.priorityExpression();
         int priority = inMemoryIdentityStoreDefinition.priority();
         try {
             return elHelper.processInt("priorityExpression", priorityExpression, priority, immediateOnly);
+        } catch (PropertyNotFoundException e) {
+            if (TraceComponent.isAnyTracingEnabled() && tc.isWarningEnabled()) {
+                Tr.warning(tc, "JAVAEESEC_WARNING_IDSTORE_CONFIG", new Object[] { "priority/priorityExpression", JakartaSec40Constants.SPEC_DEFAULT_PRIORITY });
+            }
+            return JakartaSec40Constants.SPEC_DEFAULT_PRIORITY;
         } catch (IllegalArgumentException e) {
             /*
              * If deferred expression and called during initialization, return null so the expression can be re-evaluated
@@ -214,6 +222,11 @@ public class InMemoryIdentityStoreDefinitionWrapper {
         ValidationType[] useFor = inMemoryIdentityStoreDefinition.useFor();
         try {
             return elHelper.processUseFor(useForExpression, useFor, immediateOnly);
+        } catch (PropertyNotFoundException e) {
+            if (TraceComponent.isAnyTracingEnabled() && tc.isWarningEnabled()) {
+                Tr.warning(tc, "JAVAEESEC_WARNING_IDSTORE_CONFIG", new Object[] { "priority/priorityExpression", JakartaSec40Constants.SPEC_DEFAULT_PRIORITY });
+            }
+            return JakartaSec40Constants.SPEC_DEFAULT_VALIDATION_TYPES;
         } catch (IllegalArgumentException e) {
             /*
              * If deferred expression and called during initialization, return null so the expression can be re-evaluated
@@ -313,9 +326,11 @@ public class InMemoryIdentityStoreDefinitionWrapper {
             if (expression.startsWith(ENV_PREFIX) == true) {
                 String variable = expression.substring(ENV_PREFIX.length(), expression.length());
                 theExpression = System.getenv(variable);
+
+                // environment variable specified, but not found, so output warning only
                 if (theExpression == null) {
-                    Tr.error(tc, "processString", "Expected enviroment variable '" + variable + "' to be set, but it was empty.");
-                    throw new IllegalArgumentException("Expected enviroment variable '" + variable + "' to be set, but it was empty.");
+                    theExpression = "";
+                    Tr.warning(tc, "JAKARTASEC_WARNING_ENV_VARIABLE_NOT_SET", new Object[] { variable });
                 }
             } else {
                 theExpression = expression;
@@ -370,8 +385,9 @@ public class InMemoryIdentityStoreDefinitionWrapper {
         private CredentialPassword(final @Sensitive String password) throws IllegalArgumentException {
 
             if ((password == null) || (password.length() == 0)) {
-                Tr.error(tc, "CredentialPassword", "Credential password is empty.");
-                throw new IllegalArgumentException("Credential password is empty.");
+                this.password = new ProtectedString(new char[0]);
+                this.hashedPassword = "";
+                return;
             }
 
             boolean isHashed = PasswordUtil.isHashed(password);

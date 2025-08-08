@@ -33,7 +33,6 @@ import jakarta.security.enterprise.credential.UsernamePasswordCredential;
 import jakarta.security.enterprise.identitystore.CredentialValidationResult;
 import jakarta.security.enterprise.identitystore.IdentityStore;
 import jakarta.security.enterprise.identitystore.InMemoryIdentityStoreDefinition;
-//import com.ibm.ws.security.registry.basic.internal.BasicRegistry;
 
 /**
  * Liberty's InMemory {@link IdentityStore} implementation.
