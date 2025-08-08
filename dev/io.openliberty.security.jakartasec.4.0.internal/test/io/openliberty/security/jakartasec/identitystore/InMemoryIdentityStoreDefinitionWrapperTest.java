@@ -208,7 +208,7 @@ public class InMemoryIdentityStoreDefinitionWrapperTest {
 
         assertNotNull("UseFor set should not be null", useFor);
         assertEquals("UseFor should contain default validation types",
-                     JakartaSec40Constants.SPEC_DEFAULT_VALIDATION_TYPES, useFor);
+                     JakartaSec40Constants.SPEC_DEFAULT_USE_FOR, useFor);
     }
 
     /**

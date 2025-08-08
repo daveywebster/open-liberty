@@ -107,7 +107,7 @@ public class InMemoryIdentityStore implements IdentityStore {
             callerOnly = true;
             caller = ((CallerOnlyCredential) credential).getCaller();
         } else {
-            Tr.error(tc, "JAVAEESEC_ERROR_WRONG_CRED");
+            Tr.error(tc, "JAKARTASEC_ERROR_WRONG_CRED");
             return CredentialValidationResult.NOT_VALIDATED_RESULT;
         }
 

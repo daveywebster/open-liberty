@@ -159,7 +159,7 @@ public class InMemoryIdentityStoreDefinitionWrapper {
             }
 
             if (TraceComponent.isAnyTracingEnabled() && tc.isWarningEnabled()) {
-                Tr.warning(tc, "JAVAEESEC_WARNING_IDSTORE_CONFIG", new Object[] { "password", "" });
+                Tr.warning(tc, "JAKARTASEC_WARNING_IDSTORE_CONFIG", new Object[] { "password", "" });
             }
             evaluatedPassword = ""; /* Default value from spec. */
         }
@@ -184,7 +184,7 @@ public class InMemoryIdentityStoreDefinitionWrapper {
             return elHelper.processInt("priorityExpression", priorityExpression, priority, immediateOnly);
         } catch (PropertyNotFoundException e) {
             if (TraceComponent.isAnyTracingEnabled() && tc.isWarningEnabled()) {
-                Tr.warning(tc, "JAVAEESEC_WARNING_IDSTORE_CONFIG", new Object[] { "priority/priorityExpression", JakartaSec40Constants.SPEC_DEFAULT_PRIORITY });
+                Tr.warning(tc, "JAKARTASEC_WARNING_IDSTORE_CONFIG", new Object[] { "priority/priorityExpression", JakartaSec40Constants.SPEC_DEFAULT_PRIORITY });
             }
             return JakartaSec40Constants.SPEC_DEFAULT_PRIORITY;
         } catch (IllegalArgumentException e) {
@@ -200,7 +200,7 @@ public class InMemoryIdentityStoreDefinitionWrapper {
             }
 
             if (TraceComponent.isAnyTracingEnabled() && tc.isWarningEnabled()) {
-                Tr.warning(tc, "JAVAEESEC_WARNING_IDSTORE_CONFIG", new Object[] { "priority/priorityExpression", JakartaSec40Constants.SPEC_DEFAULT_PRIORITY });
+                Tr.warning(tc, "JAKARTASEC_WARNING_IDSTORE_CONFIG", new Object[] { "priority/priorityExpression", JakartaSec40Constants.SPEC_DEFAULT_PRIORITY });
             }
             return JakartaSec40Constants.SPEC_DEFAULT_PRIORITY;
         }
@@ -224,9 +224,9 @@ public class InMemoryIdentityStoreDefinitionWrapper {
             return elHelper.processUseFor(useForExpression, useFor, immediateOnly);
         } catch (PropertyNotFoundException e) {
             if (TraceComponent.isAnyTracingEnabled() && tc.isWarningEnabled()) {
-                Tr.warning(tc, "JAVAEESEC_WARNING_IDSTORE_CONFIG", new Object[] { "priority/priorityExpression", JakartaSec40Constants.SPEC_DEFAULT_PRIORITY });
+                Tr.warning(tc, "JAKARTASEC_WARNING_IDSTORE_CONFIG", new Object[] { "useFor/useForExpression", JakartaSec40Constants.SPEC_DEFAULT_USE_FOR });
             }
-            return JakartaSec40Constants.SPEC_DEFAULT_VALIDATION_TYPES;
+            return JakartaSec40Constants.SPEC_DEFAULT_USE_FOR;
         } catch (IllegalArgumentException e) {
             /*
              * If deferred expression and called during initialization, return null so the expression can be re-evaluated
@@ -239,12 +239,13 @@ public class InMemoryIdentityStoreDefinitionWrapper {
                 return null;
             }
 
-            Set<ValidationType> values = new HashSet<ValidationType>();
-            values.addAll(JakartaSec40Constants.SPEC_DEFAULT_VALIDATION_TYPES);
-
             if (TraceComponent.isAnyTracingEnabled() && tc.isWarningEnabled()) {
-                Tr.warning(tc, "JAVAEESEC_WARNING_IDSTORE_CONFIG", new Object[] { "useFor/useForExpression", values });
+                Tr.warning(tc, "JAKARTASEC_WARNING_IDSTORE_CONFIG", new Object[] { "useFor/useForExpression", JakartaSec40Constants.SPEC_DEFAULT_USE_FOR });
             }
+
+            Set<ValidationType> values = new HashSet<ValidationType>();
+            values.addAll(JakartaSec40Constants.SPEC_DEFAULT_USE_FOR);
+
             return values;
         }
     }
@@ -305,7 +306,7 @@ public class InMemoryIdentityStoreDefinitionWrapper {
 
     private class ELHelperWrapper extends ELHelper {
 
-        private final String ENV_PREFIX = "env:";
+        private final String ENV_PREFIX = "env.";
 
         @Override
         public Set<ValidationType> processUseFor(String useForExpression, ValidationType[] useFor, boolean immediateOnly) {

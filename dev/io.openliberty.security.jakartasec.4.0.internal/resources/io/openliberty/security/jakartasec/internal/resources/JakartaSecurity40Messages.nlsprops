@@ -21,10 +21,18 @@
 # Message prefix block: 2600-2610
 
 #Note to translator, do not translate EL
-JAKARTASEC_WARNING_ENV_VARIABLE_NOT_SET=CWWKS2600W: Expected environment variable {0} to be set, but it was empty or unset.  Any subsequent authentication request validations using the associated caller will fail.
-JAKARTASEC_WARNING_ENV_VARIABLE_NOT_SET.explanation=An environment variable was used as the value of a password field in the @Credential annotation, but this variable is not set externally, or is set to an empty string.
-JAKARTASEC_WARNING_ENV_VARIABLE_NOT_SET.useraction=Make sure you set the environment variable referenced in the annotation, typically specified in server.env.
-
 JAKARTASEC_WARNING_PRODUCTION_USE=CWWKS2600W: An identity store configured using an @InMemoryIdentityStoreDefinition annotation was detected within this application.  It is NOT RECOMMENDED that this definition be used in a production environment.
 JAKARTASEC_WARNING_PRODUCTION_USE.explanation=Jakarta make this clear that the use of the @InMemoryIdentityStoreDefinition within the application should be used for development, testing and debugging purposes only.
 JAKARTASEC_WARNING_PRODUCTION_USE.useraction=Ensure that if and when your application goes into production, you remove the @InMemoryIdentityStoreDefinition and replace it with a supported production-grade identity store such as LDAP or Database.
+
+JAKARTASEC_WARNING_ENV_VARIABLE_NOT_SET=CWWKS2601W: Expected environment variable {0} to be set, but it was empty or unset.  Any subsequent authentication request validations using the associated caller will fail.
+JAKARTASEC_WARNING_ENV_VARIABLE_NOT_SET.explanation=An environment variable was used as the value of a password field in the @Credential annotation, but this variable is not set externally, or is set to an empty string.
+JAKARTASEC_WARNING_ENV_VARIABLE_NOT_SET.useraction=Make sure you set the environment variable referenced in the annotation, typically specified in server.env.
+
+JAKARTASEC_ERROR_WRONG_CRED=CWWKS2602E: The credential provided to the IdentityStore object is not a UsernamePasswordCredential and cannot be validated.
+JAKARTASEC_ERROR_WRONG_CRED.explanation=The credential provided to the IdentityStore object is not a UsernamePasswordCredential class and cannot be validated.
+JAKARTASEC_ERROR_WRONG_CRED.useraction=Review the type of credential passed into the IdentityStore object by the HttpAuthMechanism implementation.
+
+JAKARTASEC_WARNING_IDSTORE_CONFIG=CWWKS2603W: The Expression Language (EL) expression for the ''{0}'' attribute of the identity store annotation cannot be resolved to a valid value. Ensure that the EL expression and the result are valid and ensure that any referenced beans that are used in the expression are resolvable. The default attribute value of ''{1}'' is used instead.
+JAKARTASEC_WARNING_IDSTORE_CONFIG.explanation=The cause of the error is a mismatch of the type between the EL result and the expected attribute value. For example, if the expected attribute type is String, the EL result needs to be String.
+JAKARTASEC_WARNING_IDSTORE_CONFIG.useraction=Make sure that the annotation contains a valid configuration value. Ensure that the EL expressions are valid, that any referenced beans that are used in the expression are resolvable, and that the type of the result corresponds with the attribute.

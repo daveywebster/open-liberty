@@ -26,5 +26,8 @@ public class JakartaSec40Constants extends JakartaSec30Constants {
 
     // InMemoryIdentityStoreDefinition spec defaults
     public static final int SPEC_DEFAULT_PRIORITY = 90;
-    public static final Set<ValidationType> SPEC_DEFAULT_VALIDATION_TYPES = Set.of(ValidationType.VALIDATE, ValidationType.PROVIDE_GROUPS);
+    public static final String SPEC_DEFAULT_PRIORITY_EXPRESSION = "";
+
+    public static final Set<ValidationType> SPEC_DEFAULT_USE_FOR = Set.of(ValidationType.VALIDATE, ValidationType.PROVIDE_GROUPS);
+    public static final String SPEC_DEFAULT_USE_FOR_EXPRESSION = "";
 }
