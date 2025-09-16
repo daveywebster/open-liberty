@@ -2319,7 +2319,7 @@ public abstract class HttpServiceContextImpl implements HttpServiceContext, FFDC
         headerHandler.complianceCheck();
         String closeNonUpgraded = (String) (this.myVC.getStateMap().get(TransportConstants.CLOSE_NON_UPGRADED_STREAMS));
         // Shouldn't close upgraded requests
-        boolean upgradedRequest = closeNonUpgraded != null && closeNonUpgraded.equalsIgnoreCase("true");
+        boolean upgradedRequest = closeNonUpgraded != null && "true".equalsIgnoreCase(closeNonUpgraded);
         if (!upgradedRequest && (!myChannelConfig.isKeepAliveEnabled() || (myChannelConfig.getMaximumPersistentRequests() != -1 && nettyContext.channel().attr(NettyHttpConstants.NUMBER_OF_HTTP_REQUESTS).get() >= myChannelConfig.getMaximumPersistentRequests()))) {
             // Keep alive disabled or exceeded maximum number of keep alive requests
             if (TraceComponent.isAnyTracingEnabled() && tc.isDebugEnabled()) {
@@ -3045,7 +3045,7 @@ public abstract class HttpServiceContextImpl implements HttpServiceContext, FFDC
         }
 
         boolean shouldSkipWriteOnUpgrade = nettyResponse.status().equals(HttpResponseStatus.SWITCHING_PROTOCOLS)
-                                           && !nettyContext.channel().attr(NettyHttpConstants.PROTOCOL).get().equals("HTTP2");
+                                           && !"HTTP2".equals(nettyContext.channel().attr(NettyHttpConstants.PROTOCOL).get());
         // On upgrade but haven't written headers
         if(shouldSkipWriteOnUpgrade && sendHeaders) {
             sendNettyHeaders();
