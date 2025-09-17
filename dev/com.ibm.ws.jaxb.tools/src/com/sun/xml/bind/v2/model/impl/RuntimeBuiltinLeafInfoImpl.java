@@ -8,6 +8,17 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
+/*******************************************************************************
+ * Copyright (c) 2025 IBM Corporation and others.
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * http://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ *******************************************************************************/ 
+
 package com.sun.xml.bind.v2.model.impl;
 
 import java.awt.Component;
@@ -231,10 +242,10 @@ public abstract class RuntimeBuiltinLeafInfoImpl<T> extends BuiltinLeafInfoImpl<
          * But when we see the same XML type in an incoming document, we only pick
          * one of those Java classes to unmarshal. This Java class is called 'primary'.
          * The rest are called 'secondary'.
-         * 
+         *
          * Currently we lack the proper infrastructure to handle those nicely.
          * For now, we rely on a hack.
-         * 
+         *
          * We define secondary mappings first, then primary ones later. GrammarInfo
          * builds a map from type name to BeanInfo. By defining primary ones later,
          * those primary bindings will overwrite the secondary ones.
@@ -558,6 +569,7 @@ public abstract class RuntimeBuiltinLeafInfoImpl<T> extends BuiltinLeafInfoImpl<
                           });
         secondaryList.add(
                           new StringImpl<XMLGregorianCalendar>(XMLGregorianCalendar.class, createXS("anySimpleType"), DatatypeConstants.DATE, DatatypeConstants.DATETIME, DatatypeConstants.TIME, DatatypeConstants.GMONTH, DatatypeConstants.GDAY, DatatypeConstants.GYEAR, DatatypeConstants.GYEARMONTH, DatatypeConstants.GMONTHDAY) {
+
                               @Override
                               public String print(XMLGregorianCalendar cal) {
                                   XMLSerializer xs = XMLSerializer.getInstance();
@@ -582,7 +594,24 @@ public abstract class RuntimeBuiltinLeafInfoImpl<T> extends BuiltinLeafInfoImpl<
                               @Override
                               public XMLGregorianCalendar parse(CharSequence lexical) throws SAXException {
                                   try {
-                                      return DatatypeConverterImpl.getDatatypeFactory().newXMLGregorianCalendar(lexical.toString().trim()); // (.trim() - issue 396)
+                                      // Liberty change begin
+                                      String trimmedLexical = lexical.toString().trim();
+                                      if (trimmedLexical.startsWith("--") && trimmedLexical.length() == 6) { // Checking if this can be old gmonth mapping
+                                          final String oldGmonthMappingProperty = AccessController.doPrivileged(new PrivilegedAction<String>() {
+                                              @Override
+                                              public String run() {
+                                                  return System.getProperty(USE_OLD_GMONTH_MAPPING);
+                                              }
+                                          });
+                                          // Checking if property is enabled
+                                          if (oldGmonthMappingProperty != null
+                                              && (Boolean.TRUE.equals(oldGmonthMappingProperty) || "true".equalsIgnoreCase(oldGmonthMappingProperty.toString()))) {
+                                              // gMonth, --MM--(z?),
+                                              trimmedLexical = trimmedLexical.substring(0, 4);
+                                          }
+                                      }
+                                      return DatatypeConverterImpl.getDatatypeFactory().newXMLGregorianCalendar(trimmedLexical); // (.trim() - issue 396)
+                                      // Liberty change end
                                   } catch (Exception e) {
                                       UnmarshallingContext.getInstance().handleError(e);
                                       return null;

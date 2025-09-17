@@ -1,7 +1,3 @@
-package jaxb.ri.servlet;
-
-import static org.junit.Assert.assertNotNull;
-
 /*******************************************************************************
  * Copyright (c) 2025 IBM Corporation and others.
  * All rights reserved. This program and the accompanying materials
@@ -11,6 +7,9 @@ import static org.junit.Assert.assertNotNull;
  *
  * SPDX-License-Identifier: EPL-2.0
  *******************************************************************************/
+package jaxb.ri.servlet;
+
+import static org.junit.Assert.assertNotNull;
 
 import java.io.ByteArrayInputStream;
 import java.util.logging.Logger;
