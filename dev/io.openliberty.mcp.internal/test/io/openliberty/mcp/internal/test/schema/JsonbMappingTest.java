@@ -664,7 +664,7 @@ public class JsonbMappingTest {
         JSONAssert.assertEquals("{\"cm\":{\"bm\":{\"var1\":\"1str\",\"var2\":\"2str\",\"var3\":3}}}", jsonb.toJson(cc), true);
         ContainerConcrete ccIn = jsonb.fromJson("{\"cm\":{\"bm\":{\"var1\":\"1str\",\"var2\":\"2str\",\"var3\":3}}}", ContainerConcrete.class);
         JSONAssert.assertEquals("{\"cm\":{\"bm\":{\"var1\":\"1str\",\"var2\":\"2str\",\"var3\":3}}}", jsonb.toJson(ccIn), true);
-        JSONAssert.assertEquals("{\"type\":\"object\",\"properties\":{\"cm\":{\"type\":\"object\",\"properties\":{\"bm\":{\"type\":\"object\",\"properties\":{\"var3\":{\"type\":\"integer\"},\"var2\":{\"type\":\"string\"},\"var1\":{\"type\":\"object\"}},\"required\":[\"var3\",\"var2\",\"var1\"]}},\"required\":[\"bm\"]}},\"required\":[\"cm\"]}",
+        JSONAssert.assertEquals("{\"type\":\"object\",\"properties\":{\"cm\":{\"type\":\"object\",\"properties\":{\"bm\":{\"type\":\"object\",\"properties\":{\"var3\":{\"type\":\"integer\"},\"var2\":{\"type\":\"string\"},\"var1\":{\"type\":\"string\"}},\"required\":[\"var3\",\"var2\",\"var1\"]}},\"required\":[\"bm\"]}},\"required\":[\"cm\"]}",
                                 registry.getSchema(ContainerConcrete.class, SchemaDirection.INPUT).toString(), true);
 
     }
@@ -678,6 +678,10 @@ public class JsonbMappingTest {
     }
 
     public static class ChildClass extends MyClass2<String> {};
+
+    public static class Concrete {
+        public ChildClass cc;
+    };
 
     @Test
     public void testInheritedGenerics() {

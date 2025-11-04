@@ -1432,6 +1432,23 @@ public class SchemaTest {
 
     public static class ContainerConcrete {
         public ContainerMap<String> cm;
+        public ContainerMap<String> cmRepeat;
+        public ContainerMap<Float> cm2;
+        public ContainerMap<Float> cm2Repeat;
+
+        /**
+         * @return the cm2
+         */
+        public ContainerMap<Float> getCm2() {
+            return cm2;
+        }
+
+        /**
+         * @param cm2 the cm2 to set
+         */
+        public void setCm2(ContainerMap<Float> cm2) {
+            this.cm2 = cm2;
+        }
 
         /**
          */
@@ -1464,41 +1481,85 @@ public class SchemaTest {
     public void testConcreteNestedParamterizedGenericClass() {
         String response = registry.getSchema(ContainerConcrete.class, SchemaDirection.INPUT).toString();
         String expectedResponseString = """
-                        {
-                            "type": "object",
-                            "properties": {
-                                "cm": {
-                                    "type": "object",
-                                    "properties": {
-                                        "bm": {
+                                            {
                                             "type": "object",
                                             "properties": {
-                                                "var3": {
-                                                    "type": "integer"
+                                                "cm2": {
+                                                    "$ref": "#/$defs/ContainerMap2"
                                                 },
-                                                "var2": {
-                                                    "type": "string"
+                                                "cmRepeat": {
+                                                    "$ref": "#/$defs/ContainerMap"
                                                 },
-                                                "var1": {
-                                                    "type": "string"
+                                                "cm": {
+                                                    "$ref": "#/$defs/ContainerMap"
+                                                },
+                                                "cm2Repeat": {
+                                                    "$ref": "#/$defs/ContainerMap2"
                                                 }
                                             },
                                             "required": [
-                                                "var3",
-                                                "var2",
-                                                "var1"
-                                            ]
+                                                "cm2",
+                                                "cmRepeat",
+                                                "cm",
+                                                "cm2Repeat"
+                                            ],
+                                            "$defs": {
+                                                "ContainerMap": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "bm": {
+                                                            "type": "object",
+                                                            "properties": {
+                                                                "var3": {
+                                                                    "type": "integer"
+                                                                },
+                                                                "var2": {
+                                                                    "type": "string"
+                                                                },
+                                                                "var1": {
+                                                                    "type": "string"
+                                                                }
+                                                            },
+                                                            "required": [
+                                                                "var3",
+                                                                "var2",
+                                                                "var1"
+                                                            ]
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "bm"
+                                                    ]
+                                                },
+                                                "ContainerMap2": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "bm": {
+                                                            "type": "object",
+                                                            "properties": {
+                                                                "var3": {
+                                                                    "type": "integer"
+                                                                },
+                                                                "var2": {
+                                                                    "type": "string"
+                                                                },
+                                                                "var1": {
+                                                                    "type": "number"
+                                                                }
+                                                            },
+                                                            "required": [
+                                                                "var3",
+                                                                "var2",
+                                                                "var1"
+                                                            ]
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "bm"
+                                                    ]
+                                                }
+                                            }
                                         }
-                                    },
-                                    "required": [
-                                        "bm"
-                                    ]
-                                }
-                            },
-                            "required": [
-                                "cm"
-                            ]
-                        }
                         """;
         JSONAssert.assertEquals(expectedResponseString, response, true);
     }
@@ -1509,17 +1570,311 @@ public class SchemaTest {
 
     public static class MyClass2<T> extends MyClass<T> {
         public List<T> bar;
+
     }
 
     public static class ChildClass extends MyClass2<Integer> {};
 
     public static class FinalConcreteClass {
         public ChildClass cc;
+        public ChildClass cc2;
     }
 
     @Test
     public void testConcreteInheritanceParamterizedGenericClass() {
         String response = registry.getSchema(FinalConcreteClass.class, SchemaDirection.INPUT).toString();
+        String expectedResponseString = """
+                            {
+                                "type": "object",
+                                "properties": {
+                                    "cc": {
+                                        "$ref": "#/$defs/ChildClass"
+                                    },
+                                    "cc2": {
+                                        "$ref": "#/$defs/ChildClass"
+                                    }
+                                },
+                                "required": [
+                                    "cc",
+                                    "cc2"
+                                ],
+                                "$defs": {
+                                    "ChildClass": {
+                                        "type": "object",
+                                        "properties": {
+                                            "bar": {
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "integer"
+                                                }
+                                            },
+                                            "foo": {
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "integer"
+                                                }
+                                            }
+                                        },
+                                        "required": [
+                                            "bar",
+                                            "foo"
+                                        ]
+                                    }
+                                }
+                            }
+                        """;
+        JSONAssert.assertEquals(expectedResponseString, response, true);
+    }
+
+    static class TestGenericReuse {
+        static class Box<X> {
+            public X content;
+        }
+
+        static class Pallet<A, B> {
+            public List<Box<B>> boxes;
+            public A identifier;
+        }
+
+        static record Shipment(Pallet<String, String> pallet1,
+                               Pallet<Integer, String> pallet2,
+                               Box<String> extraBox,
+                               Pallet<Integer, Integer> intPallet,
+                               Box<Integer> intBox) {};
+    }
+
+    @Test
+    public void testGenericReuse() {
+        String response = registry.getSchema(TestGenericReuse.Shipment.class, SchemaDirection.INPUT).toString();
+        String expectedResponseString = """
+                            {
+                                "type": "object",
+                                "properties": {
+                                    "pallet1": {
+                                        "type": "object",
+                                        "properties": {
+                                            "identifier": {
+                                                "type": "string"
+                                            },
+                                            "boxes": {
+                                                "type": "array",
+                                                "items": {
+                                                    "$ref": "#/$defs/Box"
+                                                }
+                                            }
+                                        },
+                                        "required": ["boxes", "identifier"]
+                                    },
+                                    "pallet2": {
+                                        "type": "object",
+                                        "properties": {
+                                            "identifier": {
+                                                "type": "integer"
+                                            },
+                                            "boxes": {
+                                                "type": "array",
+                                                "items": {
+                                                    "$ref": "#/$defs/Box"
+                                                }
+                                            }
+                                        },
+                                        "required": ["boxes", "identifier"]
+                                    },
+                                    "extraBox": {
+                                        "$ref": "#/$defs/Box"
+                                    },
+                                    "intPallet": {
+                                        "type": "object",
+                                        "properties": {
+                                            "identifier": {
+                                                "type": "integer"
+                                            },
+                                            "boxes": {
+                                                "type": "array",
+                                                "items": {
+                                                    "$ref": "#/$defs/Box2"
+                                                }
+                                            }
+                                        },
+                                        "required": ["boxes", "identifier"]
+                                    },
+                                    "intBox": {
+                                        "$ref": "#/$defs/Box2"
+                                    }
+                                },
+                                "required": [
+                                    "pallet1",
+                                    "pallet2",
+                                    "extraBox",
+                                    "intPallet",
+                                    "intBox"
+                                ],
+                                "$defs": {
+                                    "Box": {
+                                        "type": "object",
+                                        "properties": {
+                                            "content": {
+                                                "type": "string",
+                                            }
+                                        },
+                                        "required": [
+                                            "content"
+                                        ]
+                                    },
+                                    "Box2": {
+                                        "type": "object",
+                                        "properties": {
+                                            "content": {
+                                                "type": "integer",
+                                            }
+                                        },
+                                        "required": [
+                                            "content"
+                                        ]
+                                    }
+                                }
+                            }
+                        """;
+        JSONAssert.assertEquals(expectedResponseString, response, true);
+
+    }
+
+    static class TestGenericArray {
+        record Box<T>(T[] content) {};
+
+        record Pallet<A, B>(Box<B>[] boxes, A identifier) {};
+
+        static record Shipment(Pallet<String, String> pallet1,
+                               Pallet<Integer, String> pallet2,
+                               Box<String> extraBox,
+                               Pallet<Integer, Integer> intPallet,
+                               Box<Integer> intBox) {};
+
+    }
+
+    @Test
+    public void testGenericArray() {
+        String response = registry.getSchema(TestGenericArray.Shipment.class, SchemaDirection.INPUT).toString();
+        String expectedResponseString = """
+                            {
+                                "type": "object",
+                                "properties": {
+                                    "pallet1": {
+                                        "type": "object",
+                                        "properties": {
+                                            "identifier": {
+                                                "type": "string"
+                                            },
+                                            "boxes": {
+                                                "type": "array",
+                                                "items": {
+                                                    "$ref": "#/$defs/Box"
+                                                }
+                                            }
+                                        },
+                                        "required": ["boxes", "identifier"]
+                                    },
+                                    "pallet2": {
+                                        "type": "object",
+                                        "properties": {
+                                            "identifier": {
+                                                "type": "integer"
+                                            },
+                                            "boxes": {
+                                                "type": "array",
+                                                "items": {
+                                                    "$ref": "#/$defs/Box"
+                                                }
+                                            }
+                                        },
+                                        "required": ["boxes", "identifier"]
+                                    },
+                                    "extraBox": {
+                                        "$ref": "#/$defs/Box"
+                                    },
+                                    "intPallet": {
+                                        "type": "object",
+                                        "properties": {
+                                            "identifier": {
+                                                "type": "integer"
+                                            },
+                                            "boxes": {
+                                                "type": "array",
+                                                "items": {
+                                                    "$ref": "#/$defs/Box2"
+                                                }
+                                            }
+                                        },
+                                        "required": ["boxes", "identifier"]
+                                    },
+                                    "intBox": {
+                                        "$ref": "#/$defs/Box2"
+                                    }
+                                },
+                                "required": [
+                                    "pallet1",
+                                    "pallet2",
+                                    "extraBox",
+                                    "intPallet",
+                                    "intBox"
+                                ],
+                                "$defs": {
+                                    "Box": {
+                                        "type": "object",
+                                        "properties": {
+                                            "content": {
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "string"
+                                                }
+                                            }
+                                        },
+                                        "required": [
+                                            "content"
+                                        ]
+                                    },
+                                    "Box2": {
+                                        "type": "object",
+                                        "properties": {
+                                            "content": {
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "integer"
+                                                }
+                                            }
+                                        },
+                                        "required": [
+                                            "content"
+                                        ]
+                                    }
+                                }
+                            }
+                        """;
+        JSONAssert.assertEquals(expectedResponseString, response, true);
+
+    }
+
+    public class MyClassParent<U> {
+        public class MyClassNested<T> {
+            public List<U> bar;
+            public List<T> foo;
+        }
+
+    }
+
+    public static class ChildClass2 extends MyClassParent<String>.MyClassNested<Integer> {
+        public ChildClass2(MyClassParent<String> outer) {
+            outer.super();
+        }
+    };
+
+    public static class FinalConcreteClass2 {
+        public ChildClass2 cc;
+    }
+
+    @Test
+    public void testConcreteNestedClassParamterizedGenericClass() {
+        String response = registry.getSchema(FinalConcreteClass2.class, SchemaDirection.INPUT).toString();
         String expectedResponseString = """
                             {
                             "type": "object",
@@ -1530,7 +1885,7 @@ public class SchemaTest {
                                         "bar": {
                                             "type": "array",
                                             "items": {
-                                                "type": "integer"
+                                                "type": "string"
                                             }
                                         },
                                         "foo": {
