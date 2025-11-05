@@ -31,17 +31,13 @@ import componenttest.custom.junit.runner.FATRunner;
 import componenttest.topology.impl.LibertyServer;
 import componenttest.topology.utils.HttpRequest;
 import io.openliberty.mcp.internal.fat.tool.basicToolApp.BasicTools;
-import io.openliberty.mcp.internal.fat.utils.McpClient;
+import io.openliberty.mcp.internal.fat.utils.McpConstants;
 
 /**
  *
  */
 @RunWith(FATRunner.class)
 public class HttpTest {
-
-    private static final String ACCEPT_HEADER = "application/json, text/event-stream";
-    private static final String MCP_PROTOCOL_HEADER = "MCP-Protocol-Version";
-    private static final String MCP_PROTOCOL_VERSION = "2025-06-18";
 
     @Server("mcp-server")
     public static LibertyServer server;
@@ -77,7 +73,7 @@ public class HttpTest {
     @Test
     public void testGetRequestWithTextEventStreamReturns405() throws Exception {
         HttpRequest request = new HttpRequest(server, ENDPOINT)
-                                                               .requestProp("Accept", "text/event-stream")
+                                                               .requestProp(McpConstants.ACCEPT, "text/event-stream")
                                                                .method("GET")
                                                                .expectCode(405);
 
@@ -104,7 +100,7 @@ public class HttpTest {
                         """;
 
         HttpRequest JsonRequest = new HttpRequest(server, ENDPOINT)
-                                                                   .requestProp(MCP_PROTOCOL_VERSION, MCP_PROTOCOL_HEADER)
+                                                                   .requestProp(McpConstants.MCP_PROTOCOL_VERSION, McpConstants.VALUE_MCP_PROTOCOL_VERSION)
                                                                    .jsonBody(request)
                                                                    .method("POST")
                                                                    .expectCode(406);
@@ -129,8 +125,9 @@ public class HttpTest {
                         }
                         """;
 
-        HttpRequest JsonRequest = new HttpRequest(server, ENDPOINT).requestProp("Accept", "application/json")
-                                                                   .requestProp(MCP_PROTOCOL_VERSION, MCP_PROTOCOL_HEADER)
+        HttpRequest JsonRequest = new HttpRequest(server, ENDPOINT)
+                                                                   .requestProp(McpConstants.ACCEPT, McpConstants.VALUE_APPLICATION_JSON)
+                                                                   .requestProp(McpConstants.MCP_PROTOCOL_VERSION, McpConstants.VALUE_MCP_PROTOCOL_VERSION)
                                                                    .jsonBody(request).method("POST").expectCode(406);
 
         String response = JsonRequest.run(String.class);
@@ -154,8 +151,8 @@ public class HttpTest {
                         """;
 
         String response = new HttpRequest(server, ENDPOINT)
-                                                           .requestProp("Accept", ACCEPT_HEADER)
-                                                           .requestProp(MCP_PROTOCOL_HEADER, MCP_PROTOCOL_VERSION)
+                                                           .requestProp(McpConstants.ACCEPT, McpConstants.VALUE_ACCEPT_DEFAULT)
+                                                           .requestProp(McpConstants.MCP_PROTOCOL_VERSION, McpConstants.VALUE_MCP_PROTOCOL_VERSION)
                                                            .jsonBody(request)
                                                            .method("POST")
                                                            .expectCode(400)
@@ -175,8 +172,8 @@ public class HttpTest {
                         """;
 
         HttpRequest httpRequest = new HttpRequest(server, ENDPOINT)
-                                                                   .requestProp("Accept", ACCEPT_HEADER)
-                                                                   .requestProp(MCP_PROTOCOL_HEADER, MCP_PROTOCOL_VERSION)
+                                                                   .requestProp(McpConstants.ACCEPT, McpConstants.VALUE_ACCEPT_DEFAULT)
+                                                                   .requestProp(McpConstants.MCP_PROTOCOL_VERSION, McpConstants.VALUE_MCP_PROTOCOL_VERSION)
                                                                    .jsonBody(request)
                                                                    .method("POST")
                                                                    .expectCode(200);
@@ -185,6 +182,6 @@ public class HttpTest {
         assertTrue("Expected 'result' field in ping response", response.contains("\"result\""));
 
         String contentType = httpRequest.getResponseHeader("Content-Type");
-        assertThat(contentType, containsString(McpClient.APPLICATION_JSON));
+        assertThat(contentType, containsString(McpConstants.VALUE_APPLICATION_JSON));
     }
 }

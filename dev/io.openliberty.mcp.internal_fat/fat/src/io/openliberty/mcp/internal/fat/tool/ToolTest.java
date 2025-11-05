@@ -33,17 +33,13 @@ import componenttest.topology.utils.FATServletClient;
 import componenttest.topology.utils.HttpRequest;
 import io.openliberty.mcp.internal.fat.tool.basicToolApp.BasicTools;
 import io.openliberty.mcp.internal.fat.utils.McpClient;
+import io.openliberty.mcp.internal.fat.utils.McpConstants;
 
 /**
  *
  */
 @RunWith(FATRunner.class)
 public class ToolTest extends FATServletClient {
-
-    private static final String ACCEPT_HEADER = "application/json, text/event-stream";
-    public static final String APPLICATION_JSON = "application/json";
-    private static final String MCP_PROTOCOL_HEADER = "MCP-Protocol-Version";
-    private static final String MCP_PROTOCOL_VERSION = "2025-06-18";
 
     @Server("mcp-server")
     public static LibertyServer server;
@@ -3048,9 +3044,9 @@ public class ToolTest extends FATServletClient {
                         """;
 
         String response = new HttpRequest(server, "/toolTest/mcp")
-                                                                  .requestProp("Accept", ACCEPT_HEADER)
-                                                                  .requestProp(MCP_PROTOCOL_HEADER, MCP_PROTOCOL_VERSION)
-                                                                  .requestProp("Mcp-Session-Id", sessionId)
+                                                                  .requestProp(McpConstants.ACCEPT, McpConstants.VALUE_ACCEPT_DEFAULT)
+                                                                  .requestProp(McpConstants.MCP_PROTOCOL_VERSION, McpConstants.VALUE_MCP_PROTOCOL_VERSION)
+                                                                  .requestProp(McpConstants.MCP_SESSION_ID, sessionId)
                                                                   .jsonBody(request)
                                                                   .method("POST")
                                                                   .expectCode(404)
