@@ -10,6 +10,11 @@
 package io.openliberty.mcp.internal.fat.tool;
 
 import static com.ibm.websphere.simplicity.ShrinkHelper.DeployOptions.SERVER_ONLY;
+import static io.openliberty.mcp.internal.fat.utils.TestConstants.ACCEPT;
+import static io.openliberty.mcp.internal.fat.utils.TestConstants.MCP_PROTOCOL_VERSION;
+import static io.openliberty.mcp.internal.fat.utils.TestConstants.MCP_SESSION_ID;
+import static io.openliberty.mcp.internal.fat.utils.TestConstants.VALUE_ACCEPT_DEFAULT;
+import static io.openliberty.mcp.internal.fat.utils.TestConstants.VALUE_MCP_PROTOCOL_VERSION;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
@@ -39,11 +44,6 @@ import io.openliberty.mcp.internal.fat.utils.McpClient;
  */
 @RunWith(FATRunner.class)
 public class ToolTest extends FATServletClient {
-
-    private static final String ACCEPT_HEADER = "application/json, text/event-stream";
-    public static final String APPLICATION_JSON = "application/json";
-    private static final String MCP_PROTOCOL_HEADER = "MCP-Protocol-Version";
-    private static final String MCP_PROTOCOL_VERSION = "2025-06-18";
 
     @Server("mcp-server")
     public static LibertyServer server;
@@ -3048,9 +3048,9 @@ public class ToolTest extends FATServletClient {
                         """;
 
         String response = new HttpRequest(server, "/toolTest/mcp")
-                                                                  .requestProp("Accept", ACCEPT_HEADER)
-                                                                  .requestProp(MCP_PROTOCOL_HEADER, MCP_PROTOCOL_VERSION)
-                                                                  .requestProp("Mcp-Session-Id", sessionId)
+                                                                  .requestProp(ACCEPT, VALUE_ACCEPT_DEFAULT)
+                                                                  .requestProp(MCP_PROTOCOL_VERSION, VALUE_MCP_PROTOCOL_VERSION)
+                                                                  .requestProp(MCP_SESSION_ID, sessionId)
                                                                   .jsonBody(request)
                                                                   .method("POST")
                                                                   .expectCode(404)
