@@ -10,11 +10,11 @@
 package io.openliberty.mcp.internal.fat.protocol;
 
 import static com.ibm.websphere.simplicity.ShrinkHelper.DeployOptions.SERVER_ONLY;
-import static io.openliberty.mcp.internal.fat.utils.McpConstants.ACCEPT;
-import static io.openliberty.mcp.internal.fat.utils.McpConstants.MCP_PROTOCOL_VERSION;
-import static io.openliberty.mcp.internal.fat.utils.McpConstants.VALUE_ACCEPT_DEFAULT;
-import static io.openliberty.mcp.internal.fat.utils.McpConstants.VALUE_APPLICATION_JSON;
-import static io.openliberty.mcp.internal.fat.utils.McpConstants.VALUE_MCP_PROTOCOL_VERSION;
+import static io.openliberty.mcp.internal.fat.utils.TestConstants.ACCEPT;
+import static io.openliberty.mcp.internal.fat.utils.TestConstants.MCP_PROTOCOL_VERSION;
+import static io.openliberty.mcp.internal.fat.utils.TestConstants.VALUE_ACCEPT_DEFAULT;
+import static io.openliberty.mcp.internal.fat.utils.TestConstants.VALUE_APPLICATION_JSON;
+import static io.openliberty.mcp.internal.fat.utils.TestConstants.VALUE_MCP_PROTOCOL_VERSION;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
