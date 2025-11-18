@@ -16,7 +16,7 @@ import java.util.List;
 import org.junit.Test;
 
 /**
- *
+ * TODO test an element collection of embeddables
  */
 public class EntityParserTests {
 
@@ -210,6 +210,176 @@ public class EntityParserTests {
                           </embeddable>
                         """;
         assertEquals(expected, xmls.get(1));
+    }
+
+    @Test
+    public void mappedSuperClassEntityTest() {
+        EntityParser p = new EntityParser("");
+        p.parse(WithMappedSuperclass.class);
+        List<String> xmls = p.generateView();
+
+        assertEquals(5, xmls.size());
+
+        String expected = """
+                          <mapped-superclass class="io.openliberty.data.internal.persistence.orm.SuperAlpha">
+                            <attributes>
+                              <version name="version" access="FIELD">
+                              </version>
+                            </attributes>
+                          </mapped-superclass>
+                        """;
+
+        assertEquals(expected, xmls.get(0));
+
+        expected = """
+                          <mapped-superclass class="io.openliberty.data.internal.persistence.orm.SuperBeta">
+                            <attributes>
+                              <embedded name="script" access="FIELD">
+                                <attribute-override name="lowercase">
+                                  <column name="SCRIPT_LOWERCASE"/>
+                                </attribute-override>
+                                <attribute-override name="uppercase">
+                                  <column name="SCRIPT_UPPERCASE"/>
+                                </attribute-override>
+                              </embedded>
+                            </attributes>
+                          </mapped-superclass>
+                        """;
+
+        assertEquals(expected, xmls.get(1));
+
+        expected = """
+                          <mapped-superclass class="io.openliberty.data.internal.persistence.orm.SuperGamma">
+                            <attributes>
+                              <id name="id" access="FIELD">
+                                <column nullable="false"/>
+                              </id>
+                            </attributes>
+                          </mapped-superclass>
+                        """;
+
+        assertEquals(expected, xmls.get(2));
+
+        expected = """
+                          <entity class="io.openliberty.data.internal.persistence.orm.WithMappedSuperclass">
+                            <table name="WithMappedSuperclass"/>
+                            <attributes>
+                              <basic name="URL" access="FIELD">
+                              </basic>
+                            </attributes>
+                          </entity>
+                        """;
+
+        assertEquals(expected, xmls.get(3));
+
+        expected = """
+                          <embeddable class="io.openliberty.data.internal.persistence.orm.SuperBeta$Script">
+                            <attributes>
+                              <basic name="lowercase" access="FIELD">
+                                <column nullable="false"/>
+                              </basic>
+                              <basic name="uppercase" access="FIELD">
+                                <column nullable="false"/>
+                              </basic>
+                            </attributes>
+                          </embeddable>
+                        """;
+
+        assertEquals(expected, xmls.get(4));
+    }
+
+    @Test
+    public void mappedSuperClassEmbeddedIdEntityTest() {
+        EntityParser p = new EntityParser("");
+        p.parse(WithMappedSuperclassPrime.class);
+        List<String> xmls = p.generateView();
+
+        assertEquals(6, xmls.size());
+
+        String expected = """
+                          <mapped-superclass class="io.openliberty.data.internal.persistence.orm.SuperAlpha">
+                            <attributes>
+                              <version name="version" access="FIELD">
+                              </version>
+                            </attributes>
+                          </mapped-superclass>
+                        """;
+
+        assertEquals(expected, xmls.get(0));
+
+        expected = """
+                          <mapped-superclass class="io.openliberty.data.internal.persistence.orm.SuperBeta">
+                            <attributes>
+                              <embedded name="script" access="FIELD">
+                                <attribute-override name="lowercase">
+                                  <column name="SCRIPT_LOWERCASE"/>
+                                </attribute-override>
+                                <attribute-override name="uppercase">
+                                  <column name="SCRIPT_UPPERCASE"/>
+                                </attribute-override>
+                              </embedded>
+                            </attributes>
+                          </mapped-superclass>
+                        """;
+
+        assertEquals(expected, xmls.get(1));
+
+        expected = """
+                          <mapped-superclass class="io.openliberty.data.internal.persistence.orm.SuperGammaPrime">
+                            <attributes>
+                              <embedded-id name="name_id" access="FIELD">
+                                <attribute-override name="firstName">
+                                  <column name="NAME_ID_FIRSTNAME"/>
+                                </attribute-override>
+                                <attribute-override name="lastName">
+                                  <column name="NAME_ID_LASTNAME"/>
+                                </attribute-override>
+                              </embedded-id>
+                            </attributes>
+                          </mapped-superclass>
+                        """;
+
+        assertEquals(expected, xmls.get(2));
+
+        expected = """
+                          <entity class="io.openliberty.data.internal.persistence.orm.WithMappedSuperclassPrime">
+                            <table name="WithMappedSuperclassPrime"/>
+                            <attributes>
+                              <basic name="URL" access="FIELD">
+                              </basic>
+                            </attributes>
+                          </entity>
+                        """;
+
+        assertEquals(expected, xmls.get(3));
+
+        expected = """
+                          <embeddable class="io.openliberty.data.internal.persistence.orm.SuperBeta$Script">
+                            <attributes>
+                              <basic name="lowercase" access="FIELD">
+                                <column nullable="false"/>
+                              </basic>
+                              <basic name="uppercase" access="FIELD">
+                                <column nullable="false"/>
+                              </basic>
+                            </attributes>
+                          </embeddable>
+                        """;
+
+        assertEquals(expected, xmls.get(4));
+
+        expected = """
+                          <embeddable class="io.openliberty.data.internal.persistence.orm.SuperGammaPrime$Name">
+                            <attributes>
+                              <basic name="firstName" access="PROPERTY">
+                              </basic>
+                              <basic name="lastName" access="PROPERTY">
+                              </basic>
+                            </attributes>
+                          </embeddable>
+                        """;
+
+        assertEquals(expected, xmls.get(5));
     }
 
 }

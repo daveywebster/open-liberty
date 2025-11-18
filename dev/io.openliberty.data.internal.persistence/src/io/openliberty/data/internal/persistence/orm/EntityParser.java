@@ -14,6 +14,7 @@ import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
 import java.io.Serializable;
 import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.lang.reflect.RecordComponent;
 import java.util.Collection;
 import java.util.List;
@@ -70,8 +71,19 @@ public class EntityParser {
         }
 
         String tableName = tablePrefix + entity.getSimpleName();
-        entities.add(new EntityRecord(entity, tableName, finalizeAttributes(entity, findAttributes(entity))));
 
+        for (Class<?> superclass = entity; //
+                        superclass != null && superclass != Object.class; //
+                        superclass = superclass.getSuperclass()) {
+            if (superclass == entity) {
+                // Record entity and any embeddables found along the way
+                entities.add(new EntityRecord(superclass, tableName, finalizeAttributes(superclass, findAttributes(superclass))));
+                continue;
+            }
+
+            // Record all mapped superclasses and any embeddables found along the way
+            mappedSuperclasses.add(new MappedSuperclass(superclass, finalizeAttributes(superclass, findAttributes(superclass))));
+        }
     }
 
     private Set<IncompleteAttribute> findAttributes(Class<?> c) {
@@ -81,8 +93,9 @@ public class EntityParser {
             for (RecordComponent r : c.getRecordComponents())
                 attributes.add(new IncompleteAttribute(r.getType(), r.getName(), AccessType.FIELD));
         } else {
-            for (Field f : c.getFields())
-                attributes.add(new IncompleteAttribute(f.getType(), f.getName(), AccessType.FIELD));
+            for (Field f : c.getDeclaredFields())
+                if (Modifier.isPublic(f.getModifiers()))
+                    attributes.add(new IncompleteAttribute(f.getType(), f.getName(), AccessType.FIELD));
 
             try {
                 PropertyDescriptor[] propertyDescriptors = Introspector //
