@@ -12,6 +12,7 @@ package io.openliberty.mcp.internal.tools;
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 
 import com.ibm.ws.ffdc.annotation.FFDCIgnore;
@@ -65,13 +66,11 @@ public class AsyncBeanMethodHandler extends BeanMethodHandler<CompletionStage<To
 
             return methodStage.thenApply(result -> createSuccessfulResponse(result))
                               .exceptionally(throwable -> {
-                                  if (throwable instanceof InvocationTargetException) {
+                                  if (throwable instanceof CompletionException) {
                                       throwable = throwable.getCause();
-                                      if (isBusinessException(throwable)) {
-                                          return createBusinessErrorResponse(throwable);
-                                      } else {
-                                          return createNonBusinessErrorResponse(throwable);
-                                      }
+                                  }
+                                  if (isBusinessException(throwable)) {
+                                      return createBusinessErrorResponse(throwable);
                                   } else {
                                       return createNonBusinessErrorResponse(throwable);
                                   }
