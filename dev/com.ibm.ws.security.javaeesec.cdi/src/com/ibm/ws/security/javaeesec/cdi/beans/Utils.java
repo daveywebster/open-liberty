@@ -4,7 +4,7 @@
  * are made available under the terms of the Eclipse Public License 2.0
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-2.0/
- * 
+ *
  * SPDX-License-Identifier: EPL-2.0
  *
  * Contributors:
@@ -100,6 +100,7 @@ public class Utils {
     }
 
     public AuthenticationStatus validateWithIdentityStore(String realmName, Subject clientSubject, @Sensitive Credential credential, IdentityStoreHandler identityStoreHandler) {
+
         AuthenticationStatus status = AuthenticationStatus.SEND_FAILURE;
         CredentialValidationResult result = identityStoreHandler.validate(credential);
         if (result.getStatus() == CredentialValidationResult.Status.VALID) {
@@ -109,6 +110,25 @@ public class Utils {
             status = AuthenticationStatus.NOT_DONE;
         }
         return status;
+    }
+
+    /**
+     * Check if identity stores are skipped via webAppSecurity configuration.
+     *
+     * @return true if skipped
+     */
+    private boolean isIdentityStoresSkipped() {
+        try {
+            com.ibm.ws.webcontainer.security.WebAppSecurityConfig config = com.ibm.ws.webcontainer.security.util.WebConfigUtils.getWebAppSecurityConfig();
+            if (config != null) {
+                return config.getSkipIdentityStores();
+            }
+        } catch (Exception e) {
+            if (tc.isDebugEnabled()) {
+                Tr.debug(tc, "Error checking skipIdentityStores config", e);
+            }
+        }
+        return false;
     }
 
     private AuthenticationStatus validateWithUserRegistry(Subject clientSubject, @Sensitive Credential credential,
@@ -249,6 +269,14 @@ public class Utils {
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
     public boolean isIdentityStoreAvailable(CDI cdi) {
+        // check if identity stores are skipped via webAppSecurity config
+        if (isIdentityStoresSkipped()) {
+            if (tc.isDebugEnabled()) {
+                Tr.debug(tc, "Identity stores skipped via webAppSecurity configuration");
+            }
+            return false;
+        }
+
         Instance<IdentityStore> identityStoreInstances = cdi.select(IdentityStore.class);
         if (identityStoreInstances != null && !identityStoreInstances.isUnsatisfied() && !identityStoreInstances.isAmbiguous()) {
             return true;

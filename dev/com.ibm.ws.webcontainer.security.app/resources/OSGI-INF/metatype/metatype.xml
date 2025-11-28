@@ -159,6 +159,9 @@
             ibm:final="true" name="internal" description="internal use only" />
         <AD id="loggedOutCookieCacheService.cardinality.minimum" type="String"  default="${count(loggedOutCookieCacheRef)}" 
             ibm:final="true" name="internal" description="internal use only"/>
+
+        <AD id="skipIdentityStores" name="%skipIdentityStores" description="%skipIdentityStores.desc"
+            required="false" type="Boolean" default="false"/>
             
     </OCD>
     <Designate pid="com.ibm.ws.webcontainer.security.WebAppSecurityCollaboratorImpl">

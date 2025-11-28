@@ -162,4 +162,11 @@ public interface WebAppSecurityConfig {
     boolean isUseContextRootForSSOCookiePath();
 
     long postParamMaxRequestBodySize();
+
+    /**
+     * Check if identity stores should be skipped.
+     *
+     * @return true if identity stores are skipped
+     */
+    boolean getSkipIdentityStores();
 }
