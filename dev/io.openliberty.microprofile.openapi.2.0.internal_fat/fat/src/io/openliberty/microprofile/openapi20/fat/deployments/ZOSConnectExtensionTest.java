@@ -38,6 +38,8 @@ import com.ibm.websphere.simplicity.config.ServerConfiguration;
 
 import componenttest.annotation.Server;
 import componenttest.custom.junit.runner.FATRunner;
+import componenttest.custom.junit.runner.Mode;
+import componenttest.custom.junit.runner.Mode.TestMode;
 import componenttest.rules.repeater.RepeatTests;
 import componenttest.topology.impl.LibertyFileManager;
 import componenttest.topology.impl.LibertyServer;
@@ -48,6 +50,7 @@ import io.openliberty.microprofile.openapi20.fat.utils.OpenAPIConnection;
 import io.openliberty.microprofile.openapi20.fat.utils.OpenAPITestUtil;
 
 @RunWith(FATRunner.class)
+@Mode(TestMode.FULL)
 public class ZOSConnectExtensionTest {
 
     private static final String SERVER_NAME = "OpenAPIMergeWithServerXMLTestServer";
