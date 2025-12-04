@@ -33,8 +33,6 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
 
 import com.ibm.websphere.ras.Tr;
@@ -84,7 +82,7 @@ public class EntityParser {
 
     // Relationship tracking
     private final Map<Class<?>, Class<?>> entityToRecord;
-    private final ConcurrentMap<Class<?>, Set<Class<?>>> entitiesSuperclasses;
+    private final Map<Class<?>, Set<Class<?>>> entitiesSuperclasses;
 
     // ORM associated sets
     private final Set<Class<?>> convertibles;
@@ -109,7 +107,7 @@ public class EntityParser {
         this.converters = new HashMap<>();
 
         this.entityToRecord = new HashMap<>();
-        this.entitiesSuperclasses = new ConcurrentHashMap<>();
+        this.entitiesSuperclasses = new HashMap<>();
 
         this.convertibles = new HashSet<>();
         this.tableNames = new LinkedHashSet<>();
@@ -213,14 +211,9 @@ public class EntityParser {
             }
 
             // Record entity-mappedSuperclass relationship
-            final Class<?> sc = superclass;
-            entitiesSuperclasses.computeIfPresent(currentEntity, (key, set) -> {
-                set.add(sc);
-                return set;
-            });
-            entitiesSuperclasses.computeIfAbsent(currentEntity, (key) -> {
-                return new HashSet<>(List.of(sc));
-            });
+            Set<Class<?>> superclasses = entitiesSuperclasses.get(currentEntity);
+            if (superclasses == null)
+                entitiesSuperclasses.put(currentEntity, superclasses = new HashSet<>(Set.of(superclass)));
 
             // Record the mappedSuperclass and any embeddables found along the way
             if (!mappedSuperclasses.containsKey(superclass)) {
@@ -473,7 +466,7 @@ public class EntityParser {
             return;
         }
 
-        // Reuse the same attribute discovery logic we already have
+        // Reuse the embeddable we already found
         Set<Attribute> attrs;
         if (embeddables.containsKey(type)) {
             attrs = Collections.unmodifiableSet(embeddables.get(type).attributes());
@@ -549,7 +542,6 @@ public class EntityParser {
     @Trivial
     private void verify() {
         if (idAttributes.isEmpty()) {
-            // Costly operations, only do for error state
             EntityRecord invalid = entities.get(currentEntity);
             Set<Class<?>> supers = entitiesSuperclasses.get(currentEntity);
             Set<MappedSuperclass> invalidSupers = supers == null || supers.isEmpty() ? //
@@ -740,7 +732,7 @@ public class EntityParser {
         return tableNames;
     }
 
-    public Set<Class<?>> getConvertibiles() {
+    public Set<Class<?>> getConvertibles() {
         doneParsing = true;
         return convertibles;
     }

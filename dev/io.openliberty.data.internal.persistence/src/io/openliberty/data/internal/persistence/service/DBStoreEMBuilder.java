@@ -354,10 +354,7 @@ public class DBStoreEMBuilder extends EntityManagerBuilder implements DDLGenerat
         for (Class<?> c : entityTypes) {
             if (c.isAnnotationPresent(Entity.class)) {
                 parser.parseAnnotatedEntity(c);
-                continue;
-            }
-
-            if (c.isRecord()) {
+            } else if (c.isRecord()) {
                 disallowPersistenceAnnos(c, true);
 
                 // an entity class is generated for the record
@@ -374,11 +371,10 @@ public class DBStoreEMBuilder extends EntityManagerBuilder implements DDLGenerat
                                                                    generatedEntityBytes);
                 generatedToRecordClass.put(ec, c);
                 parser.parseRecord(c, ec);
-                continue;
+            } else {
+                disallowPersistenceAnnos(c, false);
+                parser.parseUnannotatedEntity(c);
             }
-
-            disallowPersistenceAnnos(c, false);
-            parser.parseUnannotatedEntity(c);
         }
 
         Map<String, Object> properties = new HashMap<>();
@@ -386,7 +382,7 @@ public class DBStoreEMBuilder extends EntityManagerBuilder implements DDLGenerat
         List<String> entityClassInfo = parser.generateView();
         LinkedHashSet<String> entityClassNames = parser.getClassNames();
         LinkedHashSet<String> entityTableNames = parser.getTableNames();
-        Set<Class<?>> convertibleTypes = parser.getConvertibiles();
+        Set<Class<?>> convertibleTypes = parser.getConvertibles();
 
         properties.put("io.openliberty.persistence.internal.entityClassInfo",
                        entityClassInfo.toArray(new String[entityClassInfo.size()]));
