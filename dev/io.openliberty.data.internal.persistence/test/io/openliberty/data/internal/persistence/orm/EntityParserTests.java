@@ -16,7 +16,6 @@ import java.util.List;
 import org.junit.Test;
 
 /**
- * TODO test a multilevel embedded entity
  * TODO test an annotated entity
  */
 public class EntityParserTests {
@@ -719,8 +718,6 @@ public class EntityParserTests {
 
         assertEquals(3, xmls.size());
 
-        System.out.println("KJA1017 xmls: " + xmls);
-
         String expected = """
                           <entity class="io.openliberty.data.internal.persistence.orm.WithMultilayerEmbedded">
                             <table name="WithMultilayerEmbedded"/>
@@ -781,5 +778,138 @@ public class EntityParserTests {
                         """;
         assertEquals(expected, xmls.get(2));
 
+    }
+
+    @Test
+    public void multilayerEmbeddedCollectionEntityTest() {
+        EntityParser p = new EntityParser("");
+        p.parseUnannotatedEntity(WithMultilayerEmbeddedCollection.class);
+        List<String> xmls = p.generateView();
+
+        assertEquals(3, xmls.size());
+
+        String expected = """
+                          <entity class="io.openliberty.data.internal.persistence.orm.WithMultilayerEmbeddedCollection">
+                            <table name="WithMultilayerEmbeddedCollection"/>
+                            <attributes>
+                              <id name="id" access="FIELD">
+                                <column nullable="false"/>
+                              </id>
+                              <element-collection name="sides" access="PROPERTY" fetch="EAGER">
+                                <collection-table name="WITHMULTILAYEREMBEDDEDCOLLECTION_SIDES">
+                                  <join-column name="id"/>
+                                </collection-table>
+                                <attribute-override name="a.x">
+                                  <column name="SIDES_A_X"/>
+                                </attribute-override>
+                                <attribute-override name="a.y">
+                                  <column name="SIDES_A_Y"/>
+                                </attribute-override>
+                                <attribute-override name="b.x">
+                                  <column name="SIDES_B_X"/>
+                                </attribute-override>
+                                <attribute-override name="b.y">
+                                  <column name="SIDES_B_Y"/>
+                                </attribute-override>
+                              </element-collection>
+                              <embedded name="center" access="FIELD">
+                                <attribute-override name="x">
+                                  <column name="CENTER_X"/>
+                                </attribute-override>
+                                <attribute-override name="y">
+                                  <column name="CENTER_Y"/>
+                                </attribute-override>
+                              </embedded>
+                            </attributes>
+                          </entity>
+                        """;
+        assertEquals(expected, xmls.get(0));
+
+        expected = """
+                          <embeddable class="io.openliberty.data.internal.persistence.orm.WithMultilayerEmbeddedCollection$Coordinate">
+                            <attributes>
+                              <basic name="x" access="FIELD">
+                                <column nullable="false"/>
+                              </basic>
+                              <basic name="y" access="FIELD">
+                                <column nullable="false"/>
+                              </basic>
+                            </attributes>
+                          </embeddable>
+                        """;
+        assertEquals(expected, xmls.get(1));
+
+        expected = """
+                          <embeddable class="io.openliberty.data.internal.persistence.orm.WithMultilayerEmbeddedCollection$Side">
+                            <attributes>
+                              <embedded name="a" access="FIELD">
+                              </embedded>
+                              <embedded name="b" access="FIELD">
+                              </embedded>
+                            </attributes>
+                          </embeddable>
+                        """;
+        assertEquals(expected, xmls.get(2));
+    }
+
+    @Test
+    public void embeddedMulilayerCollectionEntityTest() {
+        EntityParser p = new EntityParser("");
+        p.parseUnannotatedEntity(WithEmbeddedMultilayerCollection.class);
+        List<String> xmls = p.generateView();
+
+        assertEquals(3, xmls.size());
+
+        String expected = """
+                          <entity class="io.openliberty.data.internal.persistence.orm.WithEmbeddedMultilayerCollection">
+                            <table name="WithEmbeddedMultilayerCollection"/>
+                            <attributes>
+                              <id name="id" access="FIELD">
+                                <column nullable="false"/>
+                              </id>
+                              <embedded name="center" access="FIELD">
+                                <attribute-override name="x">
+                                  <column name="CENTER_X"/>
+                                </attribute-override>
+                                <attribute-override name="y">
+                                  <column name="CENTER_Y"/>
+                                </attribute-override>
+                              </embedded>
+                              <embedded name="side" access="PROPERTY">
+                                <attribute-override name="cords.x">
+                                  <column name="SIDE_CORDS_X"/>
+                                </attribute-override>
+                                <attribute-override name="cords.y">
+                                  <column name="SIDE_CORDS_Y"/>
+                                </attribute-override>
+                              </embedded>
+                            </attributes>
+                          </entity>
+                        """;
+        assertEquals(expected, xmls.get(0));
+
+        expected = """
+                          <embeddable class="io.openliberty.data.internal.persistence.orm.WithEmbeddedMultilayerCollection$Coordinate">
+                            <attributes>
+                              <basic name="x" access="FIELD">
+                                <column nullable="false"/>
+                              </basic>
+                              <basic name="y" access="FIELD">
+                                <column nullable="false"/>
+                              </basic>
+                            </attributes>
+                          </embeddable>
+                        """;
+        assertEquals(expected, xmls.get(1));
+
+        expected = """
+                          <embeddable class="io.openliberty.data.internal.persistence.orm.WithEmbeddedMultilayerCollection$Side">
+                            <attributes>
+                              <element-collection name="cords" access="FIELD" fetch="EAGER">
+                              </element-collection>
+                            </attributes>
+                          </embeddable>
+                        """;
+        assertEquals(expected, xmls.get(2));
     }
 }

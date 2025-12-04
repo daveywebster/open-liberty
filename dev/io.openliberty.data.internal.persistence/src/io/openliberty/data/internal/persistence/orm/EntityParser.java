@@ -22,14 +22,18 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.RecordComponent;
 import java.lang.reflect.Type;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
 
 import com.ibm.websphere.ras.Tr;
@@ -72,18 +76,19 @@ public class EntityParser {
     private static final TraceComponent tc = Tr.register(EntityParser.class);
 
     // ORM sets
-    private final SortedSet<MappedSuperclass> mappedSuperclasses;
-    private final SortedSet<EntityRecord> entities;
-    private final SortedSet<EmbeddableRecord> embeddables;
-    private final SortedSet<Converter> converters;
+    private final Map<Class<?>, MappedSuperclass> mappedSuperclasses;
+    private final Map<Class<?>, EntityRecord> entities;
+    private final Map<Class<?>, EmbeddableRecord> embeddables;
+    private final Map<Class<?>, Converter> converters;
+
+    // Relationship tracking
+    private final Map<Class<?>, Class<?>> entityToRecord;
+    private final ConcurrentMap<Class<?>, Set<Class<?>>> entitiesSuperclasses;
 
     // ORM associated sets
     private final Set<Class<?>> convertibles;
     private final LinkedHashSet<String> tableNames;
     private final LinkedHashSet<String> classNames;
-
-    // Relationships
-    private final Relationships relate;
 
     // Global configurations
     private final String tablePrefix;
@@ -97,16 +102,17 @@ public class EntityParser {
 
     @Trivial
     public EntityParser(String tablePrefix) {
-        this.mappedSuperclasses = new TreeSet<>();
-        this.entities = new TreeSet<>();
-        this.embeddables = new TreeSet<>();
-        this.converters = new TreeSet<>();
+        this.mappedSuperclasses = new HashMap<>();
+        this.entities = new HashMap<>();
+        this.embeddables = new HashMap<>();
+        this.converters = new HashMap<>();
+
+        this.entityToRecord = new HashMap<>();
+        this.entitiesSuperclasses = new ConcurrentHashMap<>();
 
         this.convertibles = new HashSet<>();
         this.tableNames = new LinkedHashSet<>();
         this.classNames = new LinkedHashSet<>();
-
-        this.relate = new Relationships();
 
         this.tablePrefix = tablePrefix;
 
@@ -149,7 +155,7 @@ public class EntityParser {
             throw new IllegalStateException("Attempted to parse an entity after generating mapping");
         }
 
-        relate.entityToRecord(generatedEntity, record);
+        entityToRecord.put(generatedEntity, record);
         parse(generatedEntity, tablePrefix + record.getSimpleName());
     }
 
@@ -184,19 +190,31 @@ public class EntityParser {
                         superclass != null && superclass != Object.class; //
                         superclass = superclass.getSuperclass()) {
 
+            // Find annotated converters
             for (Convert convert : superclass.getAnnotationsByType(Convert.class)) {
                 foundConverter(convert);
             }
 
-            if (superclass == currentEntity) {
-                // Record entity and any embeddables found along the way
-                entities.add(new EntityRecord(superclass, tableName, finalizeAttributes(superclass, findAttributes(superclass))));
+            // Record entity and any embeddables found along the way
+            if (superclass == currentEntity && !entities.containsKey(superclass)) {
+                entities.put(superclass, new EntityRecord(superclass, tableName, finalizeAttributes(superclass, findAttributes(superclass))));
                 continue;
             }
 
-            // Record all mapped superclasses and any embeddables found along the way
-            relate.entityToMappedSuperclass(currentEntity, superclass);
-            mappedSuperclasses.add(new MappedSuperclass(superclass, finalizeAttributes(superclass, findAttributes(superclass))));
+            // Record entity-mappedSuperclass relationship
+            final Class<?> sc = superclass;
+            entitiesSuperclasses.computeIfPresent(currentEntity, (key, set) -> {
+                set.add(sc);
+                return set;
+            });
+            entitiesSuperclasses.computeIfAbsent(currentEntity, (key) -> {
+                return new HashSet<>(List.of(sc));
+            });
+
+            // Record the mappedSuperclass and any embeddables found along the way
+            if (!mappedSuperclasses.containsKey(superclass)) {
+                mappedSuperclasses.put(superclass, new MappedSuperclass(superclass, finalizeAttributes(superclass, findAttributes(superclass))));
+            }
         }
 
         verify();
@@ -216,8 +234,8 @@ public class EntityParser {
     private Set<Attribute> findAttributes(Class<?> c) {
         Set<Attribute> attributes = new HashSet<>();
 
-        if (relate.entityHasRecord(c)) {
-            Class<?> r = relate.recordForEntity(c);
+        if (entityToRecord.containsKey(c)) {
+            Class<?> r = entityToRecord.get(c);
             for (RecordComponent rc : r.getRecordComponents())
                 attributes.add(new Attribute(rc.getType(), rc.getGenericType(), rc.getName(), AccessType.FIELD));
         } else if (c.isRecord()) {
@@ -241,7 +259,8 @@ public class EntityParser {
                         if (p.getWriteMethod() != null) {
                             //Note: p.getName() utilizes Introspector.decapitalize method
                             //      which honors acryonyms like getURL/setURL -> URL (instead of uRL)
-                            Type genericType = p.getWriteMethod().getGenericReturnType();
+                            //TODO error handling if someone were to have setXXX() with no parameters
+                            Type genericType = p.getWriteMethod().getGenericParameterTypes()[0];
                             attributes.add(new Attribute(p.getPropertyType(), genericType, p.getName(), AccessType.PROPERTY));
                         }
 
@@ -263,9 +282,9 @@ public class EntityParser {
      * - finds the most likely to be a Version
      * - finds element collection attributes
      * - finds embedded attributes
-     * - processes overrides
+     * ---- processes overrides
      * - finds embedded collection attributes
-     * - processes overrides and collection ids
+     * ---- processes overrides and collection ids
      * - finds basic attributes
      *
      * @param c           a class one of [ MappedSuperclass, Entity, Embeddable ]
@@ -376,8 +395,7 @@ public class EntityParser {
                 Set<Attribute> embAttrs = finalizeAttributes(type, findAttributes(type));
 
                 // Record relationship and embeddable definition
-                relate.entityToEmbed(currentEntity, type);
-                embeddables.add(new EmbeddableRecord(type, embAttrs));
+                embeddables.put(type, new EmbeddableRecord(type, embAttrs));
 
                 // Only root entity / mapped superclass gets attribute-override entries
                 if (rootHolder) {
@@ -386,10 +404,11 @@ public class EntityParser {
             }
 
             if (attr.isEmbeddedCollection()) {
+                // Build the attributes for the embeddable type itself
                 Set<Attribute> embAttrs = finalizeAttributes(collectionType, findAttributes(collectionType));
 
-                relate.entityToEmbed(currentEntity, collectionType);
-                embeddables.add(new EmbeddableRecord(collectionType, embAttrs));
+                // Record relationship and embeddable definition
+                embeddables.put(collectionType, new EmbeddableRecord(collectionType, embAttrs));
 
                 if (rootHolder) {
                     attr.setOverrides(buildOverridesForType(collectionType));
@@ -477,7 +496,6 @@ public class EntityParser {
                 String overrideName = namePrefix + attr.name();
                 Class<?> leafType = isCollection && elementType != null ? elementType : at;
                 // For overrides we only really need the type and name; access=FIELD is fine
-                // TODO
                 result.add(new Attribute(leafType, attr.genericType(), overrideName, AccessType.FIELD));
             }
         }
@@ -503,7 +521,7 @@ public class EntityParser {
 
             Converter converter = new Converter(convert.converter());
 
-            if (!converters.contains(converter)) {
+            if (!converters.containsKey(converterType)) {
                 for (Class<?> c = converterType; c != null; c = c.getSuperclass())
                     for (Type ifc : c.getGenericInterfaces())
                         if (ifc instanceof ParameterizedType type &&
@@ -521,7 +539,7 @@ public class EntityParser {
                             if (typeParams[0] instanceof Class)
                                 convertibles.add((Class<?>) typeParams[0]);
                         }
-                converters.add(converter);
+                converters.put(converterType, converter);
             }
             if (TraceComponent.isAnyTracingEnabled() && tc.isEntryEnabled())
                 Tr.exit(tc, "foundConverter");
@@ -532,14 +550,13 @@ public class EntityParser {
     private void verify() {
         if (idAttributes.isEmpty()) {
             // Costly operations, only do for error state
-            EntityRecord invalid = entities.stream()//
-                            .filter(e -> e.type() == currentEntity)//
-                            .findFirst()//
-                            .orElseThrow();
-            Set<Class<?>> supers = relate.superclassesForEntity(currentEntity);
-            Set<MappedSuperclass> invalidSupers = supers.isEmpty() ? Set.of() : mappedSuperclasses.stream()//
-                            .filter(e -> supers.contains(e.type()))//
-                            .collect(Collectors.toSet());
+            EntityRecord invalid = entities.get(currentEntity);
+            Set<Class<?>> supers = entitiesSuperclasses.get(currentEntity);
+            Set<MappedSuperclass> invalidSupers = supers == null || supers.isEmpty() ? //
+                            Set.of() : //
+                            supers.stream() //
+                                            .map(c -> mappedSuperclasses.get(c))//
+                                            .collect(Collectors.toSet());
 
             //TODO NLS
             throw new MappingException("The entity " + invalid + " had no id attribute"
@@ -547,15 +564,13 @@ public class EntityParser {
         }
 
         if (idAttributes.size() > 1) {
-            // Costly operations, only do for error state
-            EntityRecord invalid = entities.stream()//
-                            .filter(e -> e.type() == currentEntity)//
-                            .findFirst()//
-                            .orElseThrow();
-            Set<Class<?>> supers = relate.superclassesForEntity(currentEntity);
-            Set<MappedSuperclass> invalidSupers = supers.isEmpty() ? Set.of() : mappedSuperclasses.stream()//
-                            .filter(e -> supers.contains(e.type()))//
-                            .collect(Collectors.toSet());
+            EntityRecord invalid = entities.get(currentEntity);
+            Set<Class<?>> supers = entitiesSuperclasses.get(currentEntity);
+            Set<MappedSuperclass> invalidSupers = supers == null || supers.isEmpty() ? //
+                            Set.of() : //
+                            supers.stream() //
+                                            .map(c -> mappedSuperclasses.get(c))//
+                                            .collect(Collectors.toSet());
 
             //TODO NLS
             throw new MappingException("The entity " + invalid + " had more than one id attribute due to a combination of the entity's own attributes"
@@ -699,21 +714,22 @@ public class EntityParser {
     public List<String> generateView() {
         doneParsing = true;
 
-        View view = new View(mappedSuperclasses.size() + entities.size() + embeddables.size() + converters.size());
+        View view = new View(mappedSuperclasses.size() + entities.size() +
+                             embeddables.size() + converters.size());
 
-        for (MappedSuperclass sc : mappedSuperclasses) {
+        for (MappedSuperclass sc : new TreeSet<>(mappedSuperclasses.values())) {
             view.mappedSuperclass(sc);
         }
 
-        for (EntityRecord er : entities) {
+        for (EntityRecord er : new TreeSet<>(entities.values())) {
             view.entity(er);
         }
 
-        for (EmbeddableRecord emb : embeddables) {
+        for (EmbeddableRecord emb : new TreeSet<>(embeddables.values())) {
             view.embeddable(emb);
         }
 
-        for (Converter con : converters) {
+        for (Converter con : new TreeSet<>(converters.values())) {
             view.converter(con);
         }
 
