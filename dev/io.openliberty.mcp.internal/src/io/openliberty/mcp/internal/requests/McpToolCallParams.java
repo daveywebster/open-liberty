@@ -27,6 +27,7 @@ import io.openliberty.mcp.internal.exceptions.jsonrpc.JSONRPCException;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonValue;
 import jakarta.json.bind.Jsonb;
+import jakarta.json.bind.annotation.JsonbProperty;
 
 /**
  *
@@ -45,6 +46,10 @@ public class McpToolCallParams {
     }
 
     private JsonObject arguments;
+
+    @JsonbProperty("_meta")
+    private JsonObject meta;
+
     private Map<String, Object> parsedArguments;
 
     public String getName() {
@@ -71,6 +76,14 @@ public class McpToolCallParams {
         return parsedArguments;
     }
 
+    public JsonObject getMeta() {
+        return meta;
+    }
+
+    public void setMeta(JsonObject meta) {
+        this.meta = meta;
+    }
+
     private Map<String, Object> parseArguments(JsonObject arguments, Jsonb jsonb) {
         Map<String, ArgumentMetadata> metadatas = metadata.arguments();
         Map<String, Object> result = new HashMap<>();
@@ -86,7 +99,6 @@ public class McpToolCallParams {
             }
             argsProcessed.add(argName);
         }
-
         validateProcessedArgs(argsProcessed, metadatas.keySet());
 
         return result;

@@ -28,6 +28,7 @@ import io.openliberty.mcp.internal.config.McpConfiguration;
 import io.openliberty.mcp.internal.exceptions.jsonrpc.HttpResponseException;
 import io.openliberty.mcp.internal.exceptions.jsonrpc.JSONRPCErrorCode;
 import io.openliberty.mcp.internal.exceptions.jsonrpc.JSONRPCException;
+import io.openliberty.mcp.internal.meta.MetaImpl;
 import io.openliberty.mcp.internal.requests.CancellationImpl;
 import io.openliberty.mcp.internal.requests.ExecutionRequestId;
 import io.openliberty.mcp.internal.requests.McpInitializeParams;
@@ -40,6 +41,7 @@ import io.openliberty.mcp.internal.sessions.McpSessionId;
 import io.openliberty.mcp.internal.sessions.McpSessionStore;
 import io.openliberty.mcp.internal.tools.ToolManager.ToolArguments;
 import io.openliberty.mcp.messaging.Cancellation;
+import io.openliberty.mcp.meta.Meta;
 import io.openliberty.mcp.request.RequestId;
 import io.openliberty.mcp.tools.ToolResponse;
 import jakarta.enterprise.inject.spi.BeanManager;
@@ -201,7 +203,7 @@ public class McpServlet extends HttpServlet {
                                        McpToolCallParams params)
                     throws IllegalAccessException, IllegalArgumentException {
 
-        ToolArguments toolArgs = createToolArguments(params.getArguments(jsonb));
+        ToolArguments toolArgs = createToolArguments(params);
         if (requestId != null) {
             requestTracker.registerOngoingRequest(requestId, (CancellationImpl) toolArgs.cancellation());
         }
@@ -220,7 +222,7 @@ public class McpServlet extends HttpServlet {
                                                     ExecutionRequestId requestId,
                                                     McpToolCallParams params)
                     throws IllegalAccessException, IllegalArgumentException {
-        ToolArguments toolArgs = createToolArguments(params.getArguments(jsonb));
+        ToolArguments toolArgs = createToolArguments(params);
 
         if (requestId != null) {
             requestTracker.registerOngoingRequest(requestId, (CancellationImpl) toolArgs.cancellation());
@@ -236,11 +238,13 @@ public class McpServlet extends HttpServlet {
     /**
      * @return
      */
-    private ToolArguments createToolArguments(Map<String, Object> args) {
-        return new ToolArgumentsImpl(args, new CancellationImpl());
+    private ToolArguments createToolArguments(McpToolCallParams params) {
+        Map<String, Object> args = params.getArguments(jsonb);
+        Meta meta = new MetaImpl(params.getMeta(), jsonb);
+        return new ToolArgumentsImpl(args, new CancellationImpl(), meta);
     }
 
-    record ToolArgumentsImpl(Map<String, Object> args, Cancellation cancellation) implements ToolArguments {}
+    record ToolArgumentsImpl(Map<String, Object> args, Cancellation cancellation, Meta meta) implements ToolArguments {}
 
     private void cleanup(ExecutionRequestId requestId) {
         if (requestId != null && requestTracker.isOngoingRequest(requestId)) {
