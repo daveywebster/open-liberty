@@ -1903,7 +1903,7 @@ public class JakartaPersistenceServlet extends FATServlet {
             DocumentEntity r1 = em.find(DocumentEntity.class, 1L);
             tx.commit();
             
-            assertNull(r1.getContent());
+            assertEquals("", r1.getContent());
         } catch (Exception e) {
             if (tx.getStatus() == jakarta.transaction.Status.STATUS_ACTIVE) {
                 tx.rollback();
