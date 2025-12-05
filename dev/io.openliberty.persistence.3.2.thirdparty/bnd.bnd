@@ -122,8 +122,7 @@ DynamicImport-Package: \
  jakarta.xml.bind.helpers, \
  jakarta.xml.bind.util
 
-Private-Package: io.openliberty.persistence.internal.helper, \
- org.eclipse.persistence.internal.descriptors
+Private-Package: io.openliberty.persistence.internal.helper
 
 Include-Resource: \
   @\${repo;org.eclipse.persistence:org.eclipse.persistence.asm;${asmFullVersion};EXACT}!/!(META-INF/maven/*|module-info.class),\
