@@ -758,4 +758,61 @@ public class SecurityUtilityCreateLTPAKeysTest {
         assertEquals("createLTPAKeys command should fail with exclusive arguments", 
                     FAILURE_RC, commandOutput.getReturnCode());
     }
+    @Test
+    public void testCreateLTPAKeysWithPasswordEncodingAndNotNormalizedKey() throws Exception {
+    	String key = "not//normalized//key";
+        // Run createLTPAKeys with passwordEncoding=aes for the test server
+        ProgramOutput commandOutput = testMachine.execute(
+            securityUtilityPath,
+            new String[] {
+                "createLTPAKeys",
+                "--password=" + ltpaPassword,
+                "--passwordEncoding=aes",
+                "--server=" + LTPA_TEST_SERVER_NAME,
+                "--passwordKey=" + key
+            },
+            libertyInstallRoot,
+            testEnvironment);
+        assertEquals("createLTPAKeys should succeed", SUCCESS_RC, commandOutput.getReturnCode());
+
+        // Build server.xml using the snippet
+		String ltpaSnippet = getLtpaOverride(commandOutput,
+				"<variable name=\"wlp.password.encryption.key\" value=\"" + key + "\" />");
+		writeStringToServerOverride(ltpaSnippet, ltpaTestServer);
+        // Start the server
+        ltpaTestServer.startServer();
+
+        // Verify startup log contains LTPA initialization
+        assertNotNull("Expected LTPA configuration ready message not found in the log.",
+                      ltpaTestServer.waitForStringInLogUsingMark("CWWKS4105I", 5000));
+        ltpaTestServer.stopServer();
+    }
+    @Test
+    public void testCreateLTPAKeysWithPasswordEncodingAndNotNormalizedBase64Key() throws Exception {
+    	String key = "3ORhx1L0ME//P2JDl1elDjOqhhagCoMAZ4XFbhQxJoM=";
+        // Run createLTPAKeys with passwordEncoding=aes for the test server
+        ProgramOutput commandOutput = testMachine.execute(
+            securityUtilityPath,
+            new String[] {
+                "createLTPAKeys",
+                "--password=" + ltpaPassword,
+                "--passwordEncoding=aes",
+                "--server=" + LTPA_TEST_SERVER_NAME,
+                "--passwordBase64Key=" + key
+            },
+            libertyInstallRoot,
+            testEnvironment);
+        assertEquals("createLTPAKeys should succeed", SUCCESS_RC, commandOutput.getReturnCode());
+
+        // Build server.xml using the snippet
+		String ltpaSnippet = getLtpaOverride(commandOutput, key);
+		writeStringToServerOverride(ltpaSnippet, ltpaTestServer);
+        // Start the server
+        ltpaTestServer.startServer();
+
+        // Verify startup log contains LTPA initialization
+        assertNotNull("Expected LTPA configuration ready message not found in the log.",
+                      ltpaTestServer.waitForStringInLogUsingMark("CWWKS4105I", 5000));
+        ltpaTestServer.stopServer();
+    }
 }
