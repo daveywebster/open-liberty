@@ -152,7 +152,19 @@ public class LogThrottleTest {
         hitWebPage("logger-servlet", "LoggerServlet", false, "?numMessages=6");
 
         List<String> lines = serverInUse.findStringsInLogs("TESTA0001W");
-        assertEquals("Test message TESTA0001W wasn't printed the correct number of times", lines.size(), 5);
+        List<String> lines2 = serverInUse.findStringsInLogs("TESTA0003W");
+        List<String> lines3 = serverInUse.findStringsInLogs("TESTA0004W");
+        List<String> lines4 = serverInUse.findStringsInLogs("TESTA0005W");
+        List<String> lines5 = serverInUse.findStringsInLogs("TESTA0006W");
+        List<String> lines6 = serverInUse.findStringsInLogs("TESTA0007W");
+
+        assertEquals("Test message TESTA0001W wasn't printed the correct number of times", lines.size(), 5); //This confirms JUL is being throttled
+        assertEquals("Test message TESTA0003W wasn't printed the correct number of times", lines2.size(), 5); //This confirms System.out.println is being throttled
+        assertEquals("Test message TESTA0004W wasn't printed the correct number of times", lines3.size(), 5); //This confirms System.out.print is being throttled
+        assertEquals("Test message TESTA0005W wasn't printed the correct number of times", lines4.size(), 5); //This confirms logger.log is being throttled
+        assertEquals("Test message TESTA0006W wasn't printed the correct number of times", lines5.size(), 5); //This confirms logger.log is being throttled
+        assertEquals("Test message TESTA0007W wasn't printed the correct number of times", lines6.size(), 5); //This confirms logger.log is being throttled
+
     }
 
     /*
@@ -198,8 +210,14 @@ public class LogThrottleTest {
 
         List<String> lines = serverInUse.findStringsInLogs("TESTA0001W");
         List<String> lines2 = serverInUse.findStringsInLogs("TESTA0002W");
+        List<String> lines3 = serverInUse.findStringsInLogs("TESTA0004W");
+        List<String> lines4 = serverInUse.findStringsInLogs("TESTA0005W");
 
-        assertEquals("Test message TESTA0001W wasn't printed the correct number of times", 5, lines.size());
+        assertEquals("Test message TESTA0001W wasn't printed the correct number of times", 5, lines.size()); //This confirmed logger.warning is being throttled
+        assertEquals("Test message TESTA0003W wasn't printed the correct number of times", 5, lines3.size()); //This confirms System.out.println is being throttled
+        assertEquals("Test message TESTA0004W wasn't printed the correct number of times", 5, lines4.size()); //This confirms System.out.print is being throttled
+        assertEquals("Test message TESTA0005W wasn't printed the correct number of times", 5, lines4.size()); //This confirms logger.log is being throttled
+
         assertFalse("Full message configuration is not functioning correctly.", lines2.size() == lines.size()); //This message shouldn't be getting throttled due to message variation
     }
 
@@ -278,26 +296,25 @@ public class LogThrottleTest {
 
         CheckpointInfo checkpoint = new CheckpointInfo(CheckpointPhase.AFTER_APP_START, false, null);
         checkpointServer.setCheckpoint(checkpoint);
-        checkpointServer.addCheckpointRegexIgnoreMessages("TESTA0001W", "TESTA0002W");
+        checkpointServer.addCheckpointRegexIgnoreMessages("TESTA0001W", "TESTA0002W", "TRAS3016W");
 
         setUp(checkpointServer, "testLogThrottlingCheckpoint");
         // At this point the server process has been checkpointed with the default configuration for throttling
 
-        // TODO the checkpoint side is not throttled currently; skipping verification before checkpoint
         // This is the post checkpoint test to make sure the default log throttling happens.
-        // List<String> lines = serverInUse.findStringsInLogs("TESTA0001W");
-        // List<String> linesWarning = serverInUse.findStringsInLogs("The logs are being throttled due to high volume");
-        // assertEquals("The throttle log warning was not printed.", linesWarning.size(), 1);
-        // assertEquals("Test message TESTA0001W wasn't printed the correct number of times", lines.size(), 1000);
+        List<String> lines = serverInUse.findStringsInLogs("TESTA0001W");
+        List<String> linesWarning = serverInUse.findStringsInLogs("The logs are being throttled due to high volume");
+        assertEquals("The throttle log warning was not printed.", linesWarning.size(), 1);
+        assertEquals("Test message TESTA0001W wasn't printed the correct number of times", lines.size(), 1000);
 
         // now change the config with a server.env update and restore the server process
         checkpointServer.copyFileToLibertyServerRoot("checkpoint/throttle/server.env");
         checkpointServer.checkpointRestore();
 
         // This is a post restore test to make sure the server.env config for throttling worked
-        hitWebPage("logger-servlet", "LoggerServlet", false, "?numMessages=1005");
-        List<String> lines = serverInUse.findStringsInLogs("TESTA0001W");
-        List<String> linesWarning = serverInUse.findStringsInLogs("The logs are being throttled due to high volume");
+        hitWebPage("logger-servlet", "CheckpointLoggerServlet", false, "?numMessages=1005");
+        lines = serverInUse.findStringsInLogs("TESTA0001W");
+        linesWarning = serverInUse.findStringsInLogs("The logs are being throttled due to high volume");
         assertEquals("The throttle log warning was not printed.", linesWarning.size(), 1);
         assertEquals("Test message TESTA0001W wasn't printed the correct number of times", lines.size(), 5);
 
@@ -306,7 +323,7 @@ public class LogThrottleTest {
         // This is a post restore test to make sure the server.xml config for throttling worked
         serverInUse.setServerConfigurationFile(THROTTLING_CHECKPOINT_XML);
         checkpointServer.checkpointRestore();
-        hitWebPage("logger-servlet", "LoggerServlet", false, "?numMessages=1005");
+        hitWebPage("logger-servlet", "CheckpointLoggerServlet", false, "?numMessages=1005");
         lines = serverInUse.findStringsInLogs("TESTA0001W");
         linesWarning = serverInUse.findStringsInLogs("The logs are being throttled due to high volume");
         assertEquals("The throttle log warning was not printed.", linesWarning.size(), 1);

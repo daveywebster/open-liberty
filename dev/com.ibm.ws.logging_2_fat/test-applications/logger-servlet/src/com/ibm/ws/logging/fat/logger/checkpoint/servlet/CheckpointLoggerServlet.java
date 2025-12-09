@@ -39,8 +39,7 @@ public class CheckpointLoggerServlet extends HttpServlet {
 
     @Override
     public void init(ServletConfig config) throws ServletException {
-        // TODO when logging from eager load servlet init the throttling doesn't take effect.
-        // logMessages(1010);
+        logMessages(1010);
     }
 
     @Override
