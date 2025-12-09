@@ -403,7 +403,7 @@ public final class JsMainImpl implements JsMain, Singleton {
         return messagingEngineRef.get();
     }
 
-    public Enumeration listMessagingEngines() {
+    public Enumeration<JsMessagingEngine> listMessagingEngines() {
 
         String methodName = "listMessagingEngines";
 
