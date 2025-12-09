@@ -16,6 +16,7 @@ package com.ibm.ws.sib.admin.internal;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
+import java.io.Writer;
 import java.lang.reflect.Array;
 import java.nio.charset.StandardCharsets;
 import java.text.DateFormat;
@@ -50,13 +51,13 @@ import com.ibm.ws.sib.admin.SIBFileStore;
 import com.ibm.ws.sib.admin.SIBLocalizationPoint;
 import com.ibm.ws.sib.admin.SIBPersistenceException;
 import com.ibm.ws.sib.admin.SIBTransactionException;
+import com.ibm.ws.sib.comms.server.ServerCommsDiagnosticDump;
 import com.ibm.ws.sib.msgstore.MessageStore;
 import com.ibm.ws.sib.msgstore.PersistenceException;
 import com.ibm.ws.sib.msgstore.TransactionException;
 import com.ibm.ws.sib.processor.Administrator;
 import com.ibm.ws.sib.processor.exceptions.SIMPRuntimeOperationFailedException;
 import com.ibm.ws.sib.processor.impl.MessageProcessor;
-import com.ibm.ws.sib.comms.server.ServerCommsDiagnosticDump;
 import com.ibm.ws.sib.utils.SIBUuid8;
 import com.ibm.ws.sib.utils.ras.FormattedWriter;
 import com.ibm.ws.sib.utils.ras.SibTr;
@@ -1899,6 +1900,19 @@ public class BaseMessagingEngineImpl implements JsEngineComponent, LWMConfig, Co
             FFDCFilter.processException(e, "com.ibm.ws.sib.admin.impl.BaseMessagingEngineImpl.dump", "1:2837:1.79", this);
             SibTr.exception(tc, e);
         }
+        
+        dump(dumpSpec, fw, date);
+
+        if(TraceComponent.isAnyTracingEnabled() && tc.isEntryEnabled())
+            SibTr.exit(tc, methodName);
+        
+    }
+    
+    public void dump(String dumpSpec, FormattedWriter fw, Date date) {
+        String methodName = "dump";
+        if(TraceComponent.isAnyTracingEnabled() && tc.isEntryEnabled())
+            SibTr.entry(tc, methodName, dumpSpec);
+    	
         if(fw != null)
             try
             {
