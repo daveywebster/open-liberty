@@ -34,12 +34,13 @@ import com.ibm.ws.messaging.JMS20.fat.SharedSubscription.SharedSubscriptionTest_
 import com.ibm.ws.messaging.JMS20.fat.SharedSubscription.SharedSubscriptionWithMsgSelTest_129623;
 import com.ibm.ws.messaging.JMS20.fat.SharedSubscription.SharedSubscriptionWithMsgSelTest_129626;
 
+import componenttest.custom.junit.runner.AlwaysPassesTest;
 import componenttest.rules.repeater.JakartaEE9Action;
 import componenttest.rules.repeater.RepeatTests;
 
 @RunWith(Suite.class)
 @SuiteClasses({
-                DummyTest.class,
+                AlwaysPassesTest.class,
 
                 LiteBucketSet1Test.class,
                 LiteBucketSet2Test.class,
