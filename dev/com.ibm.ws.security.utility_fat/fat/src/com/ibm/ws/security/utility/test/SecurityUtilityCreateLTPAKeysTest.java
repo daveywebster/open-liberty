@@ -758,6 +758,12 @@ public class SecurityUtilityCreateLTPAKeysTest {
         assertEquals("createLTPAKeys command should fail with exclusive arguments", 
                     FAILURE_RC, commandOutput.getReturnCode());
     }
+    
+    /**
+     * Test LTPA key creation with a passphrase which has two `//` characters in it. This 
+     * ensures the key is not Path normalized when the server starts. 
+     * @throws Exception
+     */
     @Test
     public void testCreateLTPAKeysWithPasswordEncodingAndNotNormalizedKey() throws Exception {
     	String key = "not//normalized//key";
@@ -787,6 +793,12 @@ public class SecurityUtilityCreateLTPAKeysTest {
                       ltpaTestServer.waitForStringInLogUsingMark("CWWKS4105I", 5000));
         ltpaTestServer.stopServer();
     }
+    
+    /**
+     * Test LTPA key creation with a base64Key which has two `//` characters in it. This 
+     * ensures the key is not Path normalized when the server starts. 
+     * @throws Exception
+     */
     @Test
     public void testCreateLTPAKeysWithPasswordEncodingAndNotNormalizedBase64Key() throws Exception {
     	String key = "3ORhx1L0ME//P2JDl1elDjOqhhagCoMAZ4XFbhQxJoM=";
