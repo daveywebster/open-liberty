@@ -868,9 +868,6 @@ public class DataJPATestServlet extends FATServlet {
      */
     @Test
     public void testElementCollection() throws Exception {
-        if (skipForHibernate("https://github.com/OpenLiberty/open-liberty/issues/33205")) {
-            return; //TODO remove skip when fixed in Hibernate or Liberty
-        }
 
         ECEntity e1 = new ECEntity();
         e1.setId("EC1");
