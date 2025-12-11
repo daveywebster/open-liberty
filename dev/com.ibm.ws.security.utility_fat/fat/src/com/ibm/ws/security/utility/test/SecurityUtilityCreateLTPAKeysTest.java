@@ -449,6 +449,8 @@ public class SecurityUtilityCreateLTPAKeysTest {
                 "--passwordBase64Key=" + aesEncryptionKey,
                 "--passwordEncoding=aes"},
             libertyInstallRoot, testEnvironment);
+        Log.info(thisClass, testName.getMethodName(), "stdout:\n" + output.getStdout());
+        Log.info(thisClass, testName.getMethodName(), "Return code: " + output.getReturnCode());
         assertEquals("createLTPAKeys should succeed", SUCCESS_RC, output.getReturnCode());
 
         // Extract LTPA configuration and apply to server
@@ -514,6 +516,8 @@ public class SecurityUtilityCreateLTPAKeysTest {
             },
             libertyInstallRoot,
             testEnvironment);
+        Log.info(thisClass, testName.getMethodName(), "stdout:\n" + commandOutput.getStdout());
+        Log.info(thisClass, testName.getMethodName(), "Return code: " + commandOutput.getReturnCode());
         assertEquals("createLTPAKeys should succeed", SUCCESS_RC, commandOutput.getReturnCode());
 
         // Build ltpa.keys path for the server
@@ -577,6 +581,8 @@ public class SecurityUtilityCreateLTPAKeysTest {
             },
             libertyInstallRoot,
             testEnvironment);
+        Log.info(thisClass, testName.getMethodName(), "stdout:\n" + commandOutput.getStdout());
+        Log.info(thisClass, testName.getMethodName(), "Return code: " + commandOutput.getReturnCode());
         assertEquals("createLTPAKeys should succeed", SUCCESS_RC, commandOutput.getReturnCode());
 
         // Build server.xml using the snippet
@@ -779,6 +785,8 @@ public class SecurityUtilityCreateLTPAKeysTest {
             },
             libertyInstallRoot,
             testEnvironment);
+        Log.info(thisClass, testName.getMethodName(), "stdout:\n" + commandOutput.getStdout());
+        Log.info(thisClass, testName.getMethodName(), "Return code: " + commandOutput.getReturnCode());
         assertEquals("createLTPAKeys should succeed", SUCCESS_RC, commandOutput.getReturnCode());
 
         // Build server.xml using the snippet
@@ -814,6 +822,8 @@ public class SecurityUtilityCreateLTPAKeysTest {
             },
             libertyInstallRoot,
             testEnvironment);
+        Log.info(thisClass, testName.getMethodName(), "stdout:\n" + commandOutput.getStdout());
+        Log.info(thisClass, testName.getMethodName(), "Return code: " + commandOutput.getReturnCode());
         assertEquals("createLTPAKeys should succeed", SUCCESS_RC, commandOutput.getReturnCode());
 
         // Build server.xml using the snippet
