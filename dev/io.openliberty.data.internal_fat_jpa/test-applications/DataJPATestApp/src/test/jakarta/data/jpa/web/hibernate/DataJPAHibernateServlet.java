@@ -13,6 +13,8 @@
 package test.jakarta.data.jpa.web.hibernate;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -375,4 +377,68 @@ public class DataJPAHibernateServlet extends FATServlet {
         assertEquals("merged", entity.value);
     }
 
+    @Test
+    public void testMergeDetachedEntitySimplified() throws Exception {
+        EntityManagerFactory emf = InitialContext
+                        .doLookup("java:comp/env/persistence/HibernatePersistenceUnitRef");
+        UserTransaction tx = InitialContext
+                        .doLookup("java:comp/UserTransaction");
+
+        SimpleEntity entity = new SimpleEntity();
+        entity.id = 100;
+        entity.value = "new";
+
+        EntityManager em = emf.createEntityManager();
+
+        tx.begin();
+        try {
+            em.persist(entity);
+            tx.commit();
+        } catch (Exception e) {
+            tx.rollback();
+            fail("Transaction rollback");
+        }
+
+        // Entity should have been persisted to the database.
+        // Entity is now detached
+
+        //Another part of the application modifies the entity
+        entity.value = "modified";
+
+        // Now we want to persist this change to the database
+        // so we have to re-attach the detached entity.
+
+        SimpleEntity merged = null;
+
+        tx.begin();
+        try {
+            merged = em.merge(entity);
+            tx.commit();
+        } catch (Exception e) {
+            tx.rollback();
+            fail("Transaction rollback");
+        }
+
+        // Check make sure the merged entity shows the update.
+        assertNotNull(merged);
+        assertEquals("modified", merged.value);
+
+        // The merged entity is now detached
+        // The entity should have been updated after commit
+
+        SimpleEntity found = null;
+
+        tx.begin();
+        try {
+            found = em.find(SimpleEntity.class, 100);
+            tx.commit();
+        } catch (Exception e) {
+            tx.rollback();
+            fail("Transaction rollback");
+        }
+
+        // Check make sure the found entity shows the update to the database.
+        assertNotNull(found);
+        assertEquals("modified", found.value);
+    }
 }
