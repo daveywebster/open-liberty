@@ -8,7 +8,7 @@
     </featureManager>
     
     <httpSession useSeparateSessionInvalidatorThreadPool="false"
-                 delayInvalidationAlarmDuringServerStartup="90"/>
+                 delayInvalidationAlarmDuringServerStartup="60"/>
 
     <include location="../fatTestPorts.xml"/>
     <include location="serverJDBCConfig.xml"/>
