@@ -47,7 +47,7 @@ public class VirtualConnectionImpl implements VirtualConnection {
      */
     protected void init() {
         if (TraceComponent.isAnyTracingEnabled() && tc.isDebugEnabled()) {
-            Tr.debug(tc, "init");
+            Tr.debug(tc, "init, this [" + this + "]");
         }
 
         // CONN_RUNTIME: set the top channel in the VC outbound
@@ -69,7 +69,7 @@ public class VirtualConnectionImpl implements VirtualConnection {
     @Override
     public Map<Object, Object> getStateMap() {
         if (TraceComponent.isAnyTracingEnabled() && tc.isDebugEnabled()) {
-            Tr.debug(tc, "getStateMap [" + this.stateStore + "] , currentState [" + this.currentState + "]");
+            Tr.debug(tc, "getStateMap, currentState [" + this.currentState + "], stateMap [" + this.stateStore + "]");
         }
         return this.stateStore;
     }
@@ -305,7 +305,7 @@ public class VirtualConnectionImpl implements VirtualConnection {
                 this.notify();
             }
             if (TraceComponent.isAnyTracingEnabled() && tc.isDebugEnabled()) {
-                Tr.debug(tc, "setReadStateToDone, currentState " + currentState + "]");
+                Tr.debug(tc, "setReadStateToDone, currentState [" + currentState + "]");
             }
         }
     }

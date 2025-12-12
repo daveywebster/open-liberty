@@ -42,6 +42,9 @@ public class NettyVirtualConnectionImpl implements VirtualConnection {
 
     public void init() {
         this.stateStore = new HashMap<Object, Object>();
+        if (TraceComponent.isAnyTracingEnabled() && tc.isDebugEnabled()) {
+            Tr.debug(tc, "init, this [" + this + "]");
+        }
     }
 
     @Override
