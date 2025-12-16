@@ -88,14 +88,16 @@ define([
   }
 
   function deleteCookie(name) {
-    require(["dojo/cookie"], function(cookie) {
+
+    require(["dojo/cookie"], function (cookie) {
+        var path;
+
         cookie(name, null, { expires: -1 });
         cookie(name, null, { expires: -1, path: "/" });
 
-        // Try clearing deeply nested paths
-        let path = location.pathname;
-        while (path.includes("/")) {
-            cookie(name, null, { expires: -1, path });
+        path = location.pathname;
+        while (path.indexOf("/") !== -1) {
+            cookie(name, null, { expires: -1, path: path });
             path = path.substring(0, path.lastIndexOf("/"));
         }
     });
