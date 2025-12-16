@@ -140,6 +140,42 @@ public class ToolTest extends FATServletClient {
     }
 
     @Test
+    public void testEchoRequestIdInjectionWithStringId() throws Exception {
+        String request = """
+                        {
+                          "jsonrpc": "2.0",
+                          "id": "my-custom-id-42",
+                          "method": "tools/call",
+                          "params": {
+                            "name": "echoRequestId",
+                            "arguments": {
+                              "input": "hello-world"
+                            }
+                          }
+                        }
+                        """;
+
+        String response = client.callMCP(request);
+        String expectedResponseString = """
+                        {
+                          "id": "my-custom-id-42",
+                          "jsonrpc": "2.0",
+                          "result": {
+                            "content": [
+                              {
+                                "type": "text",
+                                "text": "my-custom-id-42: hello-world"
+                              }
+                            ],
+                            "isError": false
+                          }
+                        }
+                        """;
+
+        JSONAssert.assertEquals(expectedResponseString, response, true);
+    }
+
+    @Test
     public void testEchoWithNumberIdType() throws Exception {
         String request = """
                           {
@@ -864,6 +900,22 @@ public class ToolTest extends FATServletClient {
                                         "name": "echo",
                                         "description": "Returns the input unchanged",
                                         "title": "Echoes the input"
+                                    },
+                                    {
+                                      "inputSchema": {
+                                        "type": "object",
+                                        "properties": {
+                                          "input": {
+                                            "type": "string"
+                                          }
+                                        },
+                                        "required": [
+                                            "input"
+                                        ]
+                                      },
+                                      "name": "echoRequestId",
+                                      "description": "Returns the incoming request ID",
+                                      "title": "Echo RequestId"
                                     },
                                     {
                                         "inputSchema": {

@@ -28,6 +28,7 @@ import java.util.function.Function;
 import io.openliberty.mcp.internal.features.FeatureManager.FeatureInfo;
 import io.openliberty.mcp.messaging.Cancellation;
 import io.openliberty.mcp.meta.Meta;
+import io.openliberty.mcp.request.RequestId;
 import jakarta.json.JsonObject;
 
 /**
@@ -120,9 +121,9 @@ public interface FeatureManager<INFO extends FeatureInfo> extends Iterable<INFO>
 
     interface RequestFeatureArguments extends FeatureArguments {
 
+        RequestId requestId();
+
 // Not yet implemented:
-//        RequestId requestId();
-//
 //        Progress progress();
 
         Cancellation cancellation();

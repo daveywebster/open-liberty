@@ -101,6 +101,7 @@ public abstract class BeanMethodHandler<RESPONSE> implements Function<ToolArgume
             argsArray[specArg.index()] = switch (specArg.typeResolution().specialArgsType()) {
                 case CANCELLATION -> t.cancellation();
                 case META -> t.meta();
+                case REQUEST_ID -> t.requestId();
                 default -> throw new RuntimeException("Unknown arg"); //TODO FIX - possibly we can guarantee this is validated earlier
             };
         }
