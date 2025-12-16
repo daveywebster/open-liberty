@@ -29,6 +29,7 @@ import io.openliberty.mcp.content.Role;
 import io.openliberty.mcp.content.TextContent;
 import io.openliberty.mcp.meta.Meta;
 import io.openliberty.mcp.meta.MetaKey;
+import io.openliberty.mcp.request.RequestId;
 import io.openliberty.mcp.tools.ToolResponse;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.context.Dependent;
@@ -175,6 +176,11 @@ public class BasicTools {
             throw new RuntimeException("Method call caused runtime exception");
         }
         return input;
+    }
+
+    @Tool(name = "echoRequestId", title = "Echo RequestId", description = "Returns the incoming request ID")
+    public String echoRequestId(RequestId id, @ToolArg(name = "input") String input) {
+        return id.toString() + ": " + input;
     }
 
     @Tool(name = "privateEcho", title = "Echoes the input", description = "Returns the input unchanged")
