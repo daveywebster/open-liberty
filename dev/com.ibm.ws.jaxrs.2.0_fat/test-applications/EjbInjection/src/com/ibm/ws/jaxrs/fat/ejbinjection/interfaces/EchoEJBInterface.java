@@ -7,12 +7,10 @@
  *
  * SPDX-License-Identifier: EPL-2.0
  *******************************************************************************/
-package com.ibm.ws.jaxrs.fat.ejbinjection;
+package com.ibm.ws.jaxrs.fat.ejbinjection.interfaces;
 
-public interface FarewellEjbInterface {
+public interface EchoEJBInterface {
 
-//    @GET
-//    @Path("farewell")
-    public String goodbye();
+    public String echo(String message);
 
 }

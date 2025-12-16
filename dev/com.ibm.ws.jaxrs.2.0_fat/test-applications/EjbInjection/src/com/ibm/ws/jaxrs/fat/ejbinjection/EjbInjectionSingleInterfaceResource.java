@@ -6,9 +6,6 @@
  * http://www.eclipse.org/legal/epl-2.0/
  *
  * SPDX-License-Identifier: EPL-2.0
- *
- * Contributors:
- *     IBM Corporation - initial API and implementation
  *******************************************************************************/
 package com.ibm.ws.jaxrs.fat.ejbinjection;
 
@@ -16,37 +13,27 @@ import javax.annotation.Resource;
 import javax.ejb.Local;
 import javax.ejb.SessionContext;
 import javax.ejb.Stateless;
-import javax.ws.rs.GET;
+import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 
-import com.ibm.ws.jaxrs.fat.ejbinjection.interfaces.FarewellEjbInterface;
-import com.ibm.ws.jaxrs.fat.ejbinjection.interfaces.GreetEJBInterface;
+import com.ibm.ws.jaxrs.fat.ejbinjection.interfaces.EchoEJBInterface;
 
 @Stateless
-@Local({ GreetEJBInterface.class, FarewellEjbInterface.class })
-@Path("multipleinterfaces")
-public class EjbInjectionMultipleInterfacesResource implements GreetEJBInterface, FarewellEjbInterface {
+@Local({ EchoEJBInterface.class })
+@Path("singleinterface")
+public class EjbInjectionSingleInterfaceResource implements EchoEJBInterface {
 
     @Resource
     SessionContext ctx;
 
     @Override
-    @GET
-    @Path("greet")
-    public String hello() {
+    @POST
+    @Path("echo")
+    public String echo(String message) {
         if (ctx == null) {
             return "ctx is null";
         }
-        return "Hello, World!";
+        return message;
     }
 
-    @Override
-    @GET
-    @Path("farewell")
-    public String goodbye() {
-        if (ctx == null) {
-            return "ctx is null";
-        }
-        return "Goodbye, World!";
-    }
 }

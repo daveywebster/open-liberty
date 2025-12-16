@@ -7,12 +7,15 @@
  *
  * SPDX-License-Identifier: EPL-2.0
  *******************************************************************************/
-package com.ibm.ws.jaxrs.fat.ejbinjection;
+package com.ibm.ws.jaxrs.fat.ejbinjection.interfaces.annotated;
 
-public interface GreetEJBInterface {
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
 
-//    @GET
-//    @Path("greet")
+public interface GreetEJBAnnotatedInterface {
+
+    @GET
+    @Path("greet")
     public String hello();
 
 }

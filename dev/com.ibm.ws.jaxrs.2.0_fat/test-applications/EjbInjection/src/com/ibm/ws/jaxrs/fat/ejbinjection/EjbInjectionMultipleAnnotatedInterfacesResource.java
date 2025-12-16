@@ -16,23 +16,20 @@ import javax.annotation.Resource;
 import javax.ejb.Local;
 import javax.ejb.SessionContext;
 import javax.ejb.Stateless;
-import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 
-import com.ibm.ws.jaxrs.fat.ejbinjection.interfaces.FarewellEjbInterface;
-import com.ibm.ws.jaxrs.fat.ejbinjection.interfaces.GreetEJBInterface;
+import com.ibm.ws.jaxrs.fat.ejbinjection.interfaces.annotated.FarewellEjbAnnotatedInterface;
+import com.ibm.ws.jaxrs.fat.ejbinjection.interfaces.annotated.GreetEJBAnnotatedInterface;
 
 @Stateless
-@Local({ GreetEJBInterface.class, FarewellEjbInterface.class })
-@Path("multipleinterfaces")
-public class EjbInjectionMultipleInterfacesResource implements GreetEJBInterface, FarewellEjbInterface {
+@Local({ GreetEJBAnnotatedInterface.class, FarewellEjbAnnotatedInterface.class })
+@Path("multipleannotatedinterfaces")
+public class EjbInjectionMultipleAnnotatedInterfacesResource implements GreetEJBAnnotatedInterface, FarewellEjbAnnotatedInterface {
 
     @Resource
     SessionContext ctx;
 
     @Override
-    @GET
-    @Path("greet")
     public String hello() {
         if (ctx == null) {
             return "ctx is null";
@@ -41,8 +38,6 @@ public class EjbInjectionMultipleInterfacesResource implements GreetEJBInterface
     }
 
     @Override
-    @GET
-    @Path("farewell")
     public String goodbye() {
         if (ctx == null) {
             return "ctx is null";

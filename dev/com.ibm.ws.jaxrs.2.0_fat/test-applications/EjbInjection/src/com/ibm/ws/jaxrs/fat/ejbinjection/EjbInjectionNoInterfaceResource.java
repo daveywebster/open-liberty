@@ -6,31 +6,22 @@
  * http://www.eclipse.org/legal/epl-2.0/
  *
  * SPDX-License-Identifier: EPL-2.0
- *
- * Contributors:
- *     IBM Corporation - initial API and implementation
  *******************************************************************************/
 package com.ibm.ws.jaxrs.fat.ejbinjection;
 
 import javax.annotation.Resource;
-import javax.ejb.Local;
 import javax.ejb.SessionContext;
 import javax.ejb.Stateless;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 
-import com.ibm.ws.jaxrs.fat.ejbinjection.interfaces.FarewellEjbInterface;
-import com.ibm.ws.jaxrs.fat.ejbinjection.interfaces.GreetEJBInterface;
-
 @Stateless
-@Local({ GreetEJBInterface.class, FarewellEjbInterface.class })
-@Path("multipleinterfaces")
-public class EjbInjectionMultipleInterfacesResource implements GreetEJBInterface, FarewellEjbInterface {
+@Path("nointerface")
+public class EjbInjectionNoInterfaceResource {
 
     @Resource
     SessionContext ctx;
 
-    @Override
     @GET
     @Path("greet")
     public String hello() {
@@ -40,13 +31,4 @@ public class EjbInjectionMultipleInterfacesResource implements GreetEJBInterface
         return "Hello, World!";
     }
 
-    @Override
-    @GET
-    @Path("farewell")
-    public String goodbye() {
-        if (ctx == null) {
-            return "ctx is null";
-        }
-        return "Goodbye, World!";
-    }
 }

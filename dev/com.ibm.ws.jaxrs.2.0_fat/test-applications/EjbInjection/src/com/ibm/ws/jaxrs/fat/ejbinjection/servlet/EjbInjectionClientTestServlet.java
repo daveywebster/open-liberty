@@ -10,7 +10,7 @@
  * Contributors:
  *     IBM Corporation - initial API and implementation
  *******************************************************************************/
-package com.ibm.ws.jaxrs.fat.ejbinjection;
+package com.ibm.ws.jaxrs.fat.ejbinjection.servlet;
 
 
 import static org.junit.Assert.assertEquals;
@@ -19,6 +19,7 @@ import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
@@ -44,7 +45,7 @@ public class EjbInjectionClientTestServlet extends FATServlet {
         client.close();
     }
 
-//    @Test
+    @Test
     public void testNoInterfaceInjection() {
         Response response = client.target(URI_CONTEXT_ROOT)
                         .path("nointerface/greet")
@@ -54,31 +55,56 @@ public class EjbInjectionClientTestServlet extends FATServlet {
         assertEquals("Hello, World!", response.readEntity(String.class));
     }
 
-//    @Test
-    public void testOneInterfaceInjection() {
+    @Test
+    public void testSingleInterfaceInjection() {
+        String message = "Hello, World!";
         Response response = client.target(URI_CONTEXT_ROOT)
-                        .path("interface/greet")
+                        .path("singleinterface/echo")
                         .request(MediaType.TEXT_PLAIN_TYPE)
-                        .get();
+                        .post(Entity.entity(message, MediaType.TEXT_PLAIN));
         assertEquals(200, response.getStatus());
-        assertEquals("Hello, World!", response.readEntity(String.class));
+        assertEquals(message, response.readEntity(String.class));
     }
 
-    // TODO: There is currently a bug in RESTEasy that prevents this from working.
-    // The first interface is always selected when the method is invoked.
-    // Meaning, calling EjbInjectionMultipleInterfacesResource.goodbye() fails because it's
-    // not a method on EjbInjectionBeanInterface.
     @Test
-    public void testMultiInterfaceInjection() {
+    public void testMultipleInterfacesInjection() {
         Response response = client.target(URI_CONTEXT_ROOT)
-                        .path("multiinterface/greet")
+                        .path("multipleinterfaces/greet")
                         .request(MediaType.TEXT_PLAIN_TYPE)
                         .get();
         assertEquals(200, response.getStatus());
         assertEquals("Hello, World!", response.readEntity(String.class));
 
         Response response2 = client.target(URI_CONTEXT_ROOT)
-                        .path("multiinterface/farewell")
+                        .path("multipleinterfaces/farewell")
+                        .request(MediaType.TEXT_PLAIN_TYPE)
+                        .get();
+        assertEquals(200, response2.getStatus());
+        assertEquals("Goodbye, World!", response2.readEntity(String.class));
+    }
+
+    @Test
+    public void testSingleAnnotatedInterfaceInjection() {
+        String message = "Hello, World!";
+        Response response = client.target(URI_CONTEXT_ROOT)
+                        .path("singleannotatedinterface/echo")
+                        .request(MediaType.TEXT_PLAIN_TYPE)
+                        .post(Entity.entity(message, MediaType.TEXT_PLAIN));
+        assertEquals(200, response.getStatus());
+        assertEquals(message, response.readEntity(String.class));
+    }
+
+    @Test
+    public void testMultipleAnnotatedInterfacesInjection() {
+        Response response = client.target(URI_CONTEXT_ROOT)
+                        .path("multipleannotatedinterfaces/greet")
+                        .request(MediaType.TEXT_PLAIN_TYPE)
+                        .get();
+        assertEquals(200, response.getStatus());
+        assertEquals("Hello, World!", response.readEntity(String.class));
+
+        Response response2 = client.target(URI_CONTEXT_ROOT)
+                        .path("multipleannotatedinterfaces/farewell")
                         .request(MediaType.TEXT_PLAIN_TYPE)
                         .get();
         assertEquals(200, response2.getStatus());

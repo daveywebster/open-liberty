@@ -19,7 +19,7 @@ import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
 
 import com.ibm.websphere.simplicity.ShrinkHelper;
-import com.ibm.ws.jaxrs.fat.ejbinjection.EjbInjectionClientTestServlet;
+import com.ibm.ws.jaxrs.fat.ejbinjection.servlet.EjbInjectionClientTestServlet;
 
 import componenttest.annotation.Server;
 import componenttest.annotation.TestServlet;
@@ -39,7 +39,10 @@ public class EjbInjectionTest extends FATServletClient {
     @BeforeClass
     public static void setup() throws Exception {
         // Build an application and export it to the dropins directory
-        ShrinkHelper.defaultDropinApp(server, appName, "com.ibm.ws.jaxrs.fat.ejbinjection");
+        ShrinkHelper.defaultDropinApp(server, appName, "com.ibm.ws.jaxrs.fat.ejbinjection",
+                                                       "com.ibm.ws.jaxrs.fat.ejbinjection.interfaces",
+                                                       "com.ibm.ws.jaxrs.fat.ejbinjection.interfaces.annotated",
+                                                       "com.ibm.ws.jaxrs.fat.ejbinjection.servlet");
 
         // Make sure we don't fail because we try to start an
         // already started server
