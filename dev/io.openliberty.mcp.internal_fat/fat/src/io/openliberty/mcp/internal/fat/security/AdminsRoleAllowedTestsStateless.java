@@ -25,17 +25,17 @@ import com.ibm.websphere.simplicity.ShrinkHelper;
 import componenttest.annotation.Server;
 import componenttest.custom.junit.runner.FATRunner;
 import componenttest.topology.impl.LibertyServer;
-import io.openliberty.mcp.internal.fat.tool.securityApps.NoClassAnnotationTools;
+import io.openliberty.mcp.internal.fat.tool.securityApps.AdminsRoleTools;
 
 /**
  *
  */
 @RunWith(FATRunner.class)
-public class NoClassAnnotationTests extends AbstractNoClassAnnotation {
+public class AdminsRoleAllowedTestsStateless extends AbstractRolesAllowed {
 
-    @Server("mcp-server-auth")
+    @Server("mcp-stateless-server-auth")
     public static LibertyServer server;
-    Logger logger = Logger.getLogger(NoClassAnnotationTests.class.getName());
+    Logger logger = Logger.getLogger(AdminsRoleAllowedTestsStateless.class.getName());
 
     @Override
     protected LibertyServer getServer() {
@@ -44,12 +44,12 @@ public class NoClassAnnotationTests extends AbstractNoClassAnnotation {
 
     @Override
     protected String getMCPClientPath() {
-        return "/noClassAnnotationTools";
+        return "/adminsRoleToolsStateless";
     }
 
     @BeforeClass
     public static void setup() throws Exception {
-        WebArchive war = ShrinkWrap.create(WebArchive.class, "noClassAnnotationTools.war").addClass(NoClassAnnotationTools.class);
+        WebArchive war = ShrinkWrap.create(WebArchive.class, "adminsRoleToolsStateless.war").addClass(AdminsRoleTools.class);
         ShrinkHelper.exportDropinAppToServer(server, war, SERVER_ONLY);
         server.startServer();
         assertNotNull(server.findStringsInLogs("MCP server endpoint: .*/mcp$")); // regex matches string that ends with /mcp e.g. "MCP server endpoint: http://macbookpro.home:8010/toolTest/mcp"
@@ -59,4 +59,5 @@ public class NoClassAnnotationTests extends AbstractNoClassAnnotation {
     public static void teardown() throws Exception {
         server.stopServer();
     }
+
 }

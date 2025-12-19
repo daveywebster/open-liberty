@@ -32,6 +32,7 @@ import io.openliberty.mcp.internal.fat.security.AsyncPermitAllTests;
 import io.openliberty.mcp.internal.fat.security.DenyAllTests;
 import io.openliberty.mcp.internal.fat.security.NoClassAnnotationTests;
 import io.openliberty.mcp.internal.fat.security.PermitAllTests;
+import io.openliberty.mcp.internal.fat.security.PermitAllTestsStateless;
 import io.openliberty.mcp.internal.fat.statelessMode.StatefulModeTest;
 import io.openliberty.mcp.internal.fat.statelessMode.StatelessModeTest;
 import io.openliberty.mcp.internal.fat.tool.AsyncToolCancellationTest;
@@ -39,8 +40,8 @@ import io.openliberty.mcp.internal.fat.tool.AsyncToolsErrorHandlingTest;
 import io.openliberty.mcp.internal.fat.tool.AsyncToolsTest;
 import io.openliberty.mcp.internal.fat.tool.CancellationTest;
 import io.openliberty.mcp.internal.fat.tool.DeploymentProblemTest;
-import io.openliberty.mcp.internal.fat.tool.InactiveCdiTest;
 import io.openliberty.mcp.internal.fat.tool.EncoderTest;
+import io.openliberty.mcp.internal.fat.tool.InactiveCdiTest;
 import io.openliberty.mcp.internal.fat.tool.McpUrlPathTest;
 import io.openliberty.mcp.internal.fat.tool.NoParamNameTest;
 import io.openliberty.mcp.internal.fat.tool.ToolErrorHandlingTest;
@@ -78,8 +79,15 @@ import io.openliberty.mcp.internal.fat.tool.ToolTest;
                 AdminsRoleAllowedTests.class,
                 DenyAllTests.class,
                 NoClassAnnotationTests.class,
-                PermitAllTests.class
+                PermitAllTests.class,
+
+                // Stateless Authorisation Tests
+                PermitAllTestsStateless.class
+//DenyAllTestsStateless.class,
+//NoClassAnnotationTestsStateless.class
+
 })
+
 public class FATSuite {
 
     @ClassRule

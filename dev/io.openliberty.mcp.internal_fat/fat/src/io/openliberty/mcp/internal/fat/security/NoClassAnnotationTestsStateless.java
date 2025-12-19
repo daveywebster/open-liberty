@@ -31,11 +31,11 @@ import io.openliberty.mcp.internal.fat.tool.securityApps.NoClassAnnotationTools;
  *
  */
 @RunWith(FATRunner.class)
-public class NoClassAnnotationTests extends AbstractNoClassAnnotation {
+public class NoClassAnnotationTestsStateless extends AbstractNoClassAnnotation {
 
-    @Server("mcp-server-auth")
+    @Server("mcp-stateless-server-auth")
     public static LibertyServer server;
-    Logger logger = Logger.getLogger(NoClassAnnotationTests.class.getName());
+    Logger logger = Logger.getLogger(NoClassAnnotationTestsStateless.class.getName());
 
     @Override
     protected LibertyServer getServer() {
@@ -44,12 +44,12 @@ public class NoClassAnnotationTests extends AbstractNoClassAnnotation {
 
     @Override
     protected String getMCPClientPath() {
-        return "/noClassAnnotationTools";
+        return "/noClassAnnotationToolsStateless";
     }
 
     @BeforeClass
     public static void setup() throws Exception {
-        WebArchive war = ShrinkWrap.create(WebArchive.class, "noClassAnnotationTools.war").addClass(NoClassAnnotationTools.class);
+        WebArchive war = ShrinkWrap.create(WebArchive.class, "noClassAnnotationToolsStateless.war").addClass(NoClassAnnotationTools.class);
         ShrinkHelper.exportDropinAppToServer(server, war, SERVER_ONLY);
         server.startServer();
         assertNotNull(server.findStringsInLogs("MCP server endpoint: .*/mcp$")); // regex matches string that ends with /mcp e.g. "MCP server endpoint: http://macbookpro.home:8010/toolTest/mcp"

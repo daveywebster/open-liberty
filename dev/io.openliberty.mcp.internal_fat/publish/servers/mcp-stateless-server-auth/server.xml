@@ -1,7 +1,7 @@
-<server description="Stateless Liberty server with Auth">
+<server description="Sample Liberty server">
 
   <featureManager>
-    <feature>servlet-6.0</feature>    
+    <feature>servlet-6.0</feature>
     <feature>cdi-4.0</feature>
     <feature>mcpServer-1.0</feature>
     <feature>appSecurity-5.0</feature>
@@ -11,6 +11,7 @@
   <include location="../fatTestPorts.xml" />
   
 	<basicRegistry id="basic" realm="BasicRealm">
+	
 	     <user name="testuser" password="testpassword"/>
 	     <user name="BobTheAdmin" password="testpassword"/>
 		 <user name="noRoleUser" password="testpassword"/>
@@ -27,6 +28,7 @@
 	         <member name="testuser"/>
 	         <member name="BobTheAdmin"/>
 	     </group>
+	     
 	</basicRegistry>
   
 </server>

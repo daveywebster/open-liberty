@@ -1,11 +1,11 @@
 /*******************************************************************************
- * Copyright (c) 2025 IBM Corporation and others.
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License 2.0
- * which accompanies this distribution, and is available at
- * http://www.eclipse.org/legal/epl-2.0/
+ Copyright (c) 2025 IBM Corporation and others.
+ All rights reserved. This program and the accompanying materials
+ are made available under the terms of the Eclipse Public License 2.0
+ which accompanies this distribution, and is available at
+ http://www.eclipse.org/legal/epl-2.0/
  *
- * SPDX-License-Identifier: EPL-2.0
+ SPDX-License-Identifier: EPL-2.0
  *******************************************************************************/
 package io.openliberty.mcp.internal.fat.security;
 
@@ -18,6 +18,7 @@ import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.WebArchive;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.runner.RunWith;
 
 import com.ibm.websphere.simplicity.ShrinkHelper;
@@ -25,31 +26,32 @@ import com.ibm.websphere.simplicity.ShrinkHelper;
 import componenttest.annotation.Server;
 import componenttest.custom.junit.runner.FATRunner;
 import componenttest.topology.impl.LibertyServer;
-import io.openliberty.mcp.internal.fat.tool.securityApps.NoClassAnnotationTools;
+import io.openliberty.mcp.internal.fat.tool.securityApps.PermitAllTools;
+import io.openliberty.mcp.internal.fat.utils.McpClient;
+import io.openliberty.mcp.internal.fat.utils.McpClient.Mode;
 
 /**
  *
  */
 @RunWith(FATRunner.class)
-public class NoClassAnnotationTests extends AbstractNoClassAnnotation {
+public class PermitAllTestsStateless extends AbstractPermitAll {
 
-    @Server("mcp-server-auth")
+    @Server("mcp-stateless-server-auth")
     public static LibertyServer server;
-    Logger logger = Logger.getLogger(NoClassAnnotationTests.class.getName());
+    Logger logger = Logger.getLogger(PermitAllTestsStateless.class.getName());
 
-    @Override
-    protected LibertyServer getServer() {
-        return server;
-    }
+    @Rule
+    public McpClient client = new McpClient(server, "/permitAllToolsStateless", Mode.STATELESS);
 
+    /** {@inheritDoc} */
     @Override
-    protected String getMCPClientPath() {
-        return "/noClassAnnotationTools";
+    McpClient getClient() {
+        return client;
     }
 
     @BeforeClass
     public static void setup() throws Exception {
-        WebArchive war = ShrinkWrap.create(WebArchive.class, "noClassAnnotationTools.war").addClass(NoClassAnnotationTools.class);
+        WebArchive war = ShrinkWrap.create(WebArchive.class, "permitAllToolsStateless.war").addClass(PermitAllTools.class);
         ShrinkHelper.exportDropinAppToServer(server, war, SERVER_ONLY);
         server.startServer();
         assertNotNull(server.findStringsInLogs("MCP server endpoint: .*/mcp$")); // regex matches string that ends with /mcp e.g. "MCP server endpoint: http://macbookpro.home:8010/toolTest/mcp"

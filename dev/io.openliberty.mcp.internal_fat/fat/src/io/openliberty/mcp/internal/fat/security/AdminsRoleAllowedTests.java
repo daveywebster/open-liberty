@@ -18,8 +18,6 @@ import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.WebArchive;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import com.ibm.websphere.simplicity.ShrinkHelper;
@@ -27,28 +25,31 @@ import com.ibm.websphere.simplicity.ShrinkHelper;
 import componenttest.annotation.Server;
 import componenttest.custom.junit.runner.FATRunner;
 import componenttest.topology.impl.LibertyServer;
-import componenttest.topology.utils.FATServletClient;
-import io.openliberty.mcp.internal.fat.security.AuthHelper.ExpectedTestResult;
-import io.openliberty.mcp.internal.fat.security.AuthHelper.Scenario;
 import io.openliberty.mcp.internal.fat.tool.securityApps.AdminsRoleTools;
-import io.openliberty.mcp.internal.fat.utils.McpClient;
 
 /**
  *
  */
 @RunWith(FATRunner.class)
-public class AdminsRoleAllowedTests extends FATServletClient {
+public class AdminsRoleAllowedTests extends AbstractRolesAllowed {
 
     @Server("mcp-server-auth")
     public static LibertyServer server;
     Logger logger = Logger.getLogger(AdminsRoleAllowedTests.class.getName());
 
-    @Rule
-    public McpClient client = new McpClient(server, "/adminsRoleTools");
+    @Override
+    protected LibertyServer getServer() {
+        return server;
+    }
+
+    @Override
+    protected String getMCPClientPath() {
+        return "/adminsRoleTools";
+    }
 
     @BeforeClass
     public static void setup() throws Exception {
-        WebArchive war = ShrinkWrap.create(WebArchive.class, "adminsRoleTools.war").addPackage(AdminsRoleTools.class.getPackage());
+        WebArchive war = ShrinkWrap.create(WebArchive.class, "adminsRoleTools.war").addClass(AdminsRoleTools.class);
         ShrinkHelper.exportDropinAppToServer(server, war, SERVER_ONLY);
         server.startServer();
         assertNotNull(server.findStringsInLogs("MCP server endpoint: .*/mcp$")); // regex matches string that ends with /mcp e.g. "MCP server endpoint: http://macbookpro.home:8010/toolTest/mcp"
@@ -59,80 +60,4 @@ public class AdminsRoleAllowedTests extends FATServletClient {
         server.stopServer();
     }
 
-    @Test
-    public void testRolesAllowedClass_Admins_echoPermitAll() throws Exception {
-        AuthHelper.test(Scenario.NO_AUTHENTICATION, ExpectedTestResult.PASS, client);
-        AuthHelper.test(Scenario.ADMIN_PASS_LOGIN, ExpectedTestResult.PASS, client);
-        AuthHelper.test(Scenario.ADMIN_FAIL_LOGIN, ExpectedTestResult.PASS, client);
-        AuthHelper.test(Scenario.TESTUSER_PASS_LOGIN, ExpectedTestResult.PASS, client);
-        AuthHelper.test(Scenario.TESTUSER_FAIL_LOGIN, ExpectedTestResult.PASS, client);
-        AuthHelper.test(Scenario.UNKNOWN_USER, ExpectedTestResult.PASS, client);
-        AuthHelper.test(Scenario.UNKNOWN_ROLE, ExpectedTestResult.PASS, client);
-    }
-
-    @Test
-    public void testRolesAllowedClass_Admins_echoAdminAllowed() throws Exception {
-        AuthHelper.test(Scenario.NO_AUTHENTICATION, ExpectedTestResult.FAIL, client);
-        AuthHelper.test(Scenario.ADMIN_PASS_LOGIN, ExpectedTestResult.PASS, client);
-        AuthHelper.test(Scenario.ADMIN_FAIL_LOGIN, ExpectedTestResult.FAIL, client);
-        AuthHelper.test(Scenario.TESTUSER_PASS_LOGIN, ExpectedTestResult.FAIL, client);
-        AuthHelper.test(Scenario.TESTUSER_FAIL_LOGIN, ExpectedTestResult.FAIL, client);
-        AuthHelper.test(Scenario.UNKNOWN_USER, ExpectedTestResult.FAIL, client);
-        AuthHelper.test(Scenario.UNKNOWN_ROLE, ExpectedTestResult.FAIL, client);
-    }
-
-    @Test
-    public void testRolesAllowedClass_Admins_echoTestUserAllowed() throws Exception {
-        AuthHelper.test(Scenario.NO_AUTHENTICATION, ExpectedTestResult.FAIL, client);
-        AuthHelper.test(Scenario.ADMIN_PASS_LOGIN, ExpectedTestResult.FAIL, client);
-        AuthHelper.test(Scenario.ADMIN_FAIL_LOGIN, ExpectedTestResult.FAIL, client);
-        AuthHelper.test(Scenario.TESTUSER_PASS_LOGIN, ExpectedTestResult.PASS, client);
-        AuthHelper.test(Scenario.TESTUSER_FAIL_LOGIN, ExpectedTestResult.FAIL, client);
-        AuthHelper.test(Scenario.UNKNOWN_USER, ExpectedTestResult.FAIL, client);
-        AuthHelper.test(Scenario.UNKNOWN_ROLE, ExpectedTestResult.FAIL, client);
-    }
-
-    @Test
-    public void testRolesAllowedClass_Admins_echoTwoRolesAllowed() throws Exception {
-        AuthHelper.test(Scenario.NO_AUTHENTICATION, ExpectedTestResult.FAIL, client);
-        AuthHelper.test(Scenario.ADMIN_PASS_LOGIN, ExpectedTestResult.PASS, client);
-        AuthHelper.test(Scenario.ADMIN_FAIL_LOGIN, ExpectedTestResult.FAIL, client);
-        AuthHelper.test(Scenario.TESTUSER_PASS_LOGIN, ExpectedTestResult.PASS, client);
-        AuthHelper.test(Scenario.TESTUSER_FAIL_LOGIN, ExpectedTestResult.FAIL, client);
-        AuthHelper.test(Scenario.UNKNOWN_USER, ExpectedTestResult.FAIL, client);
-        AuthHelper.test(Scenario.UNKNOWN_ROLE, ExpectedTestResult.FAIL, client);
-    }
-
-    @Test
-    public void testRolesAllowedClass_Admins_echoNoSecurityAnnotationExists() throws Exception {
-        AuthHelper.test(Scenario.NO_AUTHENTICATION, ExpectedTestResult.FAIL, client);
-        AuthHelper.test(Scenario.ADMIN_PASS_LOGIN, ExpectedTestResult.PASS, client);
-        AuthHelper.test(Scenario.ADMIN_FAIL_LOGIN, ExpectedTestResult.FAIL, client);
-        AuthHelper.test(Scenario.TESTUSER_PASS_LOGIN, ExpectedTestResult.FAIL, client);
-        AuthHelper.test(Scenario.TESTUSER_FAIL_LOGIN, ExpectedTestResult.FAIL, client);
-        AuthHelper.test(Scenario.UNKNOWN_USER, ExpectedTestResult.FAIL, client);
-        AuthHelper.test(Scenario.UNKNOWN_ROLE, ExpectedTestResult.FAIL, client);
-    }
-
-    @Test
-    public void testRolesAllowedClass_Admins_echoDenyAll() throws Exception {
-        AuthHelper.test(Scenario.NO_AUTHENTICATION, ExpectedTestResult.FAIL, client);
-        AuthHelper.test(Scenario.ADMIN_PASS_LOGIN, ExpectedTestResult.FAIL, client);
-        AuthHelper.test(Scenario.ADMIN_FAIL_LOGIN, ExpectedTestResult.FAIL, client);
-        AuthHelper.test(Scenario.TESTUSER_PASS_LOGIN, ExpectedTestResult.FAIL, client);
-        AuthHelper.test(Scenario.TESTUSER_FAIL_LOGIN, ExpectedTestResult.FAIL, client);
-        AuthHelper.test(Scenario.UNKNOWN_USER, ExpectedTestResult.FAIL, client);
-        AuthHelper.test(Scenario.UNKNOWN_ROLE, ExpectedTestResult.FAIL, client);
-    }
-
-    @Test
-    public void testRolesAllowedClass_Admins_echoRoleDoesNotExist() throws Exception {
-        AuthHelper.test(Scenario.NO_AUTHENTICATION, ExpectedTestResult.FAIL, client);
-        AuthHelper.test(Scenario.ADMIN_PASS_LOGIN, ExpectedTestResult.FAIL, client);
-        AuthHelper.test(Scenario.ADMIN_FAIL_LOGIN, ExpectedTestResult.FAIL, client);
-        AuthHelper.test(Scenario.TESTUSER_PASS_LOGIN, ExpectedTestResult.FAIL, client);
-        AuthHelper.test(Scenario.TESTUSER_FAIL_LOGIN, ExpectedTestResult.FAIL, client);
-        AuthHelper.test(Scenario.UNKNOWN_USER, ExpectedTestResult.FAIL, client);
-        AuthHelper.test(Scenario.UNKNOWN_ROLE, ExpectedTestResult.FAIL, client);
-    }
 }
