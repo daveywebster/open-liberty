@@ -211,7 +211,7 @@ public class NettyResponseMessage extends NettyBaseMessage implements HttpRespon
 
     @Override
     public void setCurrentDate() {
-        String date = new String(HttpDispatcher.getDateFormatter().getRFC1123TimeAsBytes(this.config.getDateHeaderRange()), StandardCharsets.UTF_8)
+        String date = new String(HttpDispatcher.getDateFormatter().getRFC1123TimeAsBytes(this.config.getDateHeaderRange()), StandardCharsets.UTF_8);
         setHeader(HttpHeaderKeys.HDR_DATE, date);
     }
 
@@ -417,6 +417,11 @@ public class NettyResponseMessage extends NettyBaseMessage implements HttpRespon
     }
 
     @Override
+    public String getReasonPhrase() {
+        throw new UnsupportedOperationException("getReasonPhrase() not supported in Netty context");
+    }
+
+    @Override
     public byte[] getReasonPhraseBytes() {
         return this.nettyResponse.status().reasonPhrase().getBytes();
     }
@@ -459,6 +464,21 @@ public class NettyResponseMessage extends NettyBaseMessage implements HttpRespon
             return false;
         }
         return true;
+    }
+
+    @Override
+    public void setReasonPhrase(String reason) {
+        throw new UnsupportedOperationException("setReasonPhrase(String reason) not supported in Netty context");
+    }
+
+    @Override
+    public void setReasonPhrase(byte[] reason) {
+        throw new UnsupportedOperationException("setReasonPhrase(byte[] reason) not supported in Netty context");
+    }
+
+    @Override
+    public HttpResponseMessage duplicate() {
+        throw new UnsupportedOperationException("duplicate() not supported in Netty context");
     }
 
     /**
