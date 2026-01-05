@@ -16,7 +16,6 @@ import java.io.PrintWriter;
 import java.util.Collection;
 import java.util.Optional;
 
-import org.osgi.framework.Constants;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.ConfigurationPolicy;
 import org.osgi.service.component.annotations.Reference;
@@ -30,8 +29,7 @@ import com.ibm.ws.runtime.metadata.ApplicationMetaData;
 import com.ibm.ws.runtime.metadata.MetaDataSlot;
 import com.ibm.wsspi.logging.Introspector;
 
-@Component(immediate = true, configurationPolicy = ConfigurationPolicy.IGNORE, property = {
-                                                                                            Constants.SERVICE_VENDOR + "=" + "IBM" })
+@Component(configurationPolicy = ConfigurationPolicy.IGNORE)
 public class CDIIntrospector implements Introspector {
 
     @Reference
