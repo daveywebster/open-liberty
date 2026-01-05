@@ -1299,7 +1299,7 @@ public class BeanDeploymentArchiveImpl implements WebSphereBeanDeploymentArchive
                                                        .map(m -> m.getValue())
                                                        .collect(Collectors.joining(", ")));
 
-        //We have a useful toString on the filters here: https://github.com/weld/core/blob/master/impl/src/main/java/org/jboss/weld/metadata/WeldFilterImpl.java
+        //We have a useful toString on the filters here: https://github.com/weld/core/blob/6.0/impl/src/main/java/org/jboss/weld/metadata/WeldFilterImpl.java
         out.println("scanning excludes: " + beansXml.getScanning().getExcludes().stream().filter(Objects::nonNull)
                                                     .map(m -> m.getValue()).map(f -> f.toString()).collect(Collectors.joining(", ")));
 
