@@ -33,8 +33,8 @@ import componenttest.custom.junit.runner.AlwaysPassesTest;
 public class FATSuite extends TestContainerSuite {
 
     private static final DockerImageName mongoDBImage = DockerImageName//
-                    .parse("public.ecr.aws/docker/library/mongo:6.0")
-                    .asCompatibleSubstituteFor("mongo:6.0");
+                    .parse("public.ecr.aws/docker/library/mongo:8.0")
+                    .asCompatibleSubstituteFor("mongo:8.0");
 
     @ClassRule
     public static MongoDBContainer mongoDBContainer = new MongoDBContainer(mongoDBImage);

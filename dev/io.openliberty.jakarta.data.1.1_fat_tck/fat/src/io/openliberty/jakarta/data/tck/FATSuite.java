@@ -49,8 +49,8 @@ import componenttest.topology.impl.JavaInfo;
 public class FATSuite extends TestContainerSuite {
 
     private static final DockerImageName mongoDBImage = DockerImageName //
-                    .parse("public.ecr.aws/docker/library/mongo:6.0")
-                    .asCompatibleSubstituteFor("mongo:6.0");
+                    .parse("public.ecr.aws/docker/library/mongo:8.0")
+                    .asCompatibleSubstituteFor("mongo:8.0");
 
     @ClassRule
     public static JdbcDatabaseContainer<?> relationalDatabase = DatabaseContainerFactory.create();
