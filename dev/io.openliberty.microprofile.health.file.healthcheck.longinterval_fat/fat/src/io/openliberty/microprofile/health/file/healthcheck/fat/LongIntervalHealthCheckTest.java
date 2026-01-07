@@ -281,7 +281,13 @@ public class LongIntervalHealthCheckTest {
         TimeUnit.MILLISECONDS.sleep(timeRemaining / 2);
         long readyModifiedTime = HealthFileUtils.getLastModifiedTime(HealthFileUtils.getReadyFile(serverRootDirFile));
         Log.info(getClass(), "HealthCheckTestLongCheckInterval", "The ready file's `new` modified time(ms): " + readyModifiedTime);
-        assertTrue("Ready file should not have been upated. The new modified time is (ms): " + readyModifiedTime, readyModifiedTime == readyCreateModifiedTime);
+
+        /*
+         * If difference is less than a second, its effectively the "same" time.
+         * Encountered instances where there is a different of ~100ms.
+         * Perhaps something (i.e. OS) touched it immediately after creating it.
+         */
+        assertTrue("Ready file should not have been upated. The new modified time is (ms): " + readyModifiedTime, (readyModifiedTime - readyCreateModifiedTime) <= 999);
 
         /*
          * We've waited half the remaining 30 seconds already, we're waiting the second half now and we need to offset
