@@ -1,6 +1,6 @@
 
 /*******************************************************************************
- * Copyright (c) 2024 IBM Corporation and others.
+ * Copyright (c) 2024, 2026 IBM Corporation and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License 2.0
  * which accompanies this distribution, and is available at
@@ -25,9 +25,8 @@ import jakarta.persistence.Table;
 public class Participant {
 
     @Id
-    //TODO enable strategy once #33744 is fixed
-    @GeneratedValue
-    
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+
     private Integer id;
 
     @Embedded
