@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2022, 2025 IBM Corporation and others.
+ * Copyright (c) 2022, 2026 IBM Corporation and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License 2.0
  * which accompanies this distribution, and is available at
@@ -14,7 +14,6 @@ package test.jakarta.data.web;
 
 import static componenttest.annotation.SkipIfSysProp.DB_Oracle;
 import static componenttest.annotation.SkipIfSysProp.DB_Postgres;
-import static componenttest.annotation.SkipIfSysProp.DB_SQLServer;
 import static jakarta.data.repository.By.ID;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -2225,6 +2224,34 @@ public class DataTestServlet extends FATServlet {
     }
 
     /**
+     * Repository method with a float literal in a query.
+     */
+    @Test
+    public void testFloatLiteral() {
+        products.clear();
+
+        Product prod1 = new Product();
+        prod1.pk = UUID.nameUUIDFromBytes("TestFloatLiteral-1".getBytes());
+        prod1.name = "TestFloatLiteral-Product-1";
+        prod1.price = 18.49f;
+        products.save(prod1);
+
+        Product prod2 = new Product();
+        prod2.pk = UUID.nameUUIDFromBytes("TestFloatLiteral-2".getBytes());
+        prod2.name = "TestFloatLiteral-Product-2";
+        prod2.price = 18.52f;
+        products.save(prod2);
+
+        assertEquals(List.of("TestFloatLiteral-Product-1"),
+                     products.pricedBelowWithTax(20.0f)
+                                     .stream()
+                                     .map(p -> p.name)
+                                     .collect(Collectors.toList()));
+
+        products.clear();
+    }
+
+    /**
      * Repository methods where the FROM clause identifies the entity.
      */
     @Test
@@ -2596,10 +2623,6 @@ public class DataTestServlet extends FATServlet {
      * Tests repository insert methods.
      */
     @AllowedFFDC("jakarta.data.exceptions.EntityExistsException")
-    @SkipIfSysProp({
-                     DB_Postgres, //Failing on Postgres due to eclipselink issue:  https://github.com/OpenLiberty/open-liberty/issues/28380
-                     DB_SQLServer //Failing on SQLServer due to eclipselink issue: https://github.com/OpenLiberty/open-liberty/issues/28737
-    })
     @Test
     public void testInsert() throws Exception {
         people.deleteBySSN_IdBetween(0L, 999999999L);
@@ -2705,10 +2728,6 @@ public class DataTestServlet extends FATServlet {
      * Insert and delete multiple entities.
      */
     // @AllowedFFDC("jakarta.data.exceptions.EntityExistsException")
-    @SkipIfSysProp({
-                     DB_Postgres, //Failing on Postgres due to eclipselink issue:  https://github.com/OpenLiberty/open-liberty/issues/28380
-                     DB_SQLServer //Failing on SQLServer due to eclipselink issue: https://github.com/OpenLiberty/open-liberty/issues/28737
-    })
     @Test
     public void testInsertAndDeleteMultiple() throws Exception {
         people.deleteBySSN_IdBetween(0L, 999999999L);
