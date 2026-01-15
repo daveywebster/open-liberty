@@ -1608,7 +1608,7 @@ public class LTPAKeyRotationTests {
      * <LI>Failed authentication to simple servlet.
      * </OL>
      */
-    @Mode(TestMode.LITE)
+    @Mode(TestMode.FULL)
     @Test
     @CheckForLeakedPasswords({ validPassword })
     public void testExpiredLtpaToken_monitorValidationKeysDir_true_monitorInterval_10() throws Exception {
