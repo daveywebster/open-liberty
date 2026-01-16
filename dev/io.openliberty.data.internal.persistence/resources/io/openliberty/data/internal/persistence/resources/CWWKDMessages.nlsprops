@@ -73,7 +73,7 @@ CWWKD1005.find.rtrn.err=CWWKD1005E: The {0} method of the {1} repository \
  not convertible from the {3} entity type. The result type of a \
  find operation must be the entity type, a type of an entity attribute \
  that is chosen by the Select annotation, a Java record that is composed of entity \
- attributes, or a type selected by the query that is supplied to the \
+ attributes, or a type that is selected by the query that is supplied to the \
  Query annotation. The return type of the repository find method can be \
  the result type, an array of the result type, or any of the following types \
  parameterized with the result type: {4}.
