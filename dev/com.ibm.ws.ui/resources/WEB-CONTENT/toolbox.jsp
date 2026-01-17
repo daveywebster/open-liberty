@@ -19,7 +19,6 @@
 <%@ page import="java.io.OutputStreamWriter"%>
 <%@ page import="java.net.*"%>
 <%@ page import="javax.servlet.http.Cookie"%>
-<%@ page import="javax.servlet.http.HttpServletResponse"%>
 
 <!DOCTYPE html>
 <html style="height: 100%; width: 100%; margin: 0px; padding: 0px;">
@@ -522,7 +521,7 @@ BIDI_PREFS_STRING = '<%=line%>';
 <script src="dojo/dojo.js"></script>
 <script>
     // Intercept Dojo XHR requests after Dojo loads
-    require(["dojo/request/xhr", "dojo/aspect"], function(xhr, aspect) {
+    require(["dojo/request/xhr", "dojo/aspect", "dojo/ready"], function(xhr, aspect, ready) {
         // Wrap each xhr method to add CSRF token
         function wrapXhrMethod(methodName, httpMethod) {
             aspect.around(xhr, methodName, function(originalMethod) {
@@ -555,9 +554,12 @@ BIDI_PREFS_STRING = '<%=line%>';
         wrapXhrMethod('del', 'DELETE');
         
         console.log('Dojo CSRF protection initialized');
+        
+        // Use ready() to ensure toolbox loads after DOM and Dojo are fully ready
+        ready(function() {
+            require(["js/loadToolbox"]);
+        });
     });
-    
-    require(["js/loadToolbox"]);
 </script>
 
  

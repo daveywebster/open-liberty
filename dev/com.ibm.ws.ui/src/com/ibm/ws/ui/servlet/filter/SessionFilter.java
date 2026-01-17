@@ -177,18 +177,10 @@ public class SessionFilter implements Filter {
 
     /**
      * Generates and sets a new CSRF token if one doesn't exist.
-     * Only generates tokens for authenticated users with active sessions.
+     * Reuses existing valid tokens to maintain consistency across requests.
+     * Only sets the cookie when a new token is generated to reduce overhead.
      */
     private void generateAndSetCsrfToken(HttpServletRequest request, HttpServletResponse response) {
-        // Only generate tokens for authenticated users
-        HttpSession session = request.getSession(false);
-        if (session == null || request.getUserPrincipal() == null) {
-            if (tc.isDebugEnabled()) {
-                Tr.debug(tc, "Skipping CSRF token generation - no active authenticated session");
-            }
-            return;
-        }
-        
         String token = getCsrfTokenFromCookie(request);
         if (token == null) {
             // Generate new token only if completely missing
@@ -200,7 +192,7 @@ public class SessionFilter implements Filter {
             response.addHeader(SET_COOKIE_HEADER, cookieValue);
             
             if (tc.isDebugEnabled()) {
-                Tr.debug(tc, "Generated new CSRF token for authenticated user");
+                Tr.debug(tc, "Generated new CSRF token");
             }
         } else if (!isValidTokenFormat(token)) {
             // Token exists but has invalid format - log warning but don't regenerate
@@ -209,6 +201,8 @@ public class SessionFilter implements Filter {
                 Tr.debug(tc, "Invalid CSRF token format detected - will fail validation");
             }
         }
+        // If token exists and is valid, do nothing - reuse existing token
+        // This reduces overhead by not setting the cookie on every request
     }
 
     /**
