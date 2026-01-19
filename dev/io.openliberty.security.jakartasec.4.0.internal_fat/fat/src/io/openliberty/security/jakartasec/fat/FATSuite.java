@@ -18,11 +18,13 @@ import org.junit.runners.Suite.SuiteClasses;
 
 import componenttest.custom.junit.runner.AlwaysPassesTest;
 import io.openliberty.security.jakartasec.fat.tests.InMemoryIdentityStoreTests;
+import io.openliberty.security.jakartasec.fat.tests.MultipleHAMTests;
 
 @RunWith(Suite.class)
 @SuiteClasses({
                 AlwaysPassesTest.class,
-                InMemoryIdentityStoreTests.class
+                InMemoryIdentityStoreTests.class,
+                MultipleHAMTests.class
 })
 public class FATSuite {
 }
