@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2023,2025 IBM Corporation and others.
+ * Copyright (c) 2023,2026 IBM Corporation and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License 2.0
  * which accompanies this distribution, and is available at
@@ -138,6 +138,8 @@ public class DBStoreEMBuilder extends EntityManagerBuilder implements DDLGenerat
         super(provider, repositoryClassLoader, repositoryInterfaces, dataStore);
         final boolean trace = TraceComponent.isAnyTracingEnabled();
 
+        abortIfStopping(null, repositoryInterfaces);
+
         String qualifiedName = null;
         boolean javaApp = false, javaModule = false, javaComp = false;
         J2EEName jeeName = metadata.getJ2EEName();
@@ -212,6 +214,8 @@ public class DBStoreEMBuilder extends EntityManagerBuilder implements DDLGenerat
                 }
             }
             if (dbStoreId == null) {
+                abortIfStopping(null, repositoryInterfaces);
+
                 // Create a ResourceFactory that can delegate back to a resource reference lookup
                 ResourceFactory delegator = new ResRefDelegator(dataStore, metadata);
                 Hashtable<String, Object> svcProps = new Hashtable<String, Object>();
@@ -271,6 +275,8 @@ public class DBStoreEMBuilder extends EntityManagerBuilder implements DDLGenerat
                 svcProps.put("tablePrefix", "");
                 svcProps.put("keyGenerationStrategy", "AUTO");
 
+                abortIfStopping(null, repositoryInterfaces);
+
                 dbStoreConfig = provider.configAdmin.createFactoryConfiguration("com.ibm.ws.persistence.databaseStore", bc.getBundle().getLocation());
                 dbStoreConfig.update(svcProps);
                 dbStoreConfigurations.put(isJNDIName ? qualifiedName : dataStore, dbStoreConfig);
@@ -298,38 +304,13 @@ public class DBStoreEMBuilder extends EntityManagerBuilder implements DDLGenerat
             Collection<ServiceReference<DatabaseStore>> refs = //
                             bc.getServiceReferences(DatabaseStore.class, filter);
             if (refs.isEmpty()) {
-                if (FrameworkState.isStopping())
-                    throw exc(IllegalStateException.class,
-                              "CWWKD1113.server.stopping",
-                              Util.names(repositoryInterfaces));
-
-                if (application != null) {
-                    filter = FilterUtils.createPropertyFilter("name", application);
-                    Collection<ServiceReference<Application>> appRefs = //
-                                    bc.getServiceReferences(Application.class, filter);
-                    if (appRefs.isEmpty()) {
-                        throw exc(IllegalStateException.class,
-                                  "CWWKD1115.app.unavailable",
-                                  Util.names(repositoryInterfaces),
-                                  application);
-                    } else {
-                        Object state = appRefs.iterator().next() //
-                                        .getProperty("application.state");
-                        if (ApplicationState.STOPPED == state ||
-                            ApplicationState.STOPPING == state)
-                            throw exc(IllegalStateException.class,
-                                      "CWWKD1114.app.stopping",
-                                      Util.names(repositoryInterfaces),
-                                      application,
-                                      state);
-                    }
-                }
-
                 if (System.nanoTime() - start < MAX_WAIT_FOR_SERVICE_NS) {
                     if (trace && tc.isDebugEnabled())
                         Tr.debug(this, tc, "Wait " + poll_ms +
                                            " ms for service reference to become available...");
                     TimeUnit.MILLISECONDS.sleep(poll_ms);
+
+                    abortIfStopping(application, repositoryInterfaces);
                 } else {
                     throw exc(IllegalStateException.class,
                               "CWWKD1116.resource.unavailable",
@@ -352,6 +333,8 @@ public class DBStoreEMBuilder extends EntityManagerBuilder implements DDLGenerat
         EntityParser parser = new EntityParser(tablePrefix, provider);
 
         for (Class<?> c : entityTypes) {
+            abortIfStopping(null, repositoryInterfaces);
+
             if (c.isAnnotationPresent(Entity.class)) {
                 parser.parseAnnotatedEntity(c);
             } else if (c.isRecord()) {
@@ -392,12 +375,62 @@ public class DBStoreEMBuilder extends EntityManagerBuilder implements DDLGenerat
         if (!generatedEntities.isEmpty())
             properties.put("io.openliberty.persistence.internal.generatedEntities", generatedEntities);
 
+        abortIfStopping(application, repositoryInterfaces);
+
         DatabaseStore dbstore = bc.getService(ref);
         persistenceServiceUnit = dbstore.createPersistenceServiceUnit(getRepositoryClassLoader(),
                                                                       properties,
                                                                       entityClassNames.toArray(new String[entityClassNames.size()]));
 
         collectEntityInfo(entityTypes, convertibleTypes);
+
+        abortIfStopping(application, repositoryInterfaces);
+    }
+
+    /**
+     * Detect if the server is stopping or the application is unvailable.
+     * If so, raise an appropriate error instead of continuing.
+     *
+     * @param application          name of the application that uses the repository.
+     *                                 Null to avoid checking application availability.
+     * @param repositoryInterfaces repository interfaces that use the entities.
+     * @throws IllegalStateException  if the server is stopping or
+     *                                    the application is unavailable.
+     * @throws InvalidSyntaxException should never occur.
+     */
+    private void abortIfStopping(String application,
+                                 Set<Class<?>> repositoryInterfaces) //
+                    throws InvalidSyntaxException {
+
+        if (FrameworkState.isStopping())
+            throw exc(IllegalStateException.class,
+                      "CWWKD1113.server.stopping",
+                      Util.names(repositoryInterfaces));
+
+        if (application != null) {
+            BundleContext bc = FrameworkUtil.getBundle(DatabaseStore.class) //
+                            .getBundleContext();
+
+            String filter = FilterUtils.createPropertyFilter("name", application);
+            Collection<ServiceReference<Application>> appRefs = //
+                            bc.getServiceReferences(Application.class, filter);
+            if (appRefs.isEmpty()) {
+                throw exc(IllegalStateException.class,
+                          "CWWKD1115.app.unavailable",
+                          Util.names(repositoryInterfaces),
+                          application);
+            } else {
+                Object state = appRefs.iterator().next() //
+                                .getProperty("application.state");
+                if (ApplicationState.STOPPED == state ||
+                    ApplicationState.STOPPING == state)
+                    throw exc(IllegalStateException.class,
+                              "CWWKD1114.app.stopping",
+                              Util.names(repositoryInterfaces),
+                              application,
+                              state);
+            }
+        }
     }
 
     @Override
