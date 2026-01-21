@@ -18,9 +18,6 @@
 <%@ page import="java.io.InputStreamReader"%>
 <%@ page import="java.io.OutputStreamWriter"%>
 <%@ page import="java.net.*"%>
-<%@ page import="jakarta.servlet.http.Cookie"%>
-<%@ page import="jakarta.servlet.http.HttpServletResponse"%>
-<%@ page import="jakarta.servlet.http.HttpSession"%>
 
 <!DOCTYPE html>
 <html style="height: 100%; width: 100%; margin: 0px; padding: 0px;">
@@ -45,88 +42,52 @@
 
 <%
 	boolean isAdmin = request.isUserInRole("Administrator");
-	String userRole = isAdmin ? "Administrator" : 
+	String userRole = isAdmin ? "Administrator" :
 	                  request.isUserInRole("Reader") ? "Reader" :
-					  "";
+				  "";
 %>
 <script type="text/javascript">
 	globalIsAdmin=<%=isAdmin%>
 </script>
 
-<%!
-    // Constants for cookie names
-    private static final String JSESSIONID_COOKIE = "JSESSIONID";
-    private static final String CSRF_TOKEN_COOKIE = "csrfToken";
-    private static final String UUID_PATTERN = "^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$";
-    private static final int UUID_LENGTH = 36;
-
-    /**
-     * Finds a cookie by name in the cookies array
-     * @param cookies Array of cookies to search
-     * @param name Name of the cookie to find
-     * @return Cookie object if found, null otherwise
-     */
-    private Cookie findCookieByName(Cookie[] cookies, String name) {
-        if (cookies == null || name == null) {
-            return null;
-        }
-        for (Cookie cookie : cookies) {
-            if (name.equals(cookie.getName())) {
-                return cookie;
-            }
-        }
-        return null;
-    }
-
-    /**
-     * Validates CSRF token format (UUID)
-     * @param token Token string to validate
-     * @return true if token has valid UUID format, false otherwise
-     */
-    private boolean isValidCsrfTokenFormat(String token) {
-        if (token == null || token.length() != UUID_LENGTH) {
-            return false;
-        }
-        return token.matches(UUID_PATTERN);
-    }
-
-    /**
-     * Removes JSESSIONID cookie by setting its max age to 0
-     * @param response HttpServletResponse to add the expired cookie
-     * @param jsessionCookie The JSESSIONID cookie to remove
-     */
-    private void removeJSessionIdCookie(HttpServletResponse response, Cookie jsessionCookie) {
-        if (jsessionCookie != null) {
-            jsessionCookie.setMaxAge(0);
-            jsessionCookie.setValue(null);
-            jsessionCookie.setPath("/");
-            response.addCookie(jsessionCookie);
-        }
-    }
-%>
 <%
-    String csrfToken = null;
-    boolean isValidToken = false;
     Cookie[] cookies = request.getCookies();
     response.setContentType("text/html");
     
-    // Remove old JSESSIONID cookie
-    Cookie jsessionCookie = findCookieByName(cookies, JSESSIONID_COOKIE);
-    removeJSessionIdCookie(response, jsessionCookie);
-
-    // Retrieve and validate CSRF token from cookie
-    Cookie csrfCookie = findCookieByName(cookies, CSRF_TOKEN_COOKIE);
-    if (csrfCookie != null) {
-        String tokenValue = csrfCookie.getValue();
-        if (isValidCsrfTokenFormat(tokenValue)) {
-            csrfToken = tokenValue;
-            isValidToken = true;
+    // Remove old JSESSIONID cookie - inline implementation
+    if (cookies != null) {
+        for (int i = 0; i < cookies.length; i++) {
+            if ("JSESSIONID".equals(cookies[i].getName())) {
+                cookies[i].setMaxAge(0);
+                cookies[i].setValue(null);
+                cookies[i].setPath("/");
+                response.addCookie(cookies[i]);
+                break;
+            }
         }
     }
 
-    // Prevent any session fixation/hijacking hijinx by getting new session after logging in 
+    // Retrieve and validate CSRF token from cookie - inline implementation
+    String csrfToken = null;
+    boolean isValidToken = false;
+    if (cookies != null) {
+        for (int i = 0; i < cookies.length; i++) {
+            if ("csrfToken".equals(cookies[i].getName())) {
+                String tokenValue = cookies[i].getValue();
+                // Validate UUID format: 8-4-4-4-12 hexadecimal characters
+                if (tokenValue != null && tokenValue.length() == 36 &&
+                    tokenValue.matches("^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$")) {
+                    csrfToken = tokenValue;
+                    isValidToken = true;
+                }
+                break;
+            }
+        }
+    }
+
+    // Prevent any session fixation/hijacking hijinx by getting new session after logging in
     request.getSession().invalidate();
-    HttpSession newSession = request.getSession(true);
+    request.getSession(true);
 
     // Always force the above by never caching the jsp
     response.setHeader("Content-Type", "text/html; charset=UTF-8");
