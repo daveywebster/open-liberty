@@ -19,6 +19,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.regex.Pattern;
 
 import com.ibm.websphere.ras.Tr;
 import com.ibm.websphere.ras.TraceComponent;
@@ -74,6 +75,8 @@ public class McpCdiExtension implements Extension {
         return JsonbBuilder.create(jsonbConfig);
     }
 
+    private static final Pattern TOOL_NAME_CHARACTER_PATTERN = Pattern.compile("[\\w.-]+");
+
     void registerTools(@Observes ProcessManagedBean<?> pmb, BeanManager beanManager) {
         AnnotatedType<?> type = pmb.getAnnotatedBeanClass();
         for (AnnotatedMethod<?> m : type.getMethods()) {
@@ -95,7 +98,8 @@ public class McpCdiExtension implements Extension {
     void afterDeploymentValidation(@Observes AfterDeploymentValidation afterDeploymentValidation, BeanManager manager) {
         registerEncoders(manager);
 
-        boolean error = reportOnDuplicateTools(afterDeploymentValidation) |
+        boolean error = reportOnInvalidToolNames(afterDeploymentValidation) |
+                        reportOnDuplicateTools(afterDeploymentValidation) |
                         reportOnToolArgEdgeCases(afterDeploymentValidation) |
                         reportOnDuplicateSpecialArguments(afterDeploymentValidation) |
                         reportOnInvalidSpecialArguments(afterDeploymentValidation);
@@ -200,6 +204,27 @@ public class McpCdiExtension implements Extension {
         }
         return error;
 
+    }
+
+    private boolean reportOnInvalidToolNames(AfterDeploymentValidation afterDeploymentValidation) {
+        boolean error = false;
+        for (ToolMetadata tool : tools.getAllTools()) {
+            String toolName = tool.name();
+            if (toolName.length() == 0 || toolName.length() > 128) {
+                error = true;
+                Tr.error(tc, "CWMCM0023E.invalid.length.tool.name", toolName, tool.getToolQualifiedName());
+            }
+            if (!TOOL_NAME_CHARACTER_PATTERN.matcher(toolName).matches()) {
+                error = true;
+                Tr.error(tc, "CWMCM0024E.invalid.character.tool.name", toolName, tool.getToolQualifiedName());
+            }
+        }
+        return error;
+
+    }
+
+    public static Pattern getRegexMatcher() {
+        return TOOL_NAME_CHARACTER_PATTERN;
     }
 
     private boolean reportOnDuplicateSpecialArguments(AfterDeploymentValidation afterDeploymentValidation) {

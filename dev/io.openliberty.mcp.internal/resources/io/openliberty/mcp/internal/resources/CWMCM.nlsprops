@@ -39,6 +39,7 @@ CWMCM0003E.missing.tool.argument.name.useraction=Either add a name to the @ToolA
 # Used for server logging
 # do not translate MCP
 # {0} = The list of qualified names of the tool
+# {1} = The list of duplicate methods
 CWMCM0004E.duplicate.tools=CWMCM0004E: There are multiple MCP tool methods named {0}. The methods are {1}.
 CWMCM0004E.duplicate.tools.explanation=One or more MCP Tool names occurred multiple times. The server expects one name per tool for uniqueness.
 CWMCM0004E.duplicate.tools.useraction=Only provide a unique name for each MCP Tool.
@@ -201,3 +202,20 @@ CWMCM0021E.defaultvalue.character.invalid.length.useraction=Ensure that the defa
 CWMCM0022E.invalid.cursor.value=CWMCM0022E: The "{0}" cursor value is invalid.
 CWMCM0022E.invalid.cursor.value.explanation=A cursor value was provided as a parameter to the tool/list command, but the value is invalid.
 CWMCM0022E.invalid.cursor.value.useraction=Ensure that the cursor value is provided exactly as it was returned from the previous tool/list call.
+
+# Used for server logging
+# do not translate MCP
+# {0} = The name of the tool 
+# {1} = The qualified name of the tool
+CWMCM0023E.invalid.length.tool.name=CWMCM0023E: The {0} tool name for the {1} MCP tool method is not valid. Tool names must be between 1 and 128 characters in length, inclusive.
+CWMCM0023E.invalid.length.tool.name.explanation=The tool name doesn't follow the MCP specification for names. Names must be between 1 and 128 characters in length, inclusive.
+CWMCM0023E.invalid.length.tool.name.useraction=Make sure that tool names are between 1 and 128 characters, inclusive.
+
+# Used for server logging
+# do not translate MCP
+# {0} = The name of the tool 
+# {1} = The qualified name of the tool
+CWMCM0024E.invalid.character.tool.name=CWMCM0024E: The {0} tool name for the {1} MCP tool method is not valid. Tool names must contain only ASCII letters, digits, underscores, or hyphens.
+CWMCM0024E.invalid.character.tool.name.explanation=The tool name doesn't follow the MCP specification for names. Names can contain only ASCII letters, digits, underscores, hyphens, and not any other special character.
+CWMCM0024E.invalid.character.tool.name.useraction=Make sure that tool names contain only ASCII letters, digits, underscores, or hyphens.
+
