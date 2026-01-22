@@ -32,7 +32,6 @@ Import-Package: \
     !*.internal.*, \
     !com.ibm.ws.kernel.boot.cmdline, \
     org.apache.commons.codec.binary,\
-    org.jose4j.*, \
     *
 
 javac.source: 17
