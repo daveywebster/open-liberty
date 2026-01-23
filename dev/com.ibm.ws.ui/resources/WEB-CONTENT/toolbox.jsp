@@ -187,8 +187,6 @@ BIDI_PREFS_STRING = '<%=line%>';
     // Double-Submit Cookie CSRF Protection
     // Token is read from cookie and sent in custom header for all state-changing requests
     
-    console.log('=== CSRF Protection Script Loading ===');
-    
     function getCookie(name) {
         const value = document.cookie
             .split(";")
@@ -207,7 +205,6 @@ BIDI_PREFS_STRING = '<%=line%>';
     // Validate CSRF token on page load
     const initialToken = getCookie("csrfToken");
     if (!isValidCsrfToken(initialToken)) {
-        console.error("Invalid or missing CSRF token on page load");
         window.location.href = "/adminCenter/login.jsp";
     }
     
@@ -215,7 +212,6 @@ BIDI_PREFS_STRING = '<%=line%>';
     window.addEventListener("hashchange", () => {
         const token = getCookie("csrfToken");
         if (!isValidCsrfToken(token)) {
-            console.error("Invalid CSRF token detected on hash change");
             window.location.href = "/adminCenter/login.jsp";
             return;
         }
@@ -224,20 +220,12 @@ BIDI_PREFS_STRING = '<%=line%>';
     // Intercept native XMLHttpRequest as fallback for non-Dojo requests
     // Check if header already exists to prevent duplication
     (function() {
-        console.log('=== Setting up Native XHR Interceptor ===');
         
         const originalOpen = XMLHttpRequest.prototype.open;
         const originalSend = XMLHttpRequest.prototype.send;
         const originalSetRequestHeader = XMLHttpRequest.prototype.setRequestHeader;
         
-        console.log('Original XHR methods:', {
-            open: typeof originalOpen,
-            send: typeof originalSend,
-            setRequestHeader: typeof originalSetRequestHeader
-        });
-        
         XMLHttpRequest.prototype.open = function(method, url, async, user, password) {
-            console.log('>>> XHR.open() called:', method, url);
             this._method = method;
             this._url = url;
             this._requestHeaders = {}; // Track all headers
@@ -245,7 +233,6 @@ BIDI_PREFS_STRING = '<%=line%>';
         };
         
         XMLHttpRequest.prototype.setRequestHeader = function(header, value) {
-            console.log('>>> XHR.setRequestHeader() called:', header, '=', value);
             // Track headers being set
             if (this._requestHeaders) {
                 this._requestHeaders[header.toLowerCase()] = value;
@@ -254,21 +241,15 @@ BIDI_PREFS_STRING = '<%=line%>';
         };
         
         XMLHttpRequest.prototype.send = function(data) {
-            console.log('>>> XHR.send() called for:', this._method, this._url);
             
             // Add CSRF token header for state-changing requests
             if (this._method && ['POST', 'PUT', 'DELETE', 'PATCH'].includes(this._method.toUpperCase())) {
-                console.log('XHR Interceptor - Method:', this._method, 'URL:', this._url);
-                console.log('XHR Interceptor - Request Headers:', this._requestHeaders);
                 
                 // Only add if not already present (check case-insensitive)
                 const hasToken = this._requestHeaders && this._requestHeaders['x-csrf-token'];
-                console.log('XHR Interceptor - Has Token:', hasToken);
                 
                 if (!hasToken) {
                     const token = getCookie("csrfToken");
-                    console.log('XHR Interceptor - Token from cookie:', token);
-                    console.log('XHR Interceptor - Token valid:', isValidCsrfToken(token));
                     
                     if (token && isValidCsrfToken(token)) {
                         this.setRequestHeader('X-CSRF-Token', token);
@@ -283,8 +264,6 @@ BIDI_PREFS_STRING = '<%=line%>';
             }
             return originalSend.apply(this, arguments);
         };
-        
-        console.log('=== Native XHR Interceptor Setup Complete ===');
     })();
     
     // Function to inject CSRF interceptor into iframe contexts
@@ -295,11 +274,8 @@ BIDI_PREFS_STRING = '<%=line%>';
             
             // Check if iframe is accessible (same-origin)
             if (!iframeWindow || !iframeWindow.XMLHttpRequest) {
-                console.log('Cannot access iframe:', iframe.src, '(cross-origin or not loaded)');
                 return;
             }
-            
-            console.log('=== Injecting CSRF interceptor into iframe:', iframe.src || iframe.id);
             
             // Inject getCookie and isValidCsrfToken functions into iframe
             iframeWindow.getCookie = getCookie;
@@ -311,7 +287,6 @@ BIDI_PREFS_STRING = '<%=line%>';
             const originalSetRequestHeader = iframeWindow.XMLHttpRequest.prototype.setRequestHeader;
             
             iframeWindow.XMLHttpRequest.prototype.open = function(method, url, async, user, password) {
-                console.log('[IFRAME] XHR.open():', method, url);
                 this._method = method;
                 this._url = url;
                 this._requestHeaders = {};
@@ -326,7 +301,6 @@ BIDI_PREFS_STRING = '<%=line%>';
             };
             
             iframeWindow.XMLHttpRequest.prototype.send = function(data) {
-                console.log('[IFRAME] XHR.send():', this._method, this._url);
                 
                 if (this._method && ['POST', 'PUT', 'DELETE', 'PATCH'].includes(this._method.toUpperCase())) {
                     const hasToken = this._requestHeaders && this._requestHeaders['x-csrf-token'];
@@ -336,9 +310,7 @@ BIDI_PREFS_STRING = '<%=line%>';
                         const token = window.parent.getCookie("csrfToken");
                         if (token && window.parent.isValidCsrfToken(token)) {
                             this.setRequestHeader('X-CSRF-Token', token);
-                            console.log('[IFRAME] ✓ Added CSRF token to:', this._url);
                         } else {
-                            console.error("[IFRAME] Cannot send request: Invalid CSRF token");
                             throw new Error("CSRF token validation failed");
                         }
                     }
@@ -346,7 +318,6 @@ BIDI_PREFS_STRING = '<%=line%>';
                 return originalSend.apply(this, arguments);
             };
             
-            console.log('[IFRAME] ✓ CSRF interceptor injected successfully');
         } catch (e) {
             console.error('Failed to inject CSRF interceptor into iframe:', e.message);
         }
@@ -354,14 +325,12 @@ BIDI_PREFS_STRING = '<%=line%>';
     
     // Setup iframe monitoring after DOM is ready
     function setupIframeMonitoring() {
-        console.log('=== Setting up iframe CSRF injection monitoring ===');
         
         // Monitor for iframes being added to the page
         const iframeObserver = new MutationObserver(function(mutations) {
             mutations.forEach(function(mutation) {
                 mutation.addedNodes.forEach(function(node) {
                     if (node.tagName === 'IFRAME') {
-                        console.log('New iframe detected:', node.id || node.src);
                         // Wait for iframe to load before injecting
                         node.addEventListener('load', function() {
                             injectCsrfInterceptorIntoIframe(node);
@@ -383,26 +352,21 @@ BIDI_PREFS_STRING = '<%=line%>';
                 childList: true,
                 subtree: true
             });
-            console.log('✓ MutationObserver started');
         } else {
             console.error('document.body not available yet');
         }
         
         // Inject into any existing iframes
         const iframes = document.querySelectorAll('iframe');
-        console.log('Found', iframes.length, 'existing iframes');
         iframes.forEach(function(iframe) {
-            console.log('Processing existing iframe:', iframe.id || iframe.src);
             if (iframe.contentWindow) {
                 injectCsrfInterceptorIntoIframe(iframe);
             }
             iframe.addEventListener('load', function() {
-                console.log('Iframe loaded event:', iframe.id || iframe.src);
                 injectCsrfInterceptorIntoIframe(iframe);
             });
         });
         
-        console.log('=== Iframe CSRF injection monitoring complete ===');
     }
     
     // Run setup when DOM is ready
@@ -516,7 +480,6 @@ BIDI_PREFS_STRING = '<%=line%>';
         wrapXhrMethod('put', 'PUT');
         wrapXhrMethod('del', 'DELETE');
         
-        console.log('Dojo CSRF protection initialized');
         
         // Use ready() to ensure toolbox loads after DOM and Dojo are fully ready
         ready(function() {
