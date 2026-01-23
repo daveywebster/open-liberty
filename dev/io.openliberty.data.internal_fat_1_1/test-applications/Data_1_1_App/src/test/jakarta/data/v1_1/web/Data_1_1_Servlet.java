@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2025 IBM Corporation and others.
+ * Copyright (c) 2025, 2026 IBM Corporation and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License 2.0
  * which accompanies this distribution, and is available at
@@ -164,6 +164,30 @@ public class Data_1_1_Servlet extends FATServlet {
                      fractions.withNameLike("% Ninths",
                                             restriction,
                                             Order.by(_Fraction.numerator.desc())) //
+                                     .map(f -> f.name)
+                                     .collect(Collectors.toList()));
+    }
+
+    /**
+     * Supply a concatenation expression to a repository method.
+     */
+    @Test
+    public void testConcatExpression() {
+
+        assertEquals(List.of("One Seventh",
+                             "One Ninth",
+                             "One Tenth",
+                             "One Eleventh",
+                             "One Thirteenth",
+                             "One Fourteenth",
+                             "One Fifteenth",
+                             "One Sixteenth",
+                             "One Seventeenth",
+                             "One Eighteenth",
+                             "One Nineteenth"),
+                     fractions.withNameLike("___ %",
+                                            _Fraction.name.append("s").endsWith("nths"),
+                                            Order.by(_Fraction.denominator.asc()))
                                      .map(f -> f.name)
                                      .collect(Collectors.toList()));
     }
@@ -485,6 +509,50 @@ public class Data_1_1_Servlet extends FATServlet {
     }
 
     /**
+     * Supply LEFT and RIGHT expressions to a repository method.
+     */
+    @Test
+    public void testLeftAndRightExpressions() {
+
+        Restriction<Fraction> restriction = //
+                        Restrict.all(_Fraction.name.left(4).right(1).equalTo(" "),
+                                     Restrict.any(_Fraction.name.right(3).equalTo("fth"),
+                                                  _Fraction.name.right(4).equalTo("fths")));
+
+        assertEquals(List.of("Ten Twelfths",
+                             "Six Twelfths",
+                             "Two Twelfths",
+                             "One Twelfth",
+                             "Two Fifths",
+                             "One Fifth"),
+                     fractions.withNameLike("%",
+                                            restriction,
+                                            Order.by(_Fraction.denominator.desc(),
+                                                     _Fraction.numerator.desc()))
+                                     .map(f -> f.name)
+                                     .collect(Collectors.toList()));
+    }
+
+    /**
+     * Supply a LENGTH expression to a repository method.
+     */
+    @Test
+    public void testLengthExpression() {
+
+        assertEquals(List.of("One Tenth",
+                             "One Ninth",
+                             "One Sixth",
+                             "One Fifth",
+                             "One Third",
+                             "One Half"),
+                     fractions.withNameLike("%",
+                                            _Fraction.name.length().lessThan(10),
+                                            Order.by(_Fraction.denominator.desc()))
+                                     .map(f -> f.name)
+                                     .collect(Collectors.toList()));
+    }
+
+    /**
      * Tests that the Like constraint types can be assigned to a repository
      * method parameter to enforce that an entity attributes is matched
      * according to a literal value.
@@ -550,6 +618,29 @@ public class Data_1_1_Servlet extends FATServlet {
                      fractions.named(Like.pattern("T% _i_ths"),
                                      Order.by(Sort.desc(_Fraction.NAME)),
                                      Limit.of(4)));
+    }
+
+    /**
+     * Supply a LOWER expression to a repository method.
+     */
+    @Test
+    public void testLowerExpression() {
+
+        assertEquals(List.of("Two Eighteenths",
+                             "Two Elevenths",
+                             "Two Fifteenths",
+                             "Two Fourteenths",
+                             "Two Nineteenths",
+                             "Two Seventeenths",
+                             "Two Sevenths",
+                             "Two Sixteenths",
+                             "Two Tenths",
+                             "Two Thirteenths"),
+                     fractions.withNameLike("%enths",
+                                            _Fraction.name.lower().startsWith("two "),
+                                            Order.by(_Fraction.name.asc()))
+                                     .map(f -> f.name)
+                                     .collect(Collectors.toList()));
     }
 
     /**
