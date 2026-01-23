@@ -81,6 +81,10 @@ import jakarta.data.repository.Update;
 import jakarta.data.restrict.BasicRestriction;
 import jakarta.data.restrict.CompositeRestriction;
 import jakarta.data.restrict.Restriction;
+import jakarta.data.spi.expression.function.FunctionExpression;
+import jakarta.data.spi.expression.function.NumericCast;
+import jakarta.data.spi.expression.function.NumericFunctionExpression;
+import jakarta.data.spi.expression.function.TextFunctionExpression;
 import jakarta.data.spi.expression.literal.Literal;
 import jakarta.persistence.EntityManager;
 
@@ -178,7 +182,8 @@ public class Data_1_1 implements DataVersionCompatibility {
                            Restriction.class);
 
     /**
-     * Generate the name of a named parameter that supplies a Restriction value.
+     * Generate the name of a named parameter that supplies a value that is
+     * represented as an Expression.
      *
      * @param jpqlParamCount parameter number to include in the generated name.
      * @param jpqlParamNames list of named parameter names to which to add the
@@ -186,8 +191,8 @@ public class Data_1_1 implements DataVersionCompatibility {
      * @return
      */
     @Trivial
-    private String addRestrictParam(int jpqlParamCount, Set<String> jpqlParamNames) {
-        String paramName = "restrict" + jpqlParamCount;
+    private String addExpressionParam(int jpqlParamCount, Set<String> jpqlParamNames) {
+        String paramName = "xpr" + jpqlParamCount;
         while (!jpqlParamNames.add(paramName))
             paramName += '_';
         return paramName;
@@ -347,6 +352,126 @@ public class Data_1_1 implements DataVersionCompatibility {
      *
      * @param q              partially built query ending with the WHERE clause.
      * @param entityVar_     entity identifier variable name and . character.
+     * @param expression     the Expression for which to generate JPQL.
+     * @param jpqlParamCount number of named or positional parameters in the
+     *                           partially built query.
+     * @param jpqlParamNames names of named parameters in the partially bulit
+     *                           query. Empty if the query uses positional
+     *                           parameeters or has none. If using named parameters,
+     *                           this method should add any that are generated for
+     *                           the restriction part of the query.
+     * @param xprParams      list for this method to populate with the name of
+     *                           named parameters or index of positional parameters,
+     *                           mapped to value, for values (if any) obtained from
+     *                           the Expression.
+     * @return the new count of named or positional parameters, including any that
+     *         were generated for the Restriction(s).
+     */
+    // TODO @Trivial // avoid tracing values found in Expression.toString()
+    private int generateExpression(StringBuilder q,
+                                   String entityVar_,
+                                   Expression<?, ?> expression,
+                                   int jpqlParamCount,
+                                   Set<String> jpqlParamNames,
+                                   Map<Object, Object> xprParams) {
+        if (expression instanceof Attribute<?> attr) {
+            q.append(entityVar_).append(attr.name());
+        } else if (expression instanceof Literal<?> literal) {
+            jpqlParamCount++;
+            boolean positionalParams = jpqlParamNames.isEmpty();
+            if (positionalParams) {
+                q.append('?').append(jpqlParamCount);
+                xprParams.put(jpqlParamCount, literal.value());
+            } else {
+                String paramName = addExpressionParam(jpqlParamCount, jpqlParamNames);
+                q.append(':').append(paramName);
+                xprParams.put(paramName, literal.value());
+            }
+        } else if (expression instanceof FunctionExpression<?, ?> fn) {
+            String name = fn.name();
+            List<? extends Expression<?, ?>> args = fn.arguments();
+            // before first argument:
+            switch (name) {
+                case NumericFunctionExpression.ABS:
+                case NumericFunctionExpression.LENGTH:
+                case TextFunctionExpression.LEFT:
+                case TextFunctionExpression.RIGHT:
+                case TextFunctionExpression.LOWER:
+                case TextFunctionExpression.UPPER:
+                    q.append(name.toUpperCase()).append('(');
+                    break;
+                case TextFunctionExpression.CONCAT:
+                    break;
+                case NumericFunctionExpression.NEG:
+                    q.append('-');
+                    break;
+                default:
+                    throw new IllegalArgumentException("Function: " + name);
+            }
+            // first argument:
+            jpqlParamCount = generateExpression(q,
+                                                entityVar_,
+                                                args.getFirst(),
+                                                jpqlParamCount,
+                                                jpqlParamNames,
+                                                xprParams);
+            // between first and second arguments:
+            switch (name) {
+                case TextFunctionExpression.CONCAT:
+                    q.append(" || ");
+                    break;
+                case TextFunctionExpression.LEFT:
+                case TextFunctionExpression.RIGHT:
+                    q.append(", ");
+                    break;
+            }
+            // second argument:
+            switch (name) {
+                case TextFunctionExpression.CONCAT:
+                case TextFunctionExpression.LEFT:
+                case TextFunctionExpression.RIGHT:
+                    jpqlParamCount = generateExpression(q,
+                                                        entityVar_,
+                                                        args.get(1),
+                                                        jpqlParamCount,
+                                                        jpqlParamNames,
+                                                        xprParams);
+                    break;
+            }
+            // after last argument:
+            switch (name) {
+                case NumericFunctionExpression.ABS:
+                case NumericFunctionExpression.LENGTH:
+                case TextFunctionExpression.LEFT:
+                case TextFunctionExpression.RIGHT:
+                case TextFunctionExpression.LOWER:
+                case TextFunctionExpression.UPPER:
+                    q.append(')');
+                    break;
+            }
+        } else if (expression instanceof NumericCast<?, ?> cast) {
+            q.append("CAST (");
+            jpqlParamCount = generateExpression(q,
+                                                entityVar_,
+                                                cast.expression(),
+                                                jpqlParamCount,
+                                                jpqlParamNames,
+                                                xprParams);
+            q.append(" AS ") //
+                            .append(cast.type().getSimpleName().toUpperCase()) //
+                            .append(')');
+        } else {
+            throw new IllegalArgumentException("Expression: " + expression.getClass().getName());
+        }
+        return jpqlParamCount;
+    }
+
+    /**
+     * Appends JPQL to the partially built query to implement a Restriction
+     * parameter of a repository method.
+     *
+     * @param q              partially built query ending with the WHERE clause.
+     * @param entityVar_     entity identifier variable name and . character.
      * @param restriction    value of Restriction parameter. Otherwise null.
      * @param jpqlParamCount number of named or positional parameters in the
      *                           partially built query.
@@ -386,10 +511,12 @@ public class Data_1_1 implements DataVersionCompatibility {
             int numQueryParamsToAdd = c.numMethodParams();
             boolean positionalParams = jpqlParamNames.isEmpty();
 
-            if (exp instanceof Attribute attr)
-                q.append(entityVar_).append(attr.name());
-            else
-                throw new UnsupportedOperationException(exp.getClass().getName()); // TODO other types of Expression
+            jpqlParamCount = generateExpression(q,
+                                                entityVar_,
+                                                exp,
+                                                jpqlParamCount,
+                                                jpqlParamNames,
+                                                qrParams);
 
             q.append(c.operator());
 
@@ -400,7 +527,7 @@ public class Data_1_1 implements DataVersionCompatibility {
                     q.append('?').append(jpqlParamCount);
                     qrParams.put(jpqlParamCount, toConstraintValues(constraint)[0]);
                 } else {
-                    String paramName = addRestrictParam(jpqlParamCount, jpqlParamNames);
+                    String paramName = addExpressionParam(jpqlParamCount, jpqlParamNames);
                     q.append(':').append(paramName);
                     qrParams.put(paramName, toConstraintValues(constraint)[0]);
                 }
@@ -412,7 +539,7 @@ public class Data_1_1 implements DataVersionCompatibility {
                     q.append('?').append(jpqlParamCount);
                     qrParams.put(jpqlParamCount, values[0]);
                 } else {
-                    String paramName = addRestrictParam(jpqlParamCount, jpqlParamNames);
+                    String paramName = addExpressionParam(jpqlParamCount, jpqlParamNames);
                     q.append(':').append(paramName);
                     qrParams.put(paramName, values[0]);
                 }
@@ -428,7 +555,7 @@ public class Data_1_1 implements DataVersionCompatibility {
                     q.append('?').append(jpqlParamCount);
                     qrParams.put(jpqlParamCount, values[1]);
                 } else {
-                    String paramName = addRestrictParam(jpqlParamCount, jpqlParamNames);
+                    String paramName = addExpressionParam(jpqlParamCount, jpqlParamNames);
                     q.append(':').append(paramName);
                     qrParams.put(paramName, values[1]);
                 }
@@ -439,7 +566,7 @@ public class Data_1_1 implements DataVersionCompatibility {
             List<?> rr = r.restrictions();
             int count = rr.size();
             if (count == 0)
-                q.append(all ? "TRUE" : "FALSE");
+                q.append(all ? "TRUE = TRUE" : "FALSE <> FALSE");
             else // one or more
                 for (int i = 0; i < count; i++) {
                     if (i > 0)
