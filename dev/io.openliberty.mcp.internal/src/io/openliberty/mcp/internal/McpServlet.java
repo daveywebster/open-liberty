@@ -209,13 +209,8 @@ public class McpServlet extends HttpServlet {
             } else {
                 callToolSynchronously(transport, requestId, request, params);
             }
-        } catch (IllegalAccessException e) {
-            throw new JSONRPCException(JSONRPCErrorCode.INTERNAL_ERROR, List.of("Could not call " + params.getName()));
-        } catch (IllegalArgumentException e) {
-            throw new JSONRPCException(JSONRPCErrorCode.INVALID_PARAMS, List.of("Incorrect arguments in params"));
-        }
-        //Catch invalid tool args excetion(new type) send back new tool response
-        catch (ToolCallException e) {
+        } catch (ToolCallException e) {
+            //Catch invalid tool args excetion(new type) send back new tool response
             ToolResponse response = ToolResponse.error(e.getMessage());
             transport.sendResponse(response);
             return;
@@ -226,8 +221,7 @@ public class McpServlet extends HttpServlet {
     private void callToolSynchronously(McpTransport transport,
                                        ExecutionRequestId requestId,
                                        McpRequest mcpRequest,
-                                       McpToolCallParams params)
-                    throws IllegalAccessException, IllegalArgumentException {
+                                       McpToolCallParams params) {
 
         ToolArguments toolArgs = createToolArguments(mcpRequest, params);
         if (requestId != null) {
@@ -257,8 +251,7 @@ public class McpServlet extends HttpServlet {
     private void callToolMethodAndSendResponseAsync(McpTransport transport,
                                                     ExecutionRequestId requestId,
                                                     McpRequest mcpRequest,
-                                                    McpToolCallParams params)
-                    throws IllegalAccessException, IllegalArgumentException {
+                                                    McpToolCallParams params) {
         ToolArguments toolArgs = createToolArguments(mcpRequest, params);
 
         if (requestId != null) {
@@ -270,22 +263,22 @@ public class McpServlet extends HttpServlet {
         CompletionStage<ToolResponse> response = applyHandlerAndCatchException(handler, toolArgs);
         response = response.thenApply(r -> removeStructuredContentIfNotSupported(r, transport))
                            .exceptionally(throwable -> {
-            if (throwable instanceof CompletionException) {
-                throwable = throwable.getCause();
-            }
-            if (throwable instanceof JSONRPCException jsonEx) {
-                throw jsonEx;
-            }
-            if (throwable instanceof HttpResponseException httpEx) {
-                throw httpEx;
-            }
-            if (throwable instanceof ToolCallException) {
-                return ToolResponses.createBusinessErrorResponse(throwable);
-            } else {
-                return ToolResponses.createNonBusinessErrorResponse(throwable,
-                                                                    params.getName());
-            }
-        });
+                               if (throwable instanceof CompletionException) {
+                                   throwable = throwable.getCause();
+                               }
+                               if (throwable instanceof JSONRPCException jsonEx) {
+                                   throw jsonEx;
+                               }
+                               if (throwable instanceof HttpResponseException httpEx) {
+                                   throw httpEx;
+                               }
+                               if (throwable instanceof ToolCallException) {
+                                   return ToolResponses.createBusinessErrorResponse(throwable);
+                               } else {
+                                   return ToolResponses.createNonBusinessErrorResponse(throwable,
+                                                                                       params.getName());
+                               }
+                           });
 
         transport.sendResultAsync(response)
                  .whenComplete((result, throwable) -> cleanup(requestId));
