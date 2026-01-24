@@ -240,6 +240,12 @@ public class QueryInfo {
     final Class<?> repositoryInterface;
 
     /**
+     * Starting position in the JPQL for added restrictions.
+     * -1 indicates to use the end of the JPQL query.
+     */
+    int restrictAt = -1;
+
+    /**
      * Array element type if the repository method returns an array, such as,
      * <code>Product[] findByNameLike(String namePattern);</code>
      * or if its parameterized type is an array, such as,
@@ -466,8 +472,9 @@ public class QueryInfo {
         maxResults = source.maxResults;
         method = source.method;
         multiType = source.multiType;
-        repositoryInterface = source.repositoryInterface;
         producer = source.producer;
+        repositoryInterface = source.repositoryInterface;
+        restrictAt = source.restrictAt;
         returnArrayType = source.returnArrayType;
         singleType = source.singleType;
         singleTypeElementType = source.singleTypeElementType;
@@ -475,10 +482,20 @@ public class QueryInfo {
         type = source.type;
         validateParams = source.validateParams;
 
-        StringBuilder q = new StringBuilder(source.jpql);
+        StringBuilder q;
+        if (restriction == null) {
+            q = new StringBuilder(source.jpql);
+        } else {
+            int len = source.jpql.length();
+            q = new StringBuilder(len + 200);
+            if (restrictAt >= 0 && restrictAt < len)
+                q.append(source.jpql.substring(0, restrictAt));
+            else
+                q.append(source.jpql).append(' ');
 
-        if (restriction != null) {
-            q.append(hasWhere ? " AND " : " WHERE ");
+            q.append(hasWhere ? "AND " : "WHERE ");
+            hasWhere = true;
+
             jpqlParamCount = entityInfo.builder.provider.compat //
                             .generateRestrictions(q,
                                                   entityVar_,
@@ -486,6 +503,12 @@ public class QueryInfo {
                                                   jpqlParamCount,
                                                   jpqlParamNames,
                                                   qrParams);
+
+            if (restrictAt >= 0 && restrictAt < len) {
+                int newPosition = q.length();
+                q.append(' ').append(source.jpql.substring(restrictAt));
+                restrictAt = newPosition;
+            }
         }
 
         boolean forward = pageReq == null ||
@@ -503,8 +526,10 @@ public class QueryInfo {
         if (pageReq == null ||
             pageReq.mode() == PageRequest.Mode.OFFSET) {
             // offset pagination can be a starting point for cursor pagination
-            if (order != null)
+            if (order != null) {
+                restrictAt = q.length() + 1;
                 q.append(order);
+            }
             this.jpql = q.toString();
         } else { // CURSOR_NEXT or CURSOR_PREVIOUS
             this.jpql = null;
@@ -2731,10 +2756,15 @@ public class QueryInfo {
     }
 
     /**
-     * Generates the JPQL ORDER BY clause. This method is common between the OrderBy annotation and keyword.
+     * Generates the JPQL ORDER BY clause. This method is common between the
+     * OrderBy annotation and keyword.
+     *
+     * @param q a JPQL query to which to add the ORDER BY clause.
      */
     private void generateOrderBy(StringBuilder q) {
         boolean needsCursorQueries = CursoredPage.class.equals(multiType);
+
+        restrictAt = q.length() + 1;
 
         StringBuilder fwd = needsCursorQueries ? new StringBuilder(100) : q; // forward page order
         StringBuilder prev = needsCursorQueries ? new StringBuilder(100) : null; // previous page order
@@ -4803,6 +4833,8 @@ public class QueryInfo {
                              !Character.isJavaIdentifierPart(ql.charAt(i + l)) &&
                              ql.regionMatches(true, i, "INTERSECT", 0, l))) {
 
+                            if (isOrder)
+                                restrictAt = i;
                             if (isCursoredPage && !isSelect && !isWhere && !isOrder)
                                 // ORDER BY isn't allowed with cursored pagination
                                 // either, nor is SELECT positioned after WHERE,
