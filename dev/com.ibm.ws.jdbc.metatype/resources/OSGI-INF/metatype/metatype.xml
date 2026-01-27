@@ -1415,6 +1415,10 @@
  </OCD>
  
   <!-- H2 properties -->
+ <Designate factoryPid="com.ibm.ws.jdbc.dataSource.properties.h2">
+  <Object ocdref="com.ibm.ws.jdbc.dataSource.properties.h2"/>
+ </Designate>
+  
  <OCD id="com.ibm.ws.jdbc.dataSource.properties.h2" name="internal" description="internal use only" ibm:extendsAlias="h2" ibm:extends="com.ibm.ws.jdbc.dataSource.properties.supertype" ibmui:extraProperties="true" ibmui:localization="OSGI-INF/l10n/metatype">
   <AD id="URL"                           required="true" type="String"  name="%URL" description="%URL.desc"/>
   <!-- Advanced properties for properties.h2 -->
