@@ -185,6 +185,8 @@ public class AsyncHTTPConduitFactory implements HTTPConduitFactory {
         }
         policy = UseAsyncPolicy.getPolicy(st);
 
+        // maxConnections and maxPerRoute values are fetched from jvm.options file 
+        // in case not found in the property map given in method parameter 
         maxConnections = getInt(getProperty(s, MAX_CONNECTIONS), maxConnections);
         connectionTTL = getInt(s.get(CONNECTION_TTL), connectionTTL);
         connectionMaxIdle = getInt(s.get(CONNECTION_MAX_IDLE), connectionMaxIdle);
