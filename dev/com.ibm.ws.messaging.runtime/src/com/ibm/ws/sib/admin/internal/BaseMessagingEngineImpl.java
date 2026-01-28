@@ -1903,7 +1903,6 @@ public class BaseMessagingEngineImpl implements JsEngineComponent, LWMConfig, Co
             FFDCFilter.processException(e, "com.ibm.ws.sib.admin.impl.BaseMessagingEngineImpl.dump", "1:2837:1.79", this);
             SibTr.exception(tc, e);
         }
-        try {
 
         if(TraceComponent.isAnyTracingEnabled() && tc.isEntryEnabled())
             SibTr.exit(tc, methodName);
