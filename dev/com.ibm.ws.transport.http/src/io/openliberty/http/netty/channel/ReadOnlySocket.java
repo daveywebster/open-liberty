@@ -414,7 +414,7 @@ public class ReadOnlySocket extends Socket{
 
     /**
      * Utility method to create and an UnsupportedOperationException with a message indicating
-     * that the muating the read-only socket is not supported by this implementation.
+     * that mutating the read-only socket is not supported by this implementation.
      * 
      * @param method the name of the method that is attempting to mutate the socket
      * @return a UnsupportedOperationException indicating that mutating the socket is unsupported
