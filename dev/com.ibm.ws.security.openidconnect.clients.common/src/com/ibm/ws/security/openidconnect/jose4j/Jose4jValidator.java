@@ -14,6 +14,7 @@ package com.ibm.ws.security.openidconnect.jose4j;
 
 import java.security.InvalidKeyException;
 import java.security.Key;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
@@ -55,6 +56,7 @@ public class Jose4jValidator {
     private String clientId = null;
     private String issuers = null;
     private String signingAlgorithm = "none";
+    private String[] allowedSignatureAlgorithms;
     private final Key key;
     private long clockSkewInSeconds = 0;
     boolean rpSpecifiedSigningAlgorithm = true;
@@ -62,13 +64,14 @@ public class Jose4jValidator {
 
     public Jose4jValidator(Key key, long clockSkewInSeconds,
             String issuers, String clientId,
-            String signatureAlgorithm,
+            String signatureAlgorithm, String[] allowedSignatureAlgorithms,
             OidcClientRequest oidcClientRequest) {
         this.key = key;
         this.clockSkewInSeconds = clockSkewInSeconds;
         this.issuers = issuers;
         this.clientId = clientId;
         this.signingAlgorithm = signatureAlgorithm;
+        this.allowedSignatureAlgorithms = allowedSignatureAlgorithms;
         this.oidcClientRequest = oidcClientRequest;
     }
 
@@ -407,6 +410,9 @@ public class Jose4jValidator {
         if (tc.isDebugEnabled()) {
             Tr.debug(tc, "Signing Algorithm from header: " + algHeader);
         }
+
+        // Check if 'none' is explicitly specified in the configuration
+        // FROM_HEADER acts as a specfied algorithm (i.e. expects signature verification)
         rpSpecifiedSigningAlgorithm = !this.signingAlgorithm.equals(Constants.SIG_ALG_NONE);
         if (rpSpecifiedSigningAlgorithm) {
             // if algorithm is not NONE, then check the signature of jwt first
@@ -422,16 +428,34 @@ public class Jose4jValidator {
                 }
             }
 
-            // Doing the same thing as old jwt
-            if (!(this.signingAlgorithm.equals(algHeader))) {
-                Object[] objects = new Object[] { this.clientId, this.signingAlgorithm, algHeader };
+            // If using the header algorithm, check that it is one of the supported ones
+            if (Constants.SIG_FROM_HEADER.equals(this.signingAlgorithm)) {
+                for (String alg : allowedSignatureAlgorithms) {
+                    if (alg.equals(algHeader)) {
+                        return;
+                    }
+                }
+                Object[] objects = new Object[] { this.clientId, Arrays.toString(this.allowedSignatureAlgorithms), algHeader };
                 if (oidcClientRequest != null) {
-                    throw oidcClientRequest.errorCommon(true, tc, new String[] { "OIDC_IDTOKEN_SIGNATURE_VERIFY_ERR_ALG_MISMATCH",
-                            "OIDC_JWT_SIGNATURE_VERIFY_ERR_ALG_MISMATCH" }, objects);
+                    throw oidcClientRequest.errorCommon(true, tc, new String[] { 
+                        "OIDC_IDTOKEN_SIGNATURE_VERIFY_ERR_ALG_MISMATCH",
+                        "OIDC_JWT_SIGNATURE_VERIFY_ERR_ALG_MISMATCH" }, objects);
                 } else {
                     String errorMsg = Tr.formatMessage(tc, "OIDC_JWT_SIGNATURE_VERIFY_ERR_ALG_MISMATCH", objects);
                     Tr.error(tc, errorMsg);
                     throw new JWTTokenValidationFailedException(errorMsg);
+                }   
+            } else {
+                if (!(this.signingAlgorithm.equals(algHeader))) {
+                    Object[] objects = new Object[] { this.clientId, this.signingAlgorithm, algHeader };
+                    if (oidcClientRequest != null) {
+                        throw oidcClientRequest.errorCommon(true, tc, new String[] { "OIDC_IDTOKEN_SIGNATURE_VERIFY_ERR_ALG_MISMATCH",
+                                "OIDC_JWT_SIGNATURE_VERIFY_ERR_ALG_MISMATCH" }, objects);
+                    } else {
+                        String errorMsg = Tr.formatMessage(tc, "OIDC_JWT_SIGNATURE_VERIFY_ERR_ALG_MISMATCH", objects);
+                        Tr.error(tc, errorMsg);
+                        throw new JWTTokenValidationFailedException(errorMsg);
+                    }
                 }
             }
         }

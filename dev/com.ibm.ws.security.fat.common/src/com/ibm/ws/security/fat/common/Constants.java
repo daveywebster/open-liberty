@@ -151,6 +151,7 @@ public class Constants {
 
     /* Signature contants */
     public static final String SIGALG_NONE = "none";
+    public static final String SIGALG_FROMHEADER = "FROM_HEADER";
     public static final String SIGALG_HS256 = "HS256";
     public static final String SIGALG_HS384 = "HS384";
     public static final String SIGALG_HS512 = "HS512";

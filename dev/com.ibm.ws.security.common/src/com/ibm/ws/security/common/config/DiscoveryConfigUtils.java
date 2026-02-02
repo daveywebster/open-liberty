@@ -163,8 +163,8 @@ public class DiscoveryConfigUtils {
      */
     private String socialRPSupportsOPConfig(String key, ArrayList<String> values) {
 
-        String rpSupportedSignatureAlgorithms = "RS256";
-        String rpSupportedTokenEndpointAuthMethods = "client_secret_post client_secret_basic";
+        String rpSupportedSignatureAlgorithms = "HS256 HS384 HS512 RS256 RS384 RS512 ES256 ES384 ES512";
+        String rpSupportedTokenEndpointAuthMethods = "client_secret_post client_secret_basic private_key_jwt";
         String rpSupportedTokenEndpointAuthSigningAlgs = "RS256 RS384 RS512 ES256 ES384 ES512";
         String rpSupportedScopes = "openid profile email";
 

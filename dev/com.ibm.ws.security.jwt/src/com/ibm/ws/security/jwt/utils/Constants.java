@@ -28,6 +28,7 @@ public class Constants {
     public static final String SIGNATURE_ALG_ES256 = "ES256";
     public static final String SIGNATURE_ALG_ES384 = "ES384";
     public static final String SIGNATURE_ALG_ES512 = "ES512";
+    public static final String SIGNATURE_FROM_HEADER = "FROM_HEADER";
 
     public static final String SIGNING_KEY_X509 = "x509";
     public static final String SIGNING_KEY_JWK = "jwk";

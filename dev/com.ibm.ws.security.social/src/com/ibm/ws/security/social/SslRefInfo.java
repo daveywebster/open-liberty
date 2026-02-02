@@ -39,6 +39,12 @@ public interface SslRefInfo {
     PublicKey getPublicKey() throws SocialLoginException;
 
     /**
+     * @return public key.
+     * @throws SocialLoginException
+     */
+    PublicKey getPublicKey(String alias) throws SocialLoginException;
+
+    /**
      * @return private key.
      * @throws SocialLoginException
      */
@@ -50,4 +56,9 @@ public interface SslRefInfo {
      */
     SecretKey getSecretKey() throws SocialLoginException;
 
+    /**
+     * @return collection of all certificate aliases from the truststore.
+     * @throws SocialLoginException
+     */
+    java.util.Collection<String> getTrustedCertAliases(String trustStoreRef) throws SocialLoginException;
 }

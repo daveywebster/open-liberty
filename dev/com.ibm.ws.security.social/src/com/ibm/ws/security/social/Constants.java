@@ -18,6 +18,9 @@ public class Constants {
 
     public final static String UTF8 = "UTF-8";
 
+    public static final String ALGORITHM_NONE = "none";
+    public static final String ALGORITHM_FROM_HEADER = "FROM_HEADER";
+
     public static final String ATTRIBUTE_SOCIALMEDIA_REQUEST = "SocialLoginRequest";
     public static final String ATTRIBUTE_TAI_REQUEST = "SocialTaiRequest";
     

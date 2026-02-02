@@ -48,6 +48,7 @@ public class Jose4jValidatorTests extends CommonTestClass {
     final String ISSUER = "https://localhost/oidc/provider/OP";
     final String CLIENT_ID = "client01";
     final String SIGNATURE_ALGORITHM = "RS256";
+    final String[] ALLOWED_SIGNATURE_ALGORITHMS = { "RS256", "RS384", "RS512" };
 
     final Key key = mockery.mock(Key.class);
     final OidcClientRequest oidcClientRequest = mockery.mock(OidcClientRequest.class);
@@ -63,7 +64,7 @@ public class Jose4jValidatorTests extends CommonTestClass {
     @Before
     public void before() {
         System.out.println("Entering test: " + testName.getMethodName());
-        validator = new Jose4jValidator(key, 0, ISSUER, CLIENT_ID, SIGNATURE_ALGORITHM, oidcClientRequest);
+        validator = new Jose4jValidator(key, 0, ISSUER, CLIENT_ID, SIGNATURE_ALGORITHM, ALLOWED_SIGNATURE_ALGORITHMS, oidcClientRequest);
     }
 
     @After

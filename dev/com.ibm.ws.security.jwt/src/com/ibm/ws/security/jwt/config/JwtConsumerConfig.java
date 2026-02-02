@@ -34,6 +34,8 @@ public interface JwtConsumerConfig {
 
     String getSignatureAlgorithm();
 
+    String[] getAllowedSignatureAlgorithms();
+
     String getTrustStoreRef();
 
     String getKeyStoreRef();

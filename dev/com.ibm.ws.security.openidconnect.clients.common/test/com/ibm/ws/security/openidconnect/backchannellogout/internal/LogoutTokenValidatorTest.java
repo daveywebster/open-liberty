@@ -74,6 +74,7 @@ public class LogoutTokenValidatorTest extends CommonTestClass {
     final String SID = "jwtsid";
     final String EVENTS_MEMBER_KEY = "http://schemas.openid.net/event/backchannel-logout";
     final String CLIENT_SECRET = "myClientSecret";
+    final String[] DEFAULT_ALLOWED_SIGNATURE_ALGORITHMS = { "RS256", "RS384", "RS512", "ES256", "ES384", "ES512", "HS256", "HS384", "HS512" };
 
     final ConvergedClientConfig clientConfig = mockery.mock(ConvergedClientConfig.class);
     final ConsumerUtils consumerUtils = mockery.mock(ConsumerUtils.class);
@@ -942,6 +943,8 @@ public class LogoutTokenValidatorTest extends CommonTestClass {
                 will(returnValue(clockSkew * 1000));
                 allowing(clientConfig).getIssuerIdentifier();
                 will(returnValue(issuerIdentifier));
+                allowing(clientConfig).getAllowedSignatureAlgorithms();
+                will(returnValue(DEFAULT_ALLOWED_SIGNATURE_ALGORITHMS));
             }
         });
         if (sharedKey != null) {

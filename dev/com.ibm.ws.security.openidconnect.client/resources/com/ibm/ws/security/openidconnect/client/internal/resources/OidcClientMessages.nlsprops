@@ -293,4 +293,9 @@ REDIRECT_URI_CONTAINED_ERROR=CWWKS1557E: An authentication request failed becaus
 REDIRECT_URI_CONTAINED_ERROR.explanation=The specified response status indicated that the authentication was not successful. The error and error description that are provided in the message contain additional information.
 REDIRECT_URI_CONTAINED_ERROR.useraction=For more information, see the error in the message.
 
+# 0=Configuration ID, 1=Configured signatureAlgorithm value, 2=List of allowedSignatureAlgorithms values
+OIDC_CLIENT_SIGNATURE_ALGORITHM_NOT_IN_ALLOWED_LIST=CWWKS1558E: The [{0}] OpenID Connect client configuration specifies the [{1}] signature algorithm, but that algorithm is not in the list of allowed signature algorithms [{2}].
+OIDC_CLIENT_SIGNATURE_ALGORITHM_NOT_IN_ALLOWED_LIST.explanation=The configured signature algorithm must be one of the allowed signature algorithms. When the allowedSignatureAlgorithms attribute is configured, the signatureAlgorithm must be set to one of the values in that list or to FROM_HEADER.
+OIDC_CLIENT_SIGNATURE_ALGORITHM_NOT_IN_ALLOWED_LIST.useraction=Do one of the following: 1) Update the allowedSignatureAlgorithms list to include the signatureAlgorithm value. 2) Update the signatureAlgorithm value to one of the listed allowedSignatureAlgorithm values. 3) Set signatureAlgorithm to FROM_HEADER. 4) Remove the allowedSignatureAlgorithms attribute.
+
 # STOP HERE, OIDC SERVER HAS RESERVED 1600 - 1649

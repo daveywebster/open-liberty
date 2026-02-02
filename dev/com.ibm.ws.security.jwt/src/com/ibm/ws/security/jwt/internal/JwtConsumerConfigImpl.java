@@ -16,6 +16,7 @@ import java.security.AccessController;
 import java.security.GeneralSecurityException;
 import java.security.Key;
 import java.security.PrivilegedExceptionAction;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -40,6 +41,7 @@ import com.ibm.ws.security.common.jwk.impl.JWKSet;
 import com.ibm.ws.security.jwt.config.ConsumerUtils;
 import com.ibm.ws.security.jwt.config.JwtConfigUtil;
 import com.ibm.ws.security.jwt.config.JwtConsumerConfig;
+import com.ibm.ws.security.jwt.utils.Constants;
 import com.ibm.ws.security.jwt.utils.JwtUtils;
 import com.ibm.ws.ssl.KeyStoreService;
 import com.ibm.wsspi.kernel.service.utils.AtomicServiceReference;
@@ -56,6 +58,7 @@ public class JwtConsumerConfigImpl implements JwtConsumerConfig {
     private String sharedKey;
     private List<String> audiences;
     private String sigAlg;
+    private String[] allowedSignatureAlgorithms;
     private String trustStoreRef;
     private String trustedAlias;
     private long clockSkewMilliSeconds;
@@ -118,6 +121,7 @@ public class JwtConsumerConfigImpl implements JwtConsumerConfig {
         sharedKey = JwtConfigUtil.processProtectedString(props, JwtUtils.CFG_KEY_SHARED_KEY);
         audiences = JwtUtils.trimIt((String[]) props.get(JwtUtils.CFG_KEY_AUDIENCES));
         sigAlg = JwtConfigUtil.getSignatureAlgorithm(getId(), props, JwtUtils.CFG_KEY_SIGNATURE_ALGORITHM);
+        allowedSignatureAlgorithms = JwtUtils.trimIt((String[]) props.get(JwtUtils.CFG_KEY_ALLOWED_SIGNATURE_ALGORITHMS)).toArray(new String[0]);
         trustStoreRef = JwtUtils.trimIt((String) props.get(JwtUtils.CFG_KEY_TRUSTSTORE_REF));
         trustedAlias = JwtUtils.trimIt((String) props.get(JwtUtils.CFG_KEY_TRUSTED_ALIAS));
         clockSkewMilliSeconds = (Long) props.get(JwtUtils.CFG_KEY_CLOCK_SKEW);
@@ -133,6 +137,19 @@ public class JwtConsumerConfigImpl implements JwtConsumerConfig {
         consumerUtil = new ConsumerUtils(keyStoreServiceRef);
         jwkSet = null; // the jwkEndpoint may have been changed during dynamic
                        // update
+
+        checkSignatureAlgorithmAgainstAllowedList();
+    }
+
+    void checkSignatureAlgorithmAgainstAllowedList() {
+        if (Constants.SIGNATURE_FROM_HEADER.equals(sigAlg)) {
+            return;
+        }
+        if (Arrays.asList(allowedSignatureAlgorithms).contains(sigAlg)) {
+            return;
+        }
+        Tr.error(tc, "JWT_SIGNATURE_ALGORITHM_NOT_IN_ALLOWED_LIST",
+                new Object[] { getId(), sigAlg, Arrays.toString(allowedSignatureAlgorithms) });
     }
 
     @Override
@@ -164,6 +181,11 @@ public class JwtConsumerConfigImpl implements JwtConsumerConfig {
     @Override
     public String getSignatureAlgorithm() {
         return sigAlg;
+    }
+
+    @Override
+    public String[] getAllowedSignatureAlgorithms() {
+        return allowedSignatureAlgorithms;
     }
 
     @Override

@@ -16,6 +16,7 @@ import java.security.GeneralSecurityException;
 import java.security.Key;
 import java.security.PublicKey;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -42,6 +43,7 @@ import com.ibm.ws.security.common.config.CommonConfigUtils;
 import com.ibm.ws.security.common.jwk.impl.JWKSet;
 import com.ibm.ws.security.jwt.config.ConsumerUtils;
 import com.ibm.ws.security.jwt.config.JwtConsumerConfig;
+import com.ibm.ws.security.jwt.utils.Constants;
 import com.ibm.ws.security.jwt.utils.JwtUtils;
 import com.ibm.ws.security.mp.jwt.MicroProfileJwtConfig;
 import com.ibm.ws.security.mp.jwt.MicroProfileJwtService;
@@ -126,6 +128,9 @@ public class MicroProfileJwtConfigImpl implements MicroProfileJwtConfig {
 
     String signatureAlgorithm = null;
 
+    public static final String CFG_KEY_ALLOWEDSIGNATUREALGS = "allowedSignatureAlgorithms";
+    String[] allowedSignatureAlgorithms = null;
+
     public static final String KEY_authFilterRef = "authFilterRef";
     protected String authFilterRef;
 
@@ -208,7 +213,10 @@ public class MicroProfileJwtConfigImpl implements MicroProfileJwtConfig {
         jwkSet = null; // the jwkEndpoint may have been changed during dynamic update
         consumerUtils = null; // the parameters in consumerUtils may have been changed during dynamic changing
         this.signatureAlgorithm = configUtils.getConfigAttribute(props, CFG_KEY_SIGALG);
+        this.allowedSignatureAlgorithms = configUtils.getStringArrayConfigAttribute(props, CFG_KEY_ALLOWEDSIGNATUREALGS);
         sharedKey = JwtUtils.processProtectedString(props, JwtUtils.CFG_KEY_SHARED_KEY);
+
+        checkSignatureAlgorithmAgainstAllowedList();
 
         loadConfigValuesForHigherVersions(cc, props);
 
@@ -216,6 +224,17 @@ public class MicroProfileJwtConfigImpl implements MicroProfileJwtConfig {
         if (tc.isDebugEnabled()) {
             Tr.exit(tc, methodName);
         }
+    }
+
+    void checkSignatureAlgorithmAgainstAllowedList() {
+        if (Constants.SIGNATURE_FROM_HEADER.equals(signatureAlgorithm)) {
+            return;
+        }
+        if (Arrays.asList(allowedSignatureAlgorithms).contains(signatureAlgorithm)) {
+            return;
+        }
+        Tr.error(tc, "MPJWT_SIGNATURE_ALGORITHM_NOT_IN_ALLOWED_LIST",
+                new Object[] { uniqueId, signatureAlgorithm, Arrays.toString(allowedSignatureAlgorithms) });
     }
 
     void loadConfigValuesForHigherVersions(ComponentContext cc, Map<String, Object> props) {
@@ -326,6 +345,11 @@ public class MicroProfileJwtConfigImpl implements MicroProfileJwtConfig {
     @Override
     public String getSignatureAlgorithm() {
         return this.signatureAlgorithm;
+    }
+
+    @Override
+    public String[] getAllowedSignatureAlgorithms() {
+        return this.allowedSignatureAlgorithms;
     }
 
     /** {@inheritDoc} */

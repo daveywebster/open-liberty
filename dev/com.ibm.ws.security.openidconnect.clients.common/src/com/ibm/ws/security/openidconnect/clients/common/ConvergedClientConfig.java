@@ -10,6 +10,7 @@
 package com.ibm.ws.security.openidconnect.clients.common;
 
 import java.security.Key;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 
@@ -111,6 +112,8 @@ public interface ConvergedClientConfig extends JwtConsumerConfig {
 
     public Key getPublicKey() throws Exception;
 
+    public Key getPublicKey(String alias) throws Exception;
+
     public String getJsonWebKey();
 
     public boolean allowedAllAudiences();
@@ -141,6 +144,8 @@ public interface ConvergedClientConfig extends JwtConsumerConfig {
     public String getPkceCodeChallengeMethod();
 
     public String getTokenRequestOriginHeader();
+
+    public Collection<String> getTrustedCertAliases(String trustStoreRef) throws Exception;
 
     public List<String> getTokenOrderToFetchCallerClaims();
 }

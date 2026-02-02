@@ -668,5 +668,110 @@ public class KeyAlgorithmCheckerTest extends CommonTestClass {
         int result = KeyAlgorithmChecker.getHashSizeFromAlgorithm(supportedSigAlg);
         assertEquals("Did not get the expected hash size from the algorithm string [" + supportedSigAlg + "].", supportedAlgSize, result);
     }
+    @Test
+    public void test_isRSAEncryptionAlgorithm_nullAlgorithm() {
+        String algorithm = null;
+        boolean result = KeyAlgorithmChecker.isRSAEncryptionAlgorithm(algorithm);
+        assertFalse("Algorithm [" + algorithm + "] was considered an RSA encryption algorithm.", result);
+    }
+
+    @Test
+    public void test_isRSAEncryptionAlgorithm_emptyString() {
+        String algorithm = "";
+        boolean result = KeyAlgorithmChecker.isRSAEncryptionAlgorithm(algorithm);
+        assertFalse("Algorithm [" + algorithm + "] was considered an RSA encryption algorithm.", result);
+    }
+
+    @Test
+    public void test_isRSAEncryptionAlgorithm_RSA1_5() {
+        String algorithm = "RSA1_5";
+        boolean result = KeyAlgorithmChecker.isRSAEncryptionAlgorithm(algorithm);
+        assertTrue("Algorithm [" + algorithm + "] was not considered an RSA encryption algorithm.", result);
+    }
+
+    @Test
+    public void test_isRSAEncryptionAlgorithm_RSA_OAEP() {
+        String algorithm = "RSA-OAEP";
+        boolean result = KeyAlgorithmChecker.isRSAEncryptionAlgorithm(algorithm);
+        assertTrue("Algorithm [" + algorithm + "] was not considered an RSA encryption algorithm.", result);
+    }
+
+    @Test
+    public void test_isRSAEncryptionAlgorithm_RSA_OAEP_256() {
+        String algorithm = "RSA-OAEP-256";
+        boolean result = KeyAlgorithmChecker.isRSAEncryptionAlgorithm(algorithm);
+        assertTrue("Algorithm [" + algorithm + "] was not considered an RSA encryption algorithm.", result);
+    }
+
+    @Test
+    public void test_isRSAEncryptionAlgorithm_invalidPrefix() {
+        String algorithm = "DRSA1_5";
+        boolean result = KeyAlgorithmChecker.isRSAEncryptionAlgorithm(algorithm);
+        assertFalse("Algorithm [" + algorithm + "] was considered an RSA encryption algorithm.", result);
+    }
+
+    @Test
+    public void test_isRSAEncryptionAlgorithm_invalidSuffix() {
+        String algorithm = "RSA-OAEP-256A";
+        boolean result = KeyAlgorithmChecker.isRSAEncryptionAlgorithm(algorithm);
+        assertFalse("Algorithm [" + algorithm + "] was considered an RSA encryption algorithm.", result);
+    }
+
+    @Test
+    public void test_isRSAEncryptionAlgorithm_RSSignatureAlgorithm() {
+        String algorithm = "RS256";
+        boolean result = KeyAlgorithmChecker.isRSAEncryptionAlgorithm(algorithm);
+        assertFalse("Algorithm [" + algorithm + "] was considered an RSA encryption algorithm.", result);
+    }
+
+    @Test
+    public void test_isESAEncryptionAlgorithm_nullAlgorithm() {
+        String algorithm = null;
+        boolean result = KeyAlgorithmChecker.isESAEncryptionAlgorithm(algorithm);
+        assertFalse("Algorithm [" + algorithm + "] was considered an ESA encryption algorithm.", result);
+    }
+
+    @Test
+    public void test_isESAEncryptionAlgorithm_emptyString() {
+        String algorithm = "";
+        boolean result = KeyAlgorithmChecker.isESAEncryptionAlgorithm(algorithm);
+        assertFalse("Algorithm [" + algorithm + "] was considered an ESA encryption algorithm.", result);
+    }
+
+    @Test
+    public void test_isESAEncryptionAlgorithm_ECDH_ES() {
+        String algorithm = "ECDH-ES";
+        boolean result = KeyAlgorithmChecker.isESAEncryptionAlgorithm(algorithm);
+        assertTrue("Algorithm [" + algorithm + "] was not considered an ESA encryption algorithm.", result);
+    }
+
+    @Test
+    public void test_isESAEncryptionAlgorithm_ECDH_ES_A128KW() {
+        String algorithm = "ECDH-ES+A128KW";
+        boolean result = KeyAlgorithmChecker.isESAEncryptionAlgorithm(algorithm);
+        assertTrue("Algorithm [" + algorithm + "] was not considered an ESA encryption algorithm.", result);
+    }
+
+    @Test
+    public void test_isESAEncryptionAlgorithm_invalidPrefix() {
+        String algorithm = "DECDH-ES";
+        boolean result = KeyAlgorithmChecker.isESAEncryptionAlgorithm(algorithm);
+        assertFalse("Algorithm [" + algorithm + "] was considered an ESA encryption algorithm.", result);
+    }
+
+    @Test
+    public void test_isESAEncryptionAlgorithm_invalidSuffix() {
+        String algorithm = "ECDH-ESA";
+        boolean result = KeyAlgorithmChecker.isESAEncryptionAlgorithm(algorithm);
+        assertFalse("Algorithm [" + algorithm + "] was considered an ESA encryption algorithm.", result);
+    }
+
+    @Test
+    public void test_isESAEncryptionAlgorithm_ESSignatureAlgorithm() {
+        String algorithm = "ES256";
+        boolean result = KeyAlgorithmChecker.isESAEncryptionAlgorithm(algorithm);
+        assertFalse("Algorithm [" + algorithm + "] was considered an ESA encryption algorithm.", result);
+    }
+
 
 }

@@ -4,7 +4,7 @@
  * are made available under the terms of the Eclipse Public License 2.0
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-2.0/
- * 
+ *
  * SPDX-License-Identifier: EPL-2.0
  *
  * Contributors:
@@ -23,6 +23,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.osgi.framework.Version;
 
+import com.ibm.ws.security.jwt.utils.Constants;
 import com.ibm.ws.security.test.common.CommonTestClass;
 
 import io.openliberty.security.mp.jwt.osgi.MpJwtRuntimeVersion;
@@ -31,6 +32,8 @@ import test.common.SharedOutputManager;
 public class MicroProfileJwtConfigImplTest extends CommonTestClass {
 
     private static SharedOutputManager outputMgr = SharedOutputManager.getInstance().trace("io.openliberty.security.mp.jwt*=all:com.ibm.ws.security.mp.jwt*=all");
+
+    private static final String CWWKS5529E = "CWWKS5529E";
 
     private final MpJwtRuntimeVersion runtimeVersion = mockery.mock(MpJwtRuntimeVersion.class);
 
@@ -57,6 +60,7 @@ public class MicroProfileJwtConfigImplTest extends CommonTestClass {
     @After
     public void tearDown() throws Exception {
         System.out.println("Exiting test: " + testName.getMethodName());
+        outputMgr.resetStreams();
         mockery.assertIsSatisfied();
     }
 
@@ -106,6 +110,44 @@ public class MicroProfileJwtConfigImplTest extends CommonTestClass {
         });
         boolean result = config.isRuntimeVersionAtLeast(minimumVersionRequired);
         assertFalse("Runtime version [" + thisRuntimeVersion + "] should NOT have been considered at or above [" + minimumVersionRequired + "].", result);
+    }
+
+    @Test
+    public void test_checkSignatureAlgorithmAgainstAllowedList_signatureAlgorithmIsFromHeader() {
+        config.signatureAlgorithm = Constants.SIGNATURE_FROM_HEADER;
+        config.allowedSignatureAlgorithms = new String[] { Constants.SIGNATURE_ALG_RS256 };
+        config.uniqueId = "testConfig";
+
+        config.checkSignatureAlgorithmAgainstAllowedList();
+
+        verifyNoLogMessage(outputMgr, CWWKS5529E);
+    }
+
+    
+    @Test
+    public void test_checkSignatureAlgorithmAgainstAllowedList_algorithmInAllowedList() {
+        config.signatureAlgorithm = Constants.SIGNATURE_ALG_ES256;
+        config.allowedSignatureAlgorithms = new String[] {
+                Constants.SIGNATURE_ALG_RS256,
+                Constants.SIGNATURE_ALG_ES256,
+                Constants.SIGNATURE_ALG_HS256
+        };
+        config.uniqueId = "testConfig";
+
+        config.checkSignatureAlgorithmAgainstAllowedList();
+
+        verifyNoLogMessage(outputMgr, CWWKS5529E);
+    }
+
+    @Test
+    public void test_checkSignatureAlgorithmAgainstAllowedList_algorithmNotInAllowedList() {
+        config.signatureAlgorithm = Constants.SIGNATURE_ALG_HS256;
+        config.allowedSignatureAlgorithms = new String[] { Constants.SIGNATURE_ALG_RS256, Constants.SIGNATURE_ALG_ES256 };
+        config.uniqueId = "testConfig";
+
+        config.checkSignatureAlgorithmAgainstAllowedList();
+
+        verifyLogMessage(outputMgr, CWWKS5529E);
     }
 
 }

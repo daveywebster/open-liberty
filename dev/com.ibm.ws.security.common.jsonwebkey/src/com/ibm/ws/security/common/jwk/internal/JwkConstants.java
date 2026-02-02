@@ -20,6 +20,7 @@ public class JwkConstants {
     public static final String use = "use";
     public static final String kty = "kty";
     public static final String sig = "sig";
+    public static final String enc = "enc";
 
     public static final String RSA = "RSA";
     public static final String EC = "EC";

@@ -302,6 +302,11 @@ public class JwtSsoComponent implements JwtSsoConfig {
         return signatureAlgorithm;
     }
 
+    @Override
+    public String[] getAllowedSignatureAlgorithms(){
+        return null;
+    }
+
     /** {@inheritDoc} */
     @Override
     public String getSharedKey() {

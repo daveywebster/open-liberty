@@ -23,6 +23,7 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -684,6 +685,36 @@ public class SslRefInfoImplTest extends CommonTestClass {
         }
     }
 
+    @Test
+    public void getPublicKey_validKey_withAlias() {
+        try {
+            refInfo = new SslRefInfoImpl(sslSupport, keyStoreServiceRef, sslRef, keyAliasName);
+
+            String customAlias = "customKeyAlias";
+            getGoodPropertyExpectations(keyStoreName, trustStoreName);
+            mockery.checking(new Expectations() {
+                {
+                    one(keyStoreServiceRef).getService();
+                    will(returnValue(keyStoreService));
+                    one(keyStoreService).getCertificateFromKeyStore(keyStoreName, customAlias);
+                    will(returnValue(cert));
+                    one(cert).getPublicKey();
+                }
+            });
+
+            PublicKey result = refInfo.getPublicKey(customAlias);
+
+            assertNotNull("Key returned should not be null.", result);
+
+            verifyNoLogMessage(outputMgr, MSG_BASE);
+
+            assertMemberValues(sslSupport, keyStoreServiceRef, sslRef, jsseHelper, keyStoreName, trustStoreName);
+
+        } catch (Throwable t) {
+            outputMgr.failWithThrowable(testName.getMethodName(), t);
+        }
+    }
+
     /************************************** getPrivateKey **************************************/
 
     @Test
@@ -1043,6 +1074,154 @@ public class SslRefInfoImplTest extends CommonTestClass {
             outputMgr.failWithThrowable(testName.getMethodName(), t);
         }
     }
+
+    /************************************** getTrustedCertAliases **************************************/
+
+    @Test
+    public void getTrustedCertAliases_initThrowsException() {
+        try {
+            refInfo = new SslRefInfoImpl(sslSupport, null, sslRef, keyAliasName) {
+                @Override
+                void init() throws SocialLoginException {
+                    mockInterface.init();                
+                }
+            };
+            mockery.checking(new Expectations() {
+                {
+                    one(mockInterface).init();
+                    will(throwException(new SocialLoginException(defaultExceptionMsg, null, null)));
+                }
+            });
+
+            try {
+                Collection<String> result = refInfo.getTrustedCertAliases(trustStoreName);
+                fail("Should have thrown SocialLoginException but did not. Result was [" + result + "].");
+            } catch (SocialLoginException e) {
+                verifyException(e, Pattern.quote(defaultExceptionMsg));
+            }
+
+            verifyNoLogMessage(outputMgr, MSG_BASE);
+
+            assertMemberValues(sslSupport, null, sslRef, null, null, null);
+
+
+        } catch (Throwable t) {
+            outputMgr.failWithThrowable(testName.getMethodName(), t);
+        }
+    }
+
+    @Test
+    public void getTrustedCertAliases_instantiateWithNullArgs() {
+        try {
+            refInfo = new SslRefInfoImpl(null, null, null, null);
+
+            Collection<String> result = refInfo.getTrustedCertAliases(trustStoreName);
+
+            assertNull("Collection of aliases returned should be empty but was not. Result was " + result, result);
+
+            verifyNoLogMessage(outputMgr, MSG_BASE);
+
+            assertMemberValues(null, null, null, null, null, null);
+
+        } catch (Throwable t) {
+            outputMgr.failWithThrowable(testName.getMethodName(), t);
+        }
+    }
+
+    @Test
+    public void getTrustedCertAliases_gettingCertEntriesThrowsException() {
+        try {
+            refInfo = new SslRefInfoImpl(sslSupport, keyStoreServiceRef, sslRef, keyAliasName);
+
+            getGoodPropertyExpectations(keyStoreName, trustStoreName);
+            mockery.checking(new Expectations() {
+                {
+                    one(keyStoreServiceRef).getService();
+                    will(returnValue(keyStoreService));
+                    one(keyStoreService).getTrustedCertEntriesInKeyStore(trustStoreName);
+                    will(throwException(new KeyStoreException(defaultExceptionMsg)));
+                }
+            });
+
+            try {
+                Collection<String> result = refInfo.getTrustedCertAliases(trustStoreName);
+                fail("Should have thrown SocialLoginException but did not. Result was [" + result + "].");
+            } catch (SocialLoginException e) {
+                verifyException(e, CWWKS5468E_ERROR_LOADING_KEYSTORE_CERTIFICATES + ".*\\[" + trustStoreName + "\\].*" + Pattern.quote(defaultExceptionMsg));
+            }
+
+            verifyNoLogMessage(outputMgr, MSG_BASE);
+
+            assertMemberValues(sslSupport, keyStoreServiceRef, sslRef, jsseHelper, keyStoreName, trustStoreName);
+
+        } catch (Throwable t) {
+            outputMgr.failWithThrowable(testName.getMethodName(), t);
+        }
+    }
+
+    @Test
+    public void getTrustedCertAliases_validAliases() {
+        try {
+            refInfo = new SslRefInfoImpl(sslSupport, keyStoreServiceRef, sslRef, keyAliasName);
+
+            final Set<String> expectedAliases = new HashSet<String>();
+            expectedAliases.add("alias1");
+            expectedAliases.add("alias2");
+            expectedAliases.add("alias3");
+
+            getGoodPropertyExpectations(keyStoreName, trustStoreName);
+            mockery.checking(new Expectations() {
+                {
+                    one(keyStoreServiceRef).getService();
+                    will(returnValue(keyStoreService));
+                    one(keyStoreService).getTrustedCertEntriesInKeyStore(trustStoreName);
+                    will(returnValue(expectedAliases));
+                }
+            });
+
+            Collection<String> result = refInfo.getTrustedCertAliases(trustStoreName);
+
+            assertEquals("The returned aliases did not match the expected set.", expectedAliases, result);
+
+            verifyNoLogMessage(outputMgr, MSG_BASE);
+
+            assertMemberValues(sslSupport, keyStoreServiceRef, sslRef, jsseHelper, keyStoreName, trustStoreName);
+
+        } catch (Throwable t) {
+            outputMgr.failWithThrowable(testName.getMethodName(), t);
+        }
+    }
+
+    @Test
+    public void getTrustedCertAliases_emptyAliases() {
+        try {
+            refInfo = new SslRefInfoImpl(sslSupport, keyStoreServiceRef, sslRef, keyAliasName);
+
+            final Set<String> expectedAliases = new HashSet<String>();
+
+            getGoodPropertyExpectations(keyStoreName, trustStoreName);
+            mockery.checking(new Expectations() {
+                {
+                    one(keyStoreServiceRef).getService();
+                    will(returnValue(keyStoreService));
+                    one(keyStoreService).getTrustedCertEntriesInKeyStore(trustStoreName);
+                    will(returnValue(expectedAliases));
+                }
+            });
+
+            Collection<String> result = refInfo.getTrustedCertAliases(trustStoreName);
+
+            assertTrue("Map of keys returned should be empty but was not. Result was " + result, result.isEmpty());
+
+            verifyNoLogMessage(outputMgr, MSG_BASE);
+
+            assertMemberValues(sslSupport, keyStoreServiceRef, sslRef, jsseHelper, keyStoreName, trustStoreName);
+
+        } catch (Throwable t) {
+            outputMgr.failWithThrowable(testName.getMethodName(), t);
+        }
+    }
+
 
     /************************************** Helper methods **************************************/
 

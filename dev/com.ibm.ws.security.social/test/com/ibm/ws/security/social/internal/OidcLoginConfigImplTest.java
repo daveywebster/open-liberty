@@ -605,6 +605,52 @@ public class OidcLoginConfigImplTest extends CommonConfigTestClass {
         }
     }
     
+    /************************************** checkSignatureAlgorithmAgainstAllowedList **************************************/
+
+    @Test
+    public void test_checkSignatureAlgorithmAgainstAllowedList_signatureAlgorithmIsFromHeader() {
+        configImpl.signatureAlgorithm = "FROM_HEADER";
+        configImpl.allowedSignatureAlgorithms = new String[] { "RS256" };
+        configImpl.uniqueId = "testConfig";
+
+        configImpl.checkSignatureAlgorithmAgainstAllowedList();
+
+        verifyNoLogMessage(outputMgr, "CWWKS2353E");
+    }
+
+    @Test
+    public void test_checkSignatureAlgorithmAgainstAllowedList_signatureAlgorithmIsNone() throws Exception {
+        configImpl.signatureAlgorithm = "none";
+        configImpl.allowedSignatureAlgorithms = new String[] { "RS256" };
+        configImpl.uniqueId = "testConfig";
+
+        configImpl.checkSignatureAlgorithmAgainstAllowedList();
+
+        verifyNoLogMessage(outputMgr, "CWWKS2353E");
+    }
+
+    @Test
+    public void test_checkSignatureAlgorithmAgainstAllowedList_algorithmInAllowedList() {
+        configImpl.signatureAlgorithm = "ES256";
+        configImpl.allowedSignatureAlgorithms = new String[] { "RS256", "ES256", "HS256" };
+        configImpl.uniqueId = "testConfig";
+
+        configImpl.checkSignatureAlgorithmAgainstAllowedList();
+
+        verifyNoLogMessage(outputMgr, "CWWKS2353E");
+    }
+
+    @Test
+    public void test_checkSignatureAlgorithmAgainstAllowedList_algorithmNotInAllowedList() {
+        configImpl.signatureAlgorithm = "HS256";
+        configImpl.allowedSignatureAlgorithms = new String[] { "RS256", "ES256" };
+        configImpl.uniqueId = "testConfig";
+
+        configImpl.checkSignatureAlgorithmAgainstAllowedList();
+
+        verifyLogMessage(outputMgr, "CWWKS2353E");
+    }
+
     /************************************** Helper methods **************************************/
     
     

@@ -75,6 +75,7 @@ public class ClientConstants {
     public final static String PROPAGATION_NONE = "none";
 
     public final static String ALGORITHM_NONE = "none";
+    public final static String ALGORITHM_FROM_HEADER = "FROM_HEADER";
 
     public final static String VALIDATION_INTROSPECT = "introspect";
     public final static String VALIDATION_USERINFO = "userinfo";

@@ -92,4 +92,16 @@ public class JwtConfigUtilTest extends CommonTestClass {
         verifyNoLogMessage(outputMgr, MSG_BASE);
     }
 
+    @Test
+    public void test_getSignatureAlgorithm_from_header() {
+        String fromHeaderAlgorithm = "FROM_HEADER";
+        Map<String, Object> props = new HashMap<String, Object>();
+        props.put(SIG_ALG_ATTR_NAME, fromHeaderAlgorithm);
+
+        String result = JwtConfigUtil.getSignatureAlgorithm(testName.getMethodName(), props, SIG_ALG_ATTR_NAME);
+        assertEquals("Did not get the expected signature algorithm.", fromHeaderAlgorithm, result);
+
+        verifyNoLogMessage(outputMgr, MSG_BASE);
+    }
+
 }
