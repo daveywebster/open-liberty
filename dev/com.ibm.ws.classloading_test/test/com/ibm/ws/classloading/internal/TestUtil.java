@@ -201,7 +201,7 @@ final class TestUtil {
             expectations.addExpectations(mockery, componentContext);
         }
 
-        final ClassLoadingServiceImpl cls = new ClassLoadingServiceImpl(componentContext, new GlobalClassloadingConfiguration(), null, null, null);
+        final ClassLoadingServiceImpl cls = new ClassLoadingServiceImpl(componentContext, new GlobalClassloadingConfiguration(), null, null, null, null);
         cls.activate();
         return cls;
     }

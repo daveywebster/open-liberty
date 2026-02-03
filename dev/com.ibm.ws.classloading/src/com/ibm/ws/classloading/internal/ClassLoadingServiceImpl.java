@@ -124,7 +124,7 @@ public class ClassLoadingServiceImpl implements LibertyClassLoadingService<Liber
     private final CanonicalStore<ClassLoaderIdentity, AppClassLoader> aclStore = new CanonicalStore<ClassLoaderIdentity, AppClassLoader>();
     private final CanonicalStore<String, ThreadContextClassLoader> tcclStore = new CanonicalStore<String, ThreadContextClassLoader>();
     private final RegionDigraph digraph;
-    private ClassRedefiner redefiner = new ClassRedefiner(null);
+    private final ClassRedefiner redefiner;
     private final BundleListener listener = new BundleListener() {
         @Override
         public void bundleChanged(BundleEvent event) {
@@ -199,15 +199,25 @@ public class ClassLoadingServiceImpl implements LibertyClassLoadingService<Liber
                             @Reference GlobalClassloadingConfiguration globalConfig,
                             @Reference RegionDigraph digraph,
                             @Reference MetaDataIdentifierService mdiService,
-                            @Reference(service = URLStreamHandlerService.class, target = "(url.handler.protocol=wsjar)") URLStreamHandlerService wsjar) {
+                            @Reference(service = URLStreamHandlerService.class, target = "(url.handler.protocol=wsjar)") URLStreamHandlerService wsjar,
+                            @Reference(cardinality = ReferenceCardinality.OPTIONAL) Instrumentation instr) {
+        // Declared a dependency on the URLStreamHandlerService so the wsjar protocol
+        // doesn't go away while we still may still need it; no need to store the instance of wsjar here.
         this.bundleContext = cCtx.getBundleContext();
         this.globalConfig = globalConfig;
         this.digraph = digraph;
         this.metadataIdentifierService = mdiService;
+        this.redefiner = instr == null ? null : new ClassRedefiner(instr);
+
         generatorRefs.activate(cCtx);
         metaInfServicesRefs.activate(cCtx);
     }
 
+    // NOTE: it is valid to have both a constructor activate and a method activate.
+    // Here we separate out registering the listener from the constructor because
+    // it is best to not escape this as a listener before the constructor is complete;
+    // otherwise we risk the listener being called before the JVM has finalized the construction
+    // of the object.
     @Activate
     protected void activate() {
         // use the system bundle so that it is ensured to see all bundle events
@@ -269,17 +279,6 @@ public class ClassLoadingServiceImpl implements LibertyClassLoadingService<Liber
     protected void removeResourceProvider(ResourceProvider rp) {
         resourceProviders.remove(rp);
     }
-
-    @Reference(cardinality = ReferenceCardinality.OPTIONAL)
-    protected void setInstrumentation(Instrumentation inst) {
-        redefiner = new ClassRedefiner(inst);
-    }
-
-    protected void unsetInstrumentation(Instrumentation inst) {
-        redefiner = null;
-    }
-
-    protected void unsetURLStreamHandlerService(URLStreamHandlerService svc) {}
 
     @Override
     public AppClassLoader createTopLevelClassLoader(List<Container> classPath, GatewayConfiguration gwConfig, ClassLoaderConfiguration clConfig) {
