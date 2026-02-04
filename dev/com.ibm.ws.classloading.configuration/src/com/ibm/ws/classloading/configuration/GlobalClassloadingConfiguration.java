@@ -279,15 +279,17 @@ public class GlobalClassloadingConfiguration {
         }
 
         private static Set<String> addPackages(String packages, Set<String> packageSet) {
+            if (packageSet == null) {
+                packageSet = new HashSet<String>();
+            }
             ManifestElement[] bootPackageElements;
             try {
-                bootPackageElements = ManifestElement.parseHeader("Kernel-Boot", packages);
+                // NOTE: the header name used in parseHeaders doesn't matter; Add-Packages is made up.
+                // The only use of it would be for the exception message
+                bootPackageElements = ManifestElement.parseHeader("Add-Packages", packages);
             } catch (BundleException e) {
                 // auto FFDC; treat the class path as unknown
                 return packageSet;
-            }
-            if (packageSet == null) {
-                packageSet = new HashSet<String>();
             }
             for (ManifestElement p : bootPackageElements) {
                 packageSet.add(p.getValue());
