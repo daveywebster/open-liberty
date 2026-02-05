@@ -4856,9 +4856,13 @@ public class QueryInfo {
         boolean insertRecordConstructors = producer.compat().atLeast(1, 1) &&
                                            singleType.isRecord();
         boolean needsParenthesesEnd = false;
-        boolean needsConstructorEnd = hasTopLevelSelectClause &&
-                                      insertRecordConstructors &&
-                                      parseSelectForConstructor(ql, startAt, modifyAt);
+        int insertConstructorBeginAt = hasTopLevelSelectClause && insertRecordConstructors //
+                        ? parseSelectForConstructor(ql, startAt, modifyAt) //
+                        : -1;
+        // Conversion to a record requires at least 2 constructor args. Per the
+        // Jakarta Data spec, "when the select list contains only one path expression,
+        // the query directly returns the values of the path expression."
+        int numPossibleConstructorArgs = insertConstructorBeginAt == -1 ? 0 : 1;
 
         Integer addFromAt = findQueryStartsWithSelect == null //
                         ? -1 // never, it's a DELETE or UPDATE so it always has FROM
@@ -4903,10 +4907,13 @@ public class QueryInfo {
                                 countReplacesFirstSelectEndingAt < 0) {
                                 countReplacesFirstSelectEndingAt = i;
                             }
-                            if (needsConstructorEnd) {
-                                needsConstructorEnd = false;
-                                modifyAt.put(i - 1,
-                                             QueryEdit.ADD_CONSTRUCTOR_END);
+                            if (numPossibleConstructorArgs > 0) {
+                                if (numPossibleConstructorArgs == 1)
+                                    modifyAt.remove(insertConstructorBeginAt);
+                                else
+                                    modifyAt.put(i - 1,
+                                                 QueryEdit.ADD_CONSTRUCTOR_END);
+                                numPossibleConstructorArgs = 0;
                             }
                         }
 
@@ -4975,10 +4982,13 @@ public class QueryInfo {
                                 countReplacesFirstSelectEndingAt < 0) {
                                 countReplacesFirstSelectEndingAt = i;
                             }
-                            if (needsConstructorEnd) {
-                                needsConstructorEnd = false;
-                                modifyAt.put(i - 1, // avoid possible collision with ADD_FROM
-                                             QueryEdit.ADD_CONSTRUCTOR_END);
+                            if (numPossibleConstructorArgs > 0) {
+                                if (numPossibleConstructorArgs == 1)
+                                    modifyAt.remove(insertConstructorBeginAt);
+                                else
+                                    modifyAt.put(i - 1, // avoid possible collision with ADD_FROM
+                                                 QueryEdit.ADD_CONSTRUCTOR_END);
+                                numPossibleConstructorArgs = 0;
                             }
                             if (needsParenthesesEnd) {
                                 needsParenthesesEnd = false;
@@ -4998,8 +5008,13 @@ public class QueryInfo {
                             } else if (isSelect) {
                                 hasTopLevelSelectClause = true;
 
-                                if (insertRecordConstructors)
-                                    needsConstructorEnd = parseSelectForConstructor(ql, i, modifyAt);
+                                if (insertRecordConstructors) {
+                                    insertConstructorBeginAt = hasTopLevelSelectClause && insertRecordConstructors //
+                                                    ? parseSelectForConstructor(ql, i, modifyAt) //
+                                                    : -1;
+                                    numPossibleConstructorArgs = //
+                                                    insertConstructorBeginAt == -1 ? 0 : 1;
+                                }
 
                                 if (countReplacesFirstSelectAt < 0)
                                     countReplacesFirstSelectAt = i;
@@ -5023,9 +5038,13 @@ public class QueryInfo {
                         i++;
                     }
                 }
-            } else if (paramName != null) {
-                qlParamNames.add(paramName.toString());
-                paramName = null;
+            } else {
+                if (depth == 0 && !isLiteral && ch == ',' && numPossibleConstructorArgs > 0)
+                    numPossibleConstructorArgs++;
+                if (paramName != null) {
+                    qlParamNames.add(paramName.toString());
+                    paramName = null;
+                }
             }
         }
 
@@ -5062,9 +5081,13 @@ public class QueryInfo {
             modifyAt.put(addFromAt,
                          QueryEdit.ADD_FROM);
 
-        if (needsConstructorEnd)
-            modifyAt.put(length - 1, // avoid possible collision with ADD_FROM
-                         QueryEdit.ADD_CONSTRUCTOR_END);
+        if (numPossibleConstructorArgs > 0) {
+            if (numPossibleConstructorArgs == 1)
+                modifyAt.remove(insertConstructorBeginAt);
+            else
+                modifyAt.put(length - 1, // avoid possible collision with ADD_FROM
+                             QueryEdit.ADD_CONSTRUCTOR_END);
+        }
 
         if (needsParenthesesEnd)
             modifyAt.put(length,
@@ -5080,14 +5103,14 @@ public class QueryInfo {
      * @param ql       the query.
      * @param i        position in the query after SELECT.
      * @param modifyAt indices at which to perform modifications.
-     * @return true if this method added the ADD_CONSTRUCTOR_BEGIN instruction
-     *         which needs to be paired with ADD_CONSTRUCTOR_END.
+     * @return position in the query at which to insert constructor syntax.
+     *         -1 if the constructor syntax should not be inserted.
      */
     @Trivial
-    private boolean parseSelectForConstructor(String ql,
-                                              int i,
-                                              Map<Integer, QueryEdit> modifyAt) {
-        boolean needsConstructorEnd = false;
+    private int parseSelectForConstructor(String ql,
+                                          int i,
+                                          Map<Integer, QueryEdit> modifyAt) {
+        int insertConstructorBeginAt = -1;
         int length = ql.length();
 
         while (i < length && Character.isWhitespace(ql.charAt(i)))
@@ -5100,10 +5123,10 @@ public class QueryInfo {
             i += 3;
         } else {
             modifyAt.put(i, QueryEdit.ADD_CONSTRUCTOR_BEGIN);
-            needsConstructorEnd = true;
+            insertConstructorBeginAt = i;
         }
 
-        return needsConstructorEnd;
+        return insertConstructorBeginAt;
     }
 
     /**
