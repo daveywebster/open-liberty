@@ -3182,19 +3182,21 @@ public class QueryInfo {
             } else if (entityInfo.idClassAttributeAccessors != null &&
                        singleType.equals(entityInfo.idType)) {
                 // IdClass
-                // TODO remove once #29073 is fixed
-                // The following guess of alphabetic order is not valid in most cases, but this
-                // whole code block will be removed before GA, so there is no reason to correct it.
-                q.append("SELECT NEW ").append(singleType.getName()).append('(');
-                boolean first = true;
-                for (String idClassAttributeName : entityInfo.idClassAttributeAccessors.keySet()) {
-                    String name = getAttributeName(idClassAttributeName, true);
-                    q.append(first ? "" : ", ").append(o_).append(name);
-                    first = false;
+                if (entityInfo.isHibernate) {
+                    q.append("SELECT ID(").append(entityVar).append(')');
+                } else {
+                    // TODO remove once #29073 is fixed and use above code instead.
+                    // The following guess of alphabetic order is not valid in most cases, but this
+                    // whole code block will be removed before GA, so there is no reason to correct it.
+                    q.append("SELECT NEW ").append(singleType.getName()).append('(');
+                    boolean first = true;
+                    for (String idClassAttributeName : entityInfo.idClassAttributeAccessors.keySet()) {
+                        String name = getAttributeName(idClassAttributeName, true);
+                        q.append(first ? "" : ", ").append(o_).append(name);
+                        first = false;
+                    }
+                    q.append(')');
                 }
-                q.append(')');
-                // TODO enable this once #29073 is fixed
-                // q.append("SELECT ID(").append(entityVar).append(')');
             } else {
                 // Is the result type a record?
                 RecordComponent[] recordComponents = singleType.getRecordComponents();
