@@ -6,7 +6,6 @@
  * http://www.eclipse.org/legal/epl-2.0/
  *
  * SPDX-License-Identifier: EPL-2.0
- *
  *******************************************************************************/
 package com.ibm.ws.jaxws.fat;
 
@@ -24,6 +23,7 @@ import componenttest.rules.repeater.RepeatTests;
  */
 @RunWith(Suite.class)
 @SuiteClasses({
+                AttachmentPropertiesTest.class,
                 AsyncClientConnectionTest.class,
                 BindingTypeWsdlMismatchTest.class,
                 CatalogFacilityTest.class,
