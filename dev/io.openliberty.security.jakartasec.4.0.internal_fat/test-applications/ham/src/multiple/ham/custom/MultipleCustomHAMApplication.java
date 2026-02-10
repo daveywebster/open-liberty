@@ -6,29 +6,19 @@
  * http://www.eclipse.org/legal/epl-2.0/
  *
  * SPDX-License-Identifier: EPL-2.0
- *******************************************************************************/
-package multiple.ham;
-
-import static org.junit.Assert.assertEquals;
-
-import org.junit.Test;
-
-import componenttest.app.FATServlet;
-import jakarta.servlet.annotation.WebServlet;
-
-/*
  *
+ * Contributors:
+ * IBM Corporation - initial API and implementation
+ *******************************************************************************/
+package multiple.ham.custom;
+
+import jakarta.ws.rs.ApplicationPath;
+import jakarta.ws.rs.core.Application;
+
+/**
+ * JAX-RS Application with multiple custom HAM's
+ * This is used for testing multiple HAM prioritization scenarios
  */
-@WebServlet("/BasicServlet")
-public class BasicServlet extends FATServlet {
-    private static final long serialVersionUID = 1L;
-
-    public BasicServlet() {
-        super();
-    }
-
-    @Test
-    public void testPassed() {
-        assertEquals("test passed", "test passed");
-    }
+@ApplicationPath("/")
+public class MultipleCustomHAMApplication extends Application {
 }

@@ -28,6 +28,7 @@ import org.junit.runner.RunWith;
 import com.ibm.websphere.simplicity.ShrinkHelper;
 import com.ibm.websphere.simplicity.ShrinkHelper.DeployOptions;
 
+import componenttest.annotation.ExpectedFFDC;
 import componenttest.annotation.Server;
 import componenttest.custom.junit.runner.FATRunner;
 import componenttest.custom.junit.runner.Mode;
@@ -35,15 +36,14 @@ import componenttest.custom.junit.runner.Mode.TestMode;
 import componenttest.topology.impl.LibertyServer;
 import multiple.ham.common.MultipleHAMProtectedResource;
 import multiple.ham.custom.hams.CustomHAMOne;
-import multiple.ham.custom.hams.CustomHAMThree;
-import multiple.ham.custom.hams.CustomHAMTwo;
+import multiple.ham.custom.hams.CustomHAMOneDuplicate;
 
 /**
  * Tests appSecurity-6.0
  */
 @RunWith(FATRunner.class)
 @Mode(TestMode.LITE)
-public class MultipleHAMTests {
+public class MultipleHAMDuplicateTests {
 
     public static final String SERVER_NAME = "jakartaSec40Server";
     public static final String APP_NAME = "CustomHAMApp";
@@ -58,7 +58,7 @@ public class MultipleHAMTests {
     @BeforeClass
     public static void setUp() throws Exception {
         WebArchive multipleHamApp = ShrinkWrap.create(WebArchive.class,
-                                                      APP_NAME + ".war").addPackage("multiple.ham.custom").addClass(MultipleHAMProtectedResource.class).addClass(CustomHAMOne.class).addClass(CustomHAMTwo.class).addClass(CustomHAMThree.class);
+                                                      APP_NAME + ".war").addPackage("multiple.ham.custom").addClass(MultipleHAMProtectedResource.class).addClass(CustomHAMOne.class).addClass(CustomHAMOneDuplicate.class);
 
         // The URL is not expected to be modified during this test scope
         url = "http://localhost:" + server.getHttpDefaultPort() + CONTEXT_ROOT + RESOURCE_PATH;
@@ -69,20 +69,16 @@ public class MultipleHAMTests {
     }
 
     /*
-     * Assert that we find the following message in trace.log:
+     * Assert that we find jakarta.enterprise.inject.AmbiguousResolutionException
      *
-     * Order of HttpAuthenticationMechanisms found (the first one will be used if its prioritization is unique -
-     *
-     * @Priority for application HAMs and HAM type - Oidc/CustomForm/Form/Basic - for in-built HAMs):
-     * CustomHAMThree Priority = 300, CustomHAMTwo Priority = 200, CustomHAMOne Priority = 100
-     *
-     * CustomHAMThree has the most priority with Priority = 300, CustomHAMOne has the least priority with Priority = 100
+     * CustomHAMOne and CustomHAMOneDuplicate both have Priority = 100
      */
     @Test
-    public void testCustomHamsPrioritization() throws Exception {
+    @ExpectedFFDC({ "jakarta.enterprise.inject.AmbiguousResolutionException" })
+    public void testAmbiguousResolutionException() throws Exception {
 
-        // Mark the trace before making HTTP connection
-        server.setTraceMarkToEndOfDefaultTrace();
+        // Mark log to check for error message
+        server.setMarkToEndOfLog();
 
         URL urlObj = new URL(url);
         HttpURLConnection conn = (HttpURLConnection) urlObj.openConnection();
@@ -90,22 +86,19 @@ public class MultipleHAMTests {
         conn.setRequestMethod("GET");
         conn.setDoInput(true);
         int responseCode = conn.getResponseCode();
-        assertEquals("Expected status code 200 but got " + responseCode, 200, responseCode);
+        assertEquals("Expected status code 403 but got " + responseCode, 403, responseCode);
 
-        String startOfMessage = "Order of HttpAuthenticationMechanisms found";
-        String prioritizationOrder = "CustomHAMThree Priority = 300, CustomHAMTwo Priority = 200, CustomHAMOne Priority = 100";
+        // Check that error message appears
+        assertNotNull("AmbiguousResolutionException error message should appear in log",
+                      server.waitForStringInLogUsingMark("Unable to determine which HttpAuthenticationMechanism to handle request."));
 
-        // Check that warning appears
-        assertNotNull("Warning message should appear in log",
-                      server.waitForStringInTraceUsingMark(startOfMessage));
-        // Check that warning appears
-        assertNotNull("Warning message should appear in log",
-                      server.waitForStringInTraceUsingMark(prioritizationOrder));
+        assertNotNull("AmbiguousResolutionException error message should appear in log",
+                      server.waitForStringInLogUsingMark("The following HttpAuthenticationMechanisms have the same priority or Http Authentiation Mechanism Type CustomHAMOne Priority = 100, CustomHAMOneDuplicate Priority = 100"));
     }
 
     @AfterClass
     public static void tearDown() throws Exception {
-        server.stopServer();
+        server.stopServer("CWWKS2605E");
     }
 
 }
