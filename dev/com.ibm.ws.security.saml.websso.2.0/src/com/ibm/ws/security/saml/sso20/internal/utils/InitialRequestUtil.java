@@ -74,12 +74,12 @@ public class InitialRequestUtil {
         if (key != null) {
             byte[] encodedKey = key.getEncoded();
             if (encodedKey != null) {
-                key_alias_pass.concat(JsonUtils.convertToBase64(encodedKey));
+                key_alias_pass = key_alias_pass.concat(JsonUtils.convertToBase64(encodedKey));
             }
         } else {
             String default_ks_pass = ssoService.getDefaultKeyStorePassword();
             if (default_ks_pass != null) {
-                key_alias_pass.concat(default_ks_pass);
+                key_alias_pass = key_alias_pass.concat(default_ks_pass);
             }
         }
 
