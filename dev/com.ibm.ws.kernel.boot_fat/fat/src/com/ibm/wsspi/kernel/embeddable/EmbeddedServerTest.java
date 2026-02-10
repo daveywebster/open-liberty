@@ -40,6 +40,7 @@ import com.ibm.websphere.simplicity.OperatingSystem;
 import com.ibm.websphere.simplicity.ShrinkHelper;
 import com.ibm.websphere.simplicity.log.Log;
 
+import componenttest.annotation.MinimumJavaLevel;
 import componenttest.custom.junit.runner.FATRunner;
 import componenttest.topology.impl.LibertyServer;
 import componenttest.topology.impl.LibertyServerFactory;
@@ -216,10 +217,14 @@ public class EmbeddedServerTest {
     }
 
     @Test
+    @MinimumJavaLevel(javaLevel = 11)
+    // cannot support configuring parent packages with Java 8
     public void testBootstrapAccessSystemNoPackages() throws Throwable {
     }
 
     @Test
+    @MinimumJavaLevel(javaLevel = 11)
+    // cannot support configuring parent packages with Java 8
     public void testBootstrapAccessSystemMultiPackage() throws Throwable {
     }
 
