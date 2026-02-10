@@ -747,10 +747,23 @@ final class ExpressionBuilderVisitor extends JPQLFunctionsAbstractBuilder implem
         // Handle ID() function with composite keys on left side
         if (expression.getLeftExpression() instanceof IdExpression) {
             IdExpression idExpression = (IdExpression) expression.getLeftExpression();
+            
+            // Check if this is a composite key by examining the descriptor
+            ClassDescriptor descriptor = getDescriptorForIdExpression(idExpression);
+            if (descriptor != null) {
+                List<DatabaseField> pkFields = descriptor.getPrimaryKeyFields();
+                if (pkFields != null && pkFields.size() > 1) {
+                    // Composite key - build comparison for all fields
+                    queryExpression = buildCompositeKeyComparisonFromDescriptor(
+                        idExpression, descriptor, rightExpression, comparaison, visitor);
+                    type[0] = Boolean.class;
+                    return;
+                }
+            }
+            
+            // Fallback to checking state field paths (for backward compatibility)
             Collection<StateFieldPathExpression> stateFieldPaths = idExpression.getStateFieldPathExpressions();
-
-            // If composite key (multiple fields), create AND/OR expression for each field
-            if (stateFieldPaths.size() > 1) {
+            if (stateFieldPaths != null && stateFieldPaths.size() > 1) {
                 queryExpression = buildCompositeKeyComparison(
                     stateFieldPaths, rightExpression, comparaison, visitor);
                 type[0] = Boolean.class;
@@ -761,10 +774,23 @@ final class ExpressionBuilderVisitor extends JPQLFunctionsAbstractBuilder implem
         // Handle ID() function with composite keys on right side
         if (expression.getRightExpression() instanceof IdExpression) {
             IdExpression idExpression = (IdExpression) expression.getRightExpression();
+            
+            // Check if this is a composite key by examining the descriptor
+            ClassDescriptor descriptor = getDescriptorForIdExpression(idExpression);
+            if (descriptor != null) {
+                List<DatabaseField> pkFields = descriptor.getPrimaryKeyFields();
+                if (pkFields != null && pkFields.size() > 1) {
+                    // Composite key - build comparison for all fields
+                    queryExpression = buildCompositeKeyComparisonFromDescriptor(
+                        idExpression, descriptor, leftExpression, comparaison, visitor);
+                    type[0] = Boolean.class;
+                    return;
+                }
+            }
+            
+            // Fallback to checking state field paths (for backward compatibility)
             Collection<StateFieldPathExpression> stateFieldPaths = idExpression.getStateFieldPathExpressions();
-
-            // If composite key (multiple fields), create AND/OR expression for each field
-            if (stateFieldPaths.size() > 1) {
+            if (stateFieldPaths != null && stateFieldPaths.size() > 1) {
                 queryExpression = buildCompositeKeyComparison(
                     stateFieldPaths, leftExpression, comparaison, visitor);
                 type[0] = Boolean.class;
@@ -879,6 +905,110 @@ final class ExpressionBuilderVisitor extends JPQLFunctionsAbstractBuilder implem
                 }
                 else {
                     result = result.or(fieldComparison);
+                }
+            }
+        }
+
+        return result;
+    }
+
+    /**
+     * Helper method to get the ClassDescriptor for an IdExpression.
+     *
+     * @param idExpression The ID() expression
+     * @return The ClassDescriptor or null if not found
+     */
+    private ClassDescriptor getDescriptorForIdExpression(IdExpression idExpression) {
+        if (idExpression.getExpression() instanceof IdentificationVariable) {
+            IdentificationVariable idVar = (IdentificationVariable) idExpression.getExpression();
+            Declaration declaration = queryContext.findDeclaration(idVar.getVariableName());
+            if (declaration != null) {
+                return declaration.getDescriptor();
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Builds a comparison expression for composite keys using descriptor information.
+     * This follows the pattern from ObjectBuilder.buildPrimaryKeyExpressionFromKeys()
+     *
+     * @param idExpression The ID() expression
+     * @param descriptor The entity descriptor
+     * @param parameterExpression The parameter expression (e.g., ?1)
+     * @param operator The comparison operator (=, !=, etc.)
+     * @param visitor The visitor for building sub-expressions
+     * @return The combined expression for all key fields
+     */
+    private Expression buildCompositeKeyComparisonFromDescriptor(
+            IdExpression idExpression,
+            ClassDescriptor descriptor,
+            Expression parameterExpression,
+            String operator,
+            ComparisonExpressionVisitor visitor) {
+
+        // Only support equality and inequality for composite keys
+        if (!operator.equals(ComparisonExpression.EQUAL) &&
+            !operator.equals(ComparisonExpression.DIFFERENT) &&
+            !operator.equals(ComparisonExpression.NOT_EQUAL)) {
+            throw new IllegalArgumentException(
+                "Comparison operator " + operator + " is not supported for composite keys");
+        }
+
+        // Visit the entity expression to get the base expression
+        idExpression.getExpression().accept(ExpressionBuilderVisitor.this);
+        Expression entityExpression = queryExpression;
+
+        List<DatabaseField> primaryKeyFields = descriptor.getPrimaryKeyFields();
+        Expression result = null;
+
+        // Build comparison for each primary key field
+        // Following the pattern from ObjectBuilder.buildPrimaryKeyExpressionFromKeys()
+        for (int index = 0; index < primaryKeyFields.size(); index++) {
+            DatabaseField pkField = primaryKeyFields.get(index);
+            DatabaseMapping mapping = descriptor.getObjectBuilder().getMappingForField(pkField);
+            
+            if (mapping != null) {
+                String attributeName = mapping.getAttributeName();
+                
+                // Build the left side: entity.field (e.g., c.name)
+                Expression leftFieldExpr = entityExpression.get(attributeName);
+
+                // Build the right side: parameter.field
+                // For composite keys, we need to extract the field value from the parameter
+                Expression rightFieldExpr;
+                if (parameterExpression instanceof ParameterExpression) {
+                    // Create a ParameterExpression that will extract this specific field
+                    // from the composite key parameter at runtime
+                    ParameterExpression paramExpr = (ParameterExpression) parameterExpression;
+                    
+                    // Use getField with the attribute name to extract the field from the IdClass
+                    rightFieldExpr = paramExpr.get(attributeName);
+                } else {
+                    // For non-parameter expressions, just get the field
+                    rightFieldExpr = parameterExpression.get(attributeName);
+                }
+
+                // Create the comparison for this field
+                Expression fieldComparison;
+                if (operator.equals(ComparisonExpression.EQUAL)) {
+                    fieldComparison = leftFieldExpr.equal(rightFieldExpr);
+                } else {
+                    // NOT_EQUAL or DIFFERENT
+                    fieldComparison = leftFieldExpr.notEqual(rightFieldExpr);
+                }
+
+                // Combine with previous field comparisons
+                if (result == null) {
+                    result = fieldComparison;
+                } else {
+                    // For EQUAL: all fields must match (AND)
+                    // For NOT_EQUAL: any field can differ (OR)
+                    if (operator.equals(ComparisonExpression.EQUAL)) {
+                        result = fieldComparison.and(result);
+                    } else {
+                        result = fieldComparison.or(result);
+                    }
                 }
             }
         }
@@ -1286,6 +1416,53 @@ final class ExpressionBuilderVisitor extends JPQLFunctionsAbstractBuilder implem
             // Retrieve the Entity type
             if (declaration.getType() == Type.RANGE) {
                 type[0] = declaration.getDescriptor().getJavaClass();
+            }
+        }
+    }
+
+    @Override
+    public void visit(IdExpression expression) {
+        
+        // First visit the inner expression to get the entity expression
+        expression.getExpression().accept(this);
+        Expression entityExpression = queryExpression;
+        
+        // Get the descriptor to find primary key information
+        ClassDescriptor descriptor = null;
+        if (expression.getExpression() instanceof IdentificationVariable) {
+            IdentificationVariable idVar = (IdentificationVariable) expression.getExpression();
+            Declaration declaration = queryContext.findDeclaration(idVar.getVariableName());
+            if (declaration != null) {
+                descriptor = declaration.getDescriptor();
+            }
+        }
+        
+        if (descriptor != null) {
+            List<DatabaseField> primaryKeyFields = descriptor.getPrimaryKeyFields();
+            
+            if (primaryKeyFields != null && !primaryKeyFields.isEmpty()) {
+                if (primaryKeyFields.size() == 1) {
+                    // Single primary key - return the field expression
+                    DatabaseField pkField = primaryKeyFields.get(0);
+                    DatabaseMapping mapping = descriptor.getObjectBuilder().getMappingForField(pkField);
+                    
+                    if (mapping != null) {
+                        String attributeName = mapping.getAttributeName();
+                        queryExpression = entityExpression.get(attributeName);
+                        type[0] = mapping.getAttributeClassification();
+                    }
+                } else {
+                    // Composite primary key - the comparison code will handle this
+                    // Just keep the entity expression and set the type to IdClass
+                    queryExpression = entityExpression;
+                    
+                    // Set the type to the IdClass
+                    if (descriptor.getCMPPolicy() != null && descriptor.getCMPPolicy().getPKClass() != null) {
+                        type[0] = descriptor.getCMPPolicy().getPKClass();
+                    } else {
+                        type[0] = Object.class;
+                    }
+                }
             }
         }
     }

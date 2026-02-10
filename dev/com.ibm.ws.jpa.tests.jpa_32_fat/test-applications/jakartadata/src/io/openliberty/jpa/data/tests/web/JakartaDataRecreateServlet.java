@@ -935,14 +935,14 @@ public class JakartaDataRecreateServlet extends FATServlet {
     }
 
     @Test
-   //@Ignore("Reference issue: https://github.com/OpenLiberty/open-liberty/issues/29073")
+    //@Ignore("Reference issue: https://github.com/OpenLiberty/open-liberty/issues/29073")
     public void testOLGH29073_WHERECLAUSE() throws Exception {
         deleteAllEntities(City.class);
 
         City RochesterMN = City.of("Rochester", "Minnesota", 121878, Set.of(55901, 55902, 55903, 55904, 55906));
         City RochesterNY = City.of("Rochester", "New York", 209352, Set.of(14601, 14602, 14603, 14604, 14606));
 
-        // List<CityId> rochesters;
+        List<?> rochesters;
 
         tx.begin();
         em.persist(RochesterMN);
@@ -956,6 +956,11 @@ public class JakartaDataRecreateServlet extends FATServlet {
                             .setParameter(1, new CityId("Rochester", "Minnesota"))
                             .getSingleResult();
 
+            rochesters = em.createQuery("SELECT ID(THIS) FROM City WHERE (name=?1) ORDER BY population DESC")
+                            .setParameter(1, "Rochester")
+                            .getResultList();
+            System.out.println("Result list class = " + rochesters.getClass());
+
             //This one failed
             long version2 = em.createQuery("SELECT VERSION(THIS) FROM City  WHERE ID(THIS) = ?1", Long.class)
                             .setParameter(1, new CityId("Rochester", "Minnesota"))
@@ -965,6 +970,10 @@ public class JakartaDataRecreateServlet extends FATServlet {
             tx.rollback();
             throw e;
         }
+
+        assertEquals(2, rochesters.size());
+        assertEquals("New York", ((CityId) rochesters.get(0)).getStateName());
+        assertEquals("Minnesota", ((CityId) rochesters.get(1)).getStateName());
     }
 
     @Test
