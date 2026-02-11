@@ -1225,8 +1225,10 @@ public abstract class HTTPConduit
 
         @FFDCIgnore(RejectedExecutionException.class)
         protected void handleResponseOnWorkqueue(boolean allowCurrentThread, boolean forceWQ) throws IOException {
-            //Capture thread context before creating the runnable
+            // Liberty change Begin
+            // Capture thread context before creating the runnable
             AsyncClientRunnableWrapperManager.prepare(outMessage);
+             // Liberty Change End
             Runnable runnable = new Runnable() {
                 @Override
                 @FFDCIgnore(Throwable.class)
