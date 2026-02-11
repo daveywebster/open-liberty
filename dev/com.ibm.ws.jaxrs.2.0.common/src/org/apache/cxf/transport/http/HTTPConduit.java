@@ -92,6 +92,7 @@ import org.apache.cxf.ws.addressing.EndpointReferenceType;
 
 import com.ibm.websphere.ras.Tr;
 import com.ibm.websphere.ras.TraceComponent;
+import com.ibm.ws.cxf.jaxrs20.client.component.AsyncClientRunnableWrapperManager;
 import com.ibm.ws.ffdc.annotation.FFDCIgnore;
 
 /*
@@ -1229,7 +1230,7 @@ public abstract class HTTPConduit
             // Capture thread context before creating the runnable
             AsyncClientRunnableWrapperManager.prepare(outMessage);
              // Liberty Change End
-            Runnable runnable = new Runnable() {
+            Runnable runnable = AsyncClientRunnableWrapperManager.wrap(outMessage, new Runnable() {
                 @Override
                 @FFDCIgnore(Throwable.class)
                 public void run() {
@@ -1246,7 +1247,7 @@ public abstract class HTTPConduit
                         mo.onMessage(outMessage);
                     }
                 }
-            };
+            });
             HTTPClientPolicy policy = getClient(outMessage);
             boolean exceptionSet = outMessage.getContent(Exception.class) != null;
             if (!exceptionSet) {
