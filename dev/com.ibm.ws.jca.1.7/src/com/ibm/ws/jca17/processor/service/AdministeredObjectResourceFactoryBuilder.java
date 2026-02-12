@@ -18,13 +18,17 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
 import javax.resource.ResourceException;
 
+import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
+import org.osgi.framework.BundleEvent;
 import org.osgi.framework.Constants;
 import org.osgi.framework.FrameworkUtil;
 import org.osgi.framework.ServiceReference;
+import org.osgi.framework.SynchronousBundleListener;
 import org.osgi.service.cm.Configuration;
 import org.osgi.service.cm.ConfigurationAdmin;
 import org.osgi.service.component.ComponentContext;
@@ -41,9 +45,11 @@ import com.ibm.ws.jca.service.AdminObjectService;
 import com.ibm.ws.kernel.service.util.SecureAction;
 import com.ibm.ws.resource.ResourceFactory;
 import com.ibm.ws.resource.ResourceFactoryBuilder;
+import com.ibm.ws.resource.ResourceRefInfo;
 import com.ibm.wsspi.kernel.service.location.VariableRegistry;
 import com.ibm.wsspi.kernel.service.utils.AtomicServiceReference;
 import com.ibm.wsspi.kernel.service.utils.FilterUtils;
+import com.ibm.wsspi.resource.ResourceInfo;
 
 /**
  * Creates, modifies, and removes connection factory that are defined via ConnectionFactoryDefinition.
@@ -199,7 +205,138 @@ public class AdministeredObjectResourceFactoryBuilder implements ResourceFactory
             if (trace && tc.isDebugEnabled())
                 Tr.debug(tc, "Embedded resourceAdapter name : " + resourceAdapter);
         }
-        Dictionary<String, Object> adminObjectDefaultProps = getDefaultProperties(resourceAdapter, interfaceName, className);
+        Bundle raBundle = bundleContext.getBundle(BUNDLE_LOCATION + resourceAdapter);
+        if (raBundle != null) {
+            return createAppDefinedResourceFactory(raBundle, declaringApplication, resourceAdapter, adminObjectID, interfaceName, className, adminObjectSvcProps, annotationProps,
+                                                   variableRegistry);
+        } else {
+            // The RA bundle may come later;
+            // Use a factory that waits for the bundle to arrive once the modules are deployed
+            // TODO need an error condition on starting the application if the RA bundle
+            // doesn't arrive after the modules have been provisioned
+            WaitForRABundleResourceFactory resourceFactory = new WaitForRABundleResourceFactory(declaringApplication, resourceAdapter, adminObjectID, interfaceName, className, adminObjectSvcProps, annotationProps, variableRegistry);
+            resourceFactory.listenForRABundle();
+            return resourceFactory;
+        }
+    }
+
+    class WaitForRABundleResourceFactory implements SynchronousBundleListener, ResourceFactory {
+        private final AtomicReference<ResourceFactory> resourceFactory = new AtomicReference<>();
+        private final AtomicReference<Exception> rfCreateException = new AtomicReference<>();
+        private final String raBundleLocation;
+        private final String declaringApplication;
+        private final String resourceAdapter;
+        private final String adminObjectID;
+        private final String interfaceName;
+        private final String className;
+        private final Hashtable<String, Object> adminObjectSvcProps;
+        private final Map<String, Object> annotationProps;
+        private final VariableRegistry variableRegistry;
+
+        public WaitForRABundleResourceFactory(String declaringApplication, String resourceAdapter, String adminObjectID, String interfaceName, String className,
+                                              Hashtable<String, Object> adminObjectSvcProps, Map<String, Object> annotationProps,
+                                              VariableRegistry variableRegistry) {
+            this.raBundleLocation = BUNDLE_LOCATION + resourceAdapter;
+            this.declaringApplication = declaringApplication;
+            this.resourceAdapter = resourceAdapter;
+            this.adminObjectID = adminObjectID;
+            this.interfaceName = interfaceName;
+            this.className = className;
+            this.adminObjectSvcProps = adminObjectSvcProps;
+            this.annotationProps = annotationProps;
+            this.variableRegistry = variableRegistry;
+        }
+
+        /**
+         *
+         */
+        public void listenForRABundle() {
+            bundleContext.addBundleListener(this);
+            final Bundle b = bundleContext.getBundle(raBundleLocation);
+            if (b != null) {
+                // Maybe the bundle showed up before we got our listener added;
+                // Be sure to check
+                resourceFactory.getAndUpdate((f) -> createResourceFactory(f, b));
+            }
+        }
+
+        @Override
+        public void bundleChanged(BundleEvent e) {
+            resourceFactory.getAndUpdate((f) -> createResourceFactory(f, e.getBundle()));
+        }
+
+        private ResourceFactory createResourceFactory(ResourceFactory existing, Bundle b) {
+            if (existing != null) {
+                return existing;
+            }
+            if (raBundleLocation.equals(b.getLocation())) {
+                // Not sure if this extra check is necessary for the state of the bundle.
+                // Thought it would be more safe to make sure the bundle is resolved and at least starting
+                // before creating the real factory.
+                if ((b.getState() & (Bundle.STARTING | Bundle.ACTIVE)) != 0) {
+                    try {
+                        return createAppDefinedResourceFactory(b, declaringApplication, resourceAdapter, adminObjectID, interfaceName, className, adminObjectSvcProps,
+                                                               annotationProps, variableRegistry);
+                    } catch (Exception ex) {
+                        rfCreateException.set(ex);
+                    } finally {
+                        // do not need to listen any more
+                        bundleContext.removeBundleListener(this);
+                    }
+                }
+            }
+            return existing;
+        }
+
+        private ResourceFactory getResourceFactory() throws Exception {
+            ResourceFactory result = resourceFactory.get();
+            if (result != null) {
+                return result;
+            }
+            Exception createException = rfCreateException.get();
+            if (createException != null) {
+                throw createException;
+            }
+            throw new RuntimeException("Need a new message about this condition!!!");
+        }
+
+        @Override
+        public Object createResource(ResourceInfo info) throws Exception {
+            return getResourceFactory().createResource(info);
+        }
+
+        @Override
+        public Object createResource(ResourceRefInfo info) throws Exception {
+            return getResourceFactory().createResource(info);
+        }
+
+        @Override
+        public void destroy() throws Exception {
+            ResourceFactory rf = resourceFactory.get();
+            if (rf != null) {
+                // don't throw exceptions if there is no factory yet on destroy
+                rf.destroy();
+            }
+        }
+
+        @Override
+        public void modify(Map<String, Object> props) throws Exception {
+            getResourceFactory().modify(props);
+        }
+
+    }
+
+    private ResourceFactory createAppDefinedResourceFactory(Bundle raBundle,
+                                                            String declaringApplication,
+                                                            String resourceAdapter,
+                                                            String adminObjectID,
+                                                            String interfaceName,
+                                                            String className,
+                                                            Hashtable<String, Object> adminObjectSvcProps,
+                                                            Map<String, Object> annotationProps,
+                                                            VariableRegistry variableRegistry) throws Exception {
+
+        Dictionary<String, Object> adminObjectDefaultProps = getDefaultProperties(raBundle, interfaceName, className);
 
         for (Enumeration<String> keys = adminObjectDefaultProps.keys(); keys.hasMoreElements();) {
             String key = keys.nextElement();
@@ -245,7 +382,7 @@ public class AdministeredObjectResourceFactoryBuilder implements ResourceFactory
             throw x;
         }
 
-        if (trace && tc.isEntryEnabled())
+        if (TraceComponent.isAnyTracingEnabled() && tc.isEntryEnabled())
             Tr.exit(tc, "createResourceFactory", factory);
         return factory;
     }
@@ -265,11 +402,8 @@ public class AdministeredObjectResourceFactoryBuilder implements ResourceFactory
         wsConfigurationHelperRef.deactivate(context);
     }
 
-    private Dictionary<String, Object> getDefaultProperties(String resourceAdapter, String interfaceName, String className) throws ConfigEvaluatorException, ResourceException {
-        System.out.println("KJA1017 bundleContext: " + bundleContext);
-        System.out.println("KJA1017 bundle lookup: " + BUNDLE_LOCATION + resourceAdapter);
-        System.out.println("KJA1017 bundle object: " + bundleContext.getBundle(BUNDLE_LOCATION + resourceAdapter));
-        MetaTypeInformation metaTypeInformation = metaTypeServiceRef.getService().getMetaTypeInformation(bundleContext.getBundle(BUNDLE_LOCATION + resourceAdapter));
+    private Dictionary<String, Object> getDefaultProperties(Bundle raBundle, String interfaceName, String className) throws ConfigEvaluatorException, ResourceException {
+        MetaTypeInformation metaTypeInformation = metaTypeServiceRef.getService().getMetaTypeInformation(raBundle);
         String[] factoryPids = metaTypeInformation.getFactoryPids();
 
         for (String factoryPid : factoryPids) {
