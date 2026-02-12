@@ -932,7 +932,7 @@ public class JakartaDataRecreateServlet extends FATServlet {
         }
 
         assertEquals(2, rochesters.size());
-        assertEquals("New York",((CityId) rochesters.get(1)).getStateName());
+        assertEquals("New York", ((CityId) rochesters.get(0)).getStateName());
         assertEquals("Minnesota", ((CityId) rochesters.get(1)).getStateName());
     }
 
