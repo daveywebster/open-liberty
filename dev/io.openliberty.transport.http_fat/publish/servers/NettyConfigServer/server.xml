@@ -1,0 +1,40 @@
+<!--
+    Copyright (c) 2026 IBM Corporation and others.
+    All rights reserved. This program and the accompanying materials
+    are made available under the terms of the Eclipse Public License 2.0
+    which accompanies this distribution, and is available at
+    http://www.eclipse.org/legal/epl-2.0/
+    
+    SPDX-License-Identifier: EPL-2.0
+ -->
+<server description="Test Netty Config">
+
+    <include location="../fatTestCommon.xml"/>
+
+    <httpEndpoint id="defaultHttpEndpoint"
+                  host="*"
+                  httpPort="${bvt.prop.HTTP_default}"
+                  httpsPort="${bvt.prop.HTTP_default.secure}">
+        <tcpOptions portOpenRetries="60"/>
+    </httpEndpoint>
+
+    <!-- Note - this is internal as of writing (Feb, 2026) -->
+     <!-- useNativeIO to true by default, so false should be seen in logs -->
+    <netty 
+        scalerMinThreads="1"
+        scalerMaxThreads="10"
+        scalerWindowSize="1500ms"
+        scalerDownThreshold="0.15"
+        scalerUpThreshold="0.85"
+        scalerDownStep="1"
+        scalerUpStep="1"
+        scalerCycles="3"
+        scalerMetricsWindowSize="5s"
+        useNativeIO="false"
+    />
+
+    <featureManager>
+        <feature>servlet-3.1</feature>
+    </featureManager>
+
+</server>
