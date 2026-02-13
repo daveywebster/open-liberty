@@ -33,7 +33,7 @@ import io.openliberty.classloading.platform.delegation.test.app.PlatformDelegati
  *
  */
 @RunWith(FATRunner.class)
-public class AppParentDelegationSystemPackagesTest extends AppParentDelegationAbstractTest {
+public class AppParentDelegationSystemEmptyPackagesTest extends AppParentDelegationAbstractTest {
 
     @Server(APP_PARENT_TEST_SERVER)
     @TestServlet(servlet = PlatformDelegationTestServlet.class, contextRoot = TEST_PLATFORM_DELEGATION_APP)
@@ -41,7 +41,7 @@ public class AppParentDelegationSystemPackagesTest extends AppParentDelegationAb
 
     @BeforeClass
     public static void setupTestServer() throws Exception {
-        setAppParent(server, CONFIG_APP_PARENT_SYSTEM, "io.openliberty.classloading.test.resources, io.openliberty.classloading.classpath.test.lib7, io.openliberty.classloading.classpath.test.lib9");
+        setAppParent(server, CONFIG_APP_PARENT_SYSTEM, "");
         setupTestServer(server);
     }
 
@@ -51,6 +51,8 @@ public class AppParentDelegationSystemPackagesTest extends AppParentDelegationAb
         String traceMsg = null;
         String testMethod = testName.getMethodName();
         testMethod = testMethod.substring(PlatformDelegationTestServlet.class.getSimpleName().length() + 1);
+        String secondaryName = null;
+        String secondaryMsg = null;
         switch (testMethod) {
             case "testLoadLibrary6Class":
                 targetName = Lib6.class.getName();
@@ -58,7 +60,7 @@ public class AppParentDelegationSystemPackagesTest extends AppParentDelegationAb
                 break;
             case "testLoadLibrary7Class":
                 targetName = Lib7.class.getName();
-                traceMsg = LOAD_CLASS_NOT_FILTERED_MSG;
+                traceMsg = JavaInfo.JAVA_VERSION >= 9 ? LOAD_CLASS_FILTERED_MSG : LOAD_CLASS_NOT_FILTERED_MSG;
                 break;
             case "testLoadLibrary8Class":
                 targetName = Lib8.class.getName();
@@ -66,15 +68,15 @@ public class AppParentDelegationSystemPackagesTest extends AppParentDelegationAb
                 break;
             case "testLoadLibrary9Class":
                 targetName = Lib9.class.getName();
-                traceMsg = LOAD_CLASS_NOT_FILTERED_MSG;
+                traceMsg = JavaInfo.JAVA_VERSION >= 9 ? LOAD_CLASS_FILTERED_MSG : LOAD_CLASS_NOT_FILTERED_MSG;
                 break;
             case "testGetCommonResource":
                 targetName = "io/openliberty/classloading/test/resources/common.properties";
-                traceMsg = FIND_RESOURCE_NOT_FILTERED_MSG;
+                traceMsg = JavaInfo.JAVA_VERSION >= 9 ? FIND_RESOURCE_FILTERED_MSG : FIND_RESOURCE_NOT_FILTERED_MSG;
                 break;
             case "testGetCommonResourcesOrder":
                 targetName = "io/openliberty/classloading/test/resources/common.properties";
-                traceMsg = FIND_RESOURCES_NOT_FILTERED_MSG;
+                traceMsg = JavaInfo.JAVA_VERSION >= 9 ? FIND_RESOURCES_FILTERED_MSG : FIND_RESOURCES_NOT_FILTERED_MSG;
                 break;
             case "testGetPlatformResource":
                 targetName = "java/lang/platform-delegation-test.txt";
@@ -91,6 +93,8 @@ public class AppParentDelegationSystemPackagesTest extends AppParentDelegationAb
             case "testLoadKernelClass":
                 targetName = "com.ibm.wsspi.kernel.embeddable.ServerBuilder";
                 traceMsg = LOAD_CLASS_NOT_FILTERED_MSG;
+                secondaryName = "CLASS FOUND";
+                secondaryMsg = "testLoadKernelClass:";
                 break;
             case "testPlatformService":
                 targetName = null;
@@ -100,6 +104,9 @@ public class AppParentDelegationSystemPackagesTest extends AppParentDelegationAb
         }
         if (targetName != null) {
             checkTrace(server, traceMsg, targetName);
+        }
+        if (secondaryName != null) {
+            checkTrace(server, secondaryMsg, secondaryName);
         }
     }
 

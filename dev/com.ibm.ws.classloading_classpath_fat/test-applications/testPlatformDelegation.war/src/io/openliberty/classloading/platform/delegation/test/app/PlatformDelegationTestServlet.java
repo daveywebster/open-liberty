@@ -78,8 +78,9 @@ public class PlatformDelegationTestServlet extends FATServlet{
     public void testLoadKernelClass() {
         try {
             Class.forName("com.ibm.wsspi.kernel.embeddable.ServerBuilder");
+            System.out.println("testLoadKernelClass: CLASS FOUND");
         } catch (ClassNotFoundException e) {
-            // may be expected for filtering tests
+            System.out.println("testLoadKernelClass: CLASS NOT FOUND");
         }
     }
     @Test
@@ -94,13 +95,13 @@ public class PlatformDelegationTestServlet extends FATServlet{
 
     @Test
     public void testGetPlatformResource() {
-        // look for a resource form java/lang that doesn't exist
+        // look for a resource from java/lang that doesn't exist
         getClass().getResource("/java/lang/platform-delegation-test.txt");
     }
 
     @Test
     public void testGetPlatformResources() throws IOException {
-        // look for a resource form java/lang that doesn't exist
+        // look for a resource from java/lang that doesn't exist
         getClass().getClassLoader().getResources("java/lang/platform-delegation-test.txt");
     }
 

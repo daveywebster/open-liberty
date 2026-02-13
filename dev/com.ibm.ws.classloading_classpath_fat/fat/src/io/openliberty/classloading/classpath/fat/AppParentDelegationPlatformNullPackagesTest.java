@@ -33,7 +33,7 @@ import io.openliberty.classloading.platform.delegation.test.app.PlatformDelegati
  *
  */
 @RunWith(FATRunner.class)
-public class AppParentDelegationDefaultTest extends AppParentDelegationAbstractTest {
+public class AppParentDelegationPlatformNullPackagesTest extends AppParentDelegationAbstractTest {
 
     @Server(APP_PARENT_TEST_SERVER)
     @TestServlet(servlet = PlatformDelegationTestServlet.class, contextRoot = TEST_PLATFORM_DELEGATION_APP)
@@ -41,6 +41,7 @@ public class AppParentDelegationDefaultTest extends AppParentDelegationAbstractT
 
     @BeforeClass
     public static void setupTestServer() throws Exception {
+        setAppParent(server, CONFIG_APP_PARENT_PLATFORM, null);
         setupTestServer(server);
     }
 
@@ -48,11 +49,10 @@ public class AppParentDelegationDefaultTest extends AppParentDelegationAbstractT
     public void checkTestTrace() throws Exception {
         String testMethodName = testName.getMethodName();
         testMethodName = testMethodName.substring(PlatformDelegationTestServlet.class.getSimpleName().length() + 1);
-
-        checkTestTraceDefault(testMethodName);
+        checkTestTracePlatformNullPackages(testMethodName);
     }
 
-    static void checkTestTraceDefault(String testMethodName) throws Exception {
+    static void checkTestTracePlatformNullPackages(String testMethodName) throws Exception {
         String targetName = null;
         String traceMsg = null;
         String secondaryName = null;
@@ -96,8 +96,10 @@ public class AppParentDelegationDefaultTest extends AppParentDelegationAbstractT
                 break;
             case "testLoadKernelClass":
                 targetName = "com.ibm.wsspi.kernel.embeddable.ServerBuilder";
-                traceMsg = LOAD_CLASS_NOT_FILTERED_MSG;
-                secondaryName = "CLASS FOUND";
+                traceMsg = JavaInfo.JAVA_VERSION >= 9 ? LOAD_CLASS_FILTERED_MSG : LOAD_CLASS_NOT_FILTERED_MSG;
+                // NOTE: on Java 8 we don't filter the class but
+                // it should not be found when delegating to platform for all cases
+                secondaryName = "CLASS NOT FOUND";
                 secondaryMsg = "testLoadKernelClass:";
                 break;
             case "testPlatformService":
