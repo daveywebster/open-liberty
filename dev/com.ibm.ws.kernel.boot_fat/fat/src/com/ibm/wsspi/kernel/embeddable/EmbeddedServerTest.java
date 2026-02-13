@@ -217,6 +217,10 @@ public class EmbeddedServerTest {
     }
 
     @Test
+    public void testBootstrapAccessDefault() throws Throwable {
+    }
+
+    @Test
     @MinimumJavaLevel(javaLevel = 11)
     // cannot support configuring parent packages with Java 8
     public void testBootstrapAccessSystemNoPackages() throws Throwable {

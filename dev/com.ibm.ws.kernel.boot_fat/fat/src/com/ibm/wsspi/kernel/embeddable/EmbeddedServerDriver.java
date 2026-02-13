@@ -35,6 +35,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
 import com.ibm.websphere.simplicity.log.Log;
@@ -221,6 +222,30 @@ public class EmbeddedServerDriver implements ServerEventListener {
                               failResources("/junit/runner/TestRunListener.class"));
     }
 
+    public void testBootstrapAccessDefault() {
+        String m = "testBootstrapAccessDefault";
+        // This scenario cannot load the test servlet because javax.servlet is on the classpath.
+        // This is a negative test verifying the default behavior is still broken
+        runBootStrapAccessTest(null, null, (out) -> {
+            try {
+                URL url = new URL("http://" + args[0] + ":" + args[1] + "/simpleApp/bootstrapAccess");
+                HttpURLConnection con = (HttpURLConnection) url.openConnection();
+                try (InputStream in = con.getInputStream()) {
+
+                } catch (IOException e) {
+                    // ignore we expect the request to fail anyway
+                }
+                int rc = con.getResponseCode();
+                Log.info(c, m, "HTTP response: " + rc);
+                if (rc == HttpURLConnection.HTTP_OK) {
+                    failures.add(new AssertionFailedError("Wrong response code: " + rc));
+                }
+            } catch (IOException e) {
+                failures.add(new AssertionFailedError("Exception occurred: " + m + " - " + e));
+            }
+        });
+    }
+
     private List<String> failClasses(String... classNames) {
         return asList(classNames);
     }
@@ -242,76 +267,99 @@ public class EmbeddedServerDriver implements ServerEventListener {
                                        List<String> expectClassFailure,
                                        List<String> expectResourceSuccess,
                                        List<String> expectResourceFailure) {
+        runBootStrapAccessTest(parent, parentPackages, (out) -> {
+            checkAppClassAndResourceAccess(expectClassSuccess, expectClassFailure, expectResourceSuccess, expectResourceFailure);
+        });
+    }
+
+    private void checkAppClassAndResourceAccess(List<String> expectClassSuccess,
+                                                List<String> expectClassFailure,
+                                                List<String> expectResourceSuccess,
+                                                List<String> expectResourceFailure) {
+
+        for (String className : expectClassSuccess) {
+            checkBootstrapAccess("/simpleApp/bootstrapAccess?classname=" + className + "&expectFailure=" + false);
+        }
+
+        for (String className : expectClassFailure) {
+            checkBootstrapAccess("/simpleApp/bootstrapAccess?classname=" + className + "&expectFailure=" + true);
+        }
+
+        for (String resourceName : expectResourceSuccess) {
+            checkBootstrapAccess("/simpleApp/bootstrapAccess?resourcename=" + resourceName + "&expectFailure=" + false);
+        }
+
+        for (String resourceName : expectResourceFailure) {
+            checkBootstrapAccess("/simpleApp/bootstrapAccess?resosurcename=" + resourceName + "&expectFailure=" + true);
+        }
+    }
+
+    private void runBootStrapAccessTest(String parent, String parentPackages, Consumer<ByteArrayOutputStream> test) {
         PrintStream originalSysOut = System.out;
         try {
             System.setProperty("com.ibm.ws.beta.edition", "true");
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            System.setOut(new PrintStream(baos, true, "UTF-8"));
-            Map<String, String> bootProps = new HashMap<>();
-            bootProps.put("io.openliberty.classloading.app.parent", parent);
-            if (parentPackages != null) {
-                bootProps.put("io.openliberty.classloading.app.parent.packages", parentPackages);
-            }
-
-            coldStartServer(bootProps);
-            verifyServerEvent("\"STARTING\" ServerEvent should have fired", startingEventOccurred);
-            verifyServerEvent("\"STARTED\" ServerEvent should have fired", startedEventOccurred);
-
-            String serverConsoleOutput = new String(baos.toByteArray(), "UTF-8");
-            Log.info(c, "testStartingAStoppedServer", "consoleOutput = " + serverConsoleOutput);
-            try {
-                Pattern p = Pattern.compile(".*CWWKZ0001I:.*simpleApp.*", Pattern.DOTALL);
-                Assert.assertTrue("No indication that application started", p.matcher(serverConsoleOutput).matches());
-            } catch (Throwable t) {
-                failures.add(new AssertionFailedError("Exception occurred while searching for app started message in logs - " + t));
-                Log.error(c, CURRENT_METHOD_NAME, t);
-            }
-
-            for (String className : expectClassSuccess) {
-                checkBootstrapAccess("/simpleApp/bootstrapAccess?classname=" + className + "&expectFailure=" + false);
-            }
-
-            for (String className : expectClassFailure) {
-                checkBootstrapAccess("/simpleApp/bootstrapAccess?classname=" + className + "&expectFailure=" + true);
-            }
-
-            for (String resourceName : expectResourceSuccess) {
-                checkBootstrapAccess("/simpleApp/bootstrapAccess?resourcename=" + resourceName + "&expectFailure=" + false);
-            }
-
-            for (String resourceName : expectResourceFailure) {
-                checkBootstrapAccess("/simpleApp/bootstrapAccess?resosurcename=" + resourceName + "&expectFailure=" + true);
-            }
-
-            stopRunningServer();
+            ByteArrayOutputStream baos = configParentAccessAndStartServer(parent, parentPackages);
+            test.accept(baos);
         } catch (IOException e) {
             Assert.assertEquals("Unexpected exception", null, e);
         } finally {
             System.getProperties().remove("com.ibm.ws.beta.edition");
             System.setOut(originalSysOut);
+            stopRunningServer();
         }
     }
 
-    private void checkBootstrapAccess(String requestPath) throws IOException {
-        final String m = "checkBootstrapAccess";
-        URL url = new URL("http://" + args[0] + ":" + args[1] + requestPath);
-        HttpURLConnection con = (HttpURLConnection) url.openConnection();
-        Log.info(c, m, "HTTP response: " + con.getResponseCode());
-
-        InputStream in = con.getInputStream();
-        try {
-            BufferedReader reader = new BufferedReader(new InputStreamReader(in));
-
-            for (String line; (line = reader.readLine()) != null;) {
-                Log.info(c, m, "Output: " + line);
-            }
-        } finally {
-            try {
-                in.close();
-            } catch (IOException e) {
-                Log.error(c, m, e);
-            }
+    private ByteArrayOutputStream configParentAccessAndStartServer(String parent, String parentPackages) throws IOException {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        System.setOut(new PrintStream(baos, true, "UTF-8"));
+        Map<String, String> bootProps = new HashMap<>();
+        if (parent != null) {
+            bootProps.put("io.openliberty.classloading.app.parent", parent);
         }
+        if (parentPackages != null) {
+            bootProps.put("io.openliberty.classloading.app.parent.packages", parentPackages);
+        }
+
+        coldStartServer(bootProps);
+        verifyServerEvent("\"STARTING\" ServerEvent should have fired", startingEventOccurred);
+        verifyServerEvent("\"STARTED\" ServerEvent should have fired", startedEventOccurred);
+
+        String serverConsoleOutput = new String(baos.toByteArray(), "UTF-8");
+        Log.info(c, "doGatewayParentAccess", "consoleOutput = " + serverConsoleOutput);
+        try {
+            Pattern p = Pattern.compile(".*CWWKZ0001I:.*simpleApp.*", Pattern.DOTALL);
+            Assert.assertTrue("No indication that application started", p.matcher(serverConsoleOutput).matches());
+        } catch (Throwable t) {
+            failures.add(new AssertionFailedError("Exception occurred while searching for app started message in logs - " + t));
+            Log.error(c, CURRENT_METHOD_NAME, t);
+        }
+        return baos;
+    }
+
+    private void checkBootstrapAccess(String requestPath) {
+        final String m = "checkBootstrapAccess";
+        try {
+            URL url = new URL("http://" + args[0] + ":" + args[1] + requestPath);
+            HttpURLConnection con = (HttpURLConnection) url.openConnection();
+            InputStream in = con.getInputStream();
+            try {
+                BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+
+                for (String line; (line = reader.readLine()) != null;) {
+                    Log.info(c, m, "Output: " + line);
+                }
+            } finally {
+                try {
+                    in.close();
+                } catch (IOException e) {
+                    Log.error(c, m, e);
+                }
+            }
+            Log.info(c, m, "HTTP response: " + con.getResponseCode());
+        } catch (IOException e) {
+            failures.add(new AssertionFailedError("Exception occurred: " + m + " - " + e));
+        }
+
     }
 
     public void testAddProductExtension() {
