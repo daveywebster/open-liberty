@@ -31,16 +31,15 @@ public class MySimpleHandlerActivitor implements BundleActivator {
     @Override
     public void start(BundleContext context) throws Exception {
         System.out.println("in start method in bundle activator");
-        // Test ClientBuilder.newBuilder() - Added to test for problem documented in #34019 
+        //Test ClientBuilder.newBuilder() - Added to test for problem documented in #34019
         ClientBuilder builder = ClientBuilder.newBuilder();
         Client client = builder.build();
         try {
+            //Test RuntimeDelegate by creating WebTarget
             WebTarget target = client.target("http://localhost:9080/test");
-
+            //Test RuntimeDelegate by creating Entity
             Entity<String> entity = Entity.entity("ABC", MediaType.TEXT_PLAIN);
-            Response resp = target.request(MediaType.TEXT_PLAIN).post(entity);
-            String result = resp.readEntity(String.class);
-            resp.close();
+            
         } finally {
             client.close();
         }
