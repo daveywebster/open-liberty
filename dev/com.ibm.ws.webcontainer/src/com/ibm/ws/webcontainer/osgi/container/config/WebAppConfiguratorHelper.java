@@ -3460,6 +3460,73 @@ public class WebAppConfiguratorHelper implements ServletConfiguratorHelper {
                                  + " , the value from annotation is ignored");
                 }
             }
+            
+            // NOTE: The following two cases (ANNOTATION -> WEB_XML and ANNOTATION -> WEB_FRAGMENT) are
+            // commented out to avoid introducing behavior changes for existing users.
+            //
+            // While these cases would implement correct Jakarta EE precedence rules, they could cause
+            // existing applications to behave differently:
+            //
+            // 1. ANNOTATION -> WEB_XML: web.xml mapping would REPLACE annotation mapping
+            //    - Before: annotation mapping used (web.xml mapping silently ignored)
+            //    - After: web.xml mapping replaces annotation mapping
+            //    - Risk: Servlet responds to different URLs than before
+            //
+            // 2. ANNOTATION -> WEB_FRAGMENT: web-fragment mapping would ADD to annotation mapping
+            //    - Before: only annotation mapping used (web-fragment mapping silently ignored)
+            //    - After: both annotation AND web-fragment mappings active
+            //    - Risk: Servlet responds to more URLs than before
+            //
+            // These cases are not required to fix the reported issue (servlet-mapping in
+            // web.xml referencing servlet definition in web-fragment.xml), which is handled by the
+            // WEB_FRAGMENT -> WEB_XML case above.
+            //
+            // If spec-compliant annotation handling is needed in the future, these cases can be
+            // uncommented and the behavior change documented in release notes.
+            
+            
+            // } else if (existedServletMapping.getSource() == ConfigSource.ANNOTATION && configurator.getConfigSource() == ConfigSource.WEB_XML) {
+            //     // WEB_XML overrides ANNOTATION - replace the existing mapping
+            //     if (TraceComponent.isAnyTracingEnabled() && tc.isDebugEnabled()) {
+            //         Tr.debug(tc, "servlet-mapping for servlet " + servletName + " from web.xml overrides the value from annotation");
+            //     }
+            //     // Update the servlet mapping map with the new WEB_XML mapping
+            //     List<String> urlPatterns = servletMapping.getURLPatterns();
+            //     for (String urlPattern : urlPatterns) {
+            //         if (isServletSpecLevel31OrHigher()) {
+            //             String existingName = urlToServletNameMap.put(urlPattern, servletName);
+            //             if ((existingName != null) && !(existingName.equals(servletName))) {
+            //                 Tr.error(tc,"duplicate.url.pattern.for.servlet.mapping", urlPattern, servletName, existingName);
+            //                 throw new UnableToAdaptException(nls.getFormattedMessage("duplicate.url.pattern.for.servlet.mapping",
+            //                                                                          new Object[]{urlPattern, servletName, existingName} ,
+            //                                                                          "servlet-mapping value matches multiple servlets: " + urlPattern));
+            //             }
+            //         }
+            //         webAppConfiguration.addServletMapping(servletName, urlPattern);
+            //     }
+            //     if (urlPatterns.size() > 0) {
+            //         servletMappingMap.put(servletName, createConfigItem(urlPatterns));
+            //     }
+            // } else if (existedServletMapping.getSource() == ConfigSource.ANNOTATION && configurator.getConfigSource() == ConfigSource.WEB_FRAGMENT) {
+            //     // WEB_FRAGMENT adds to ANNOTATION - additive (different sources, different URL patterns)
+            //     if (TraceComponent.isAnyTracingEnabled() && tc.isDebugEnabled()) {
+            //         Tr.debug(tc, "servlet-mapping for servlet " + servletName + " from web-fragment.xml in " + configurator.getLibraryURI()
+            //                      + " adds to annotation mapping");
+            //     }
+            //     for (String urlPattern : servletMapping.getURLPatterns()) {
+            //         if (isServletSpecLevel31OrHigher()) {
+            //             String existingName = urlToServletNameMap.put(urlPattern, servletName);
+            //             if ((existingName != null) && !(existingName.equals(servletName))) {
+            //                 Tr.error(tc,"duplicate.url.pattern.for.servlet.mapping", urlPattern, servletName, existingName);
+            //                 throw new UnableToAdaptException(nls.getFormattedMessage("duplicate.url.pattern.for.servlet.mapping",
+            //                                                                          new Object[]{urlPattern, servletName, existingName} ,
+            //                                                                          "servlet-mapping value matches multiple servlets: " + urlPattern));
+            //             }
+            //         }
+            //         webAppConfiguration.addServletMapping(servletName, urlPattern);
+            //     }
+            // }
+            
         }
     }
 
