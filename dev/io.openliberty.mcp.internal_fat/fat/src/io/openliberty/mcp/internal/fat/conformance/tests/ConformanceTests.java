@@ -27,11 +27,13 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.testcontainers.Testcontainers;
 import org.testcontainers.containers.Container;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.utility.MountableFile;
 
 import com.ibm.websphere.simplicity.ShrinkHelper;
+import com.ibm.websphere.simplicity.log.Log;
 
 import componenttest.annotation.Server;
 import componenttest.containers.SimpleLogConsumer;
@@ -68,7 +70,7 @@ public class ConformanceTests extends FATServletClient {
     private static String artServer;
 
     // Container config
-    private static String MCP_SERVER_URL_FROM_CONTAINER = "http://host.docker.internal:";
+    private static String MCP_SERVER_URL_FROM_CONTAINER;
     private static final String DOCKER_REGISTRY = "public.ecr.aws/docker/library/node:20-alpine";
 
     @Server("mcp-conformance-server")
@@ -96,7 +98,9 @@ public class ConformanceTests extends FATServletClient {
     }
 
     private static void setupContainer() throws IOException, InterruptedException {
-        MCP_SERVER_URL_FROM_CONTAINER += server.getHttpDefaultPort() + "/conformanceTests/mcp";
+        final int localServerPort = server.getHttpDefaultPort();
+        MCP_SERVER_URL_FROM_CONTAINER = "http://host.testcontainers.internal:" + localServerPort + "/conformanceTests/mcp";
+        Testcontainers.exposeHostPorts(localServerPort);
 
         if (artifactoryConfigIsPresent()) {
             String credentials = artUser + ":" + artToken;
@@ -163,8 +167,12 @@ public class ConformanceTests extends FATServletClient {
      * @throws InterruptedException
      */
     private void checkMCPServerConformanceWithTest(String scenarioName) throws IOException, InterruptedException {
-        String command = "npx @modelcontextprotocol/conformance server --url " + MCP_SERVER_URL_FROM_CONTAINER + " --scenario " + scenarioName;
+        String m = "checkMCPServerConformanceWithTest";
+        String command = "npx --no-install @modelcontextprotocol/conformance@0.1.9 server --url " + MCP_SERVER_URL_FROM_CONTAINER + " --scenario " + scenarioName;
+        Log.info(getClass(), m, "Running test command: " + command);
         Container.ExecResult result = container.execInContainer("sh", "-c", command);
+        Log.info(getClass(), m, "Stdout: " + result.getStdout());
+        Log.info(getClass(), m, "Stderr: " + result.getStderr());
         assertThat("MCP Conformance test scenario " + scenarioName + " failed", result.getStdout(), containsString("SUCCESS"));
     }
 }

@@ -44,3 +44,4 @@ tested.features: \
 	io.openliberty.jakarta.concurrency.3.0,\
 	io.openliberty.org.testcontainers;version=latest
 	
+fat.test.container.images=public.ecr.aws/docker/library/node:20-alpine
