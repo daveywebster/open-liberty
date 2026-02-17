@@ -12,7 +12,6 @@
 Bundle-Name: io.openliberty.org.jboss.resteasy.common.ee10
 Bundle-SymbolicName: io.openliberty.org.jboss.resteasy.common.ee10
 
-
 javac.source: 11
 javac.target: 11
 
