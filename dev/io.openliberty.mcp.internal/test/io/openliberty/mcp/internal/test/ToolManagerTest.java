@@ -247,7 +247,7 @@ public class ToolManagerTest {
 
         assertThrows(() -> toolManager.newTool("foo"),
                      exception().ofType(IllegalArgumentException.class)
-                                .messageIncludes("CWMCM0026E: An MCP tool with the foo name already exists."));
+                                .messageIncludes("CWMCM0026E: An MCP tool with the name foo already exists."));
 
         // Test check on register (tool is not a duplicate when newTool is called, but is a duplicate when register is called)
         ToolDefinition def1 = toolManager.newTool("bar").setHandler(a -> ToolResponse.success("ok"));
@@ -256,14 +256,14 @@ public class ToolManagerTest {
         def1.register();
         assertThrows(() -> def2.register(),
                      exception().ofType(IllegalArgumentException.class)
-                                .messageIncludes("CWMCM0026E: An MCP tool with the bar name already exists."));
+                                .messageIncludes("CWMCM0026E: An MCP tool with the name bar already exists."));
 
         // Test calling register twice
         ToolDefinition def3 = toolManager.newTool("baz").setHandler(a -> ToolResponse.success("OK"));
         def3.register();
         assertThrows(() -> def3.register(),
                      exception().ofType(IllegalArgumentException.class)
-                                .messageIncludes("CWMCM0026E: An MCP tool with the baz name already exists."));
+                                .messageIncludes("CWMCM0026E: An MCP tool with the name baz already exists."));
     }
 
     @Test
