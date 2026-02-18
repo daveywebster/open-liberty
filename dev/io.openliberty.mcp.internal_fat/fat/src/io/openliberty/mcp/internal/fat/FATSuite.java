@@ -17,8 +17,10 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
 
+import componenttest.containers.TestContainerSuite;
 import componenttest.rules.repeater.EERepeatActions;
 import componenttest.rules.repeater.RepeatTests;
+import io.openliberty.mcp.internal.fat.conformance.tests.ConformanceTests;
 import io.openliberty.mcp.internal.fat.introspector.IntrospectorMultiAppTest;
 import io.openliberty.mcp.internal.fat.lifecycle.tests.AsyncToolLifecycleTest;
 import io.openliberty.mcp.internal.fat.lifecycle.tests.BeanLifecycleTest;
@@ -103,10 +105,12 @@ import io.openliberty.mcp.internal.fat.tool.ToolTest;
                 DenyAllTestsStateless.class,
                 NoClassAnnotationTestsStateless.class,
                 AdminsRoleAllowedTestsStateless.class,
-
+                // Conformance Tests
+                ConformanceTests.class
 })
 
-public class FATSuite {
+public class FATSuite extends TestContainerSuite {
+
     @ClassRule
     public static RepeatTests r = EERepeatActions.repeat(null, /* skipTransformation */ true, EE10, EE11);
 }
