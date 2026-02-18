@@ -301,7 +301,7 @@ public class ToolTest extends FATServletClient {
                             "content": [
                               {
                                 "type": "text",
-                                "text": "The following arguments were expected by the method but were not provided: [input]."
+                                "text": "The method expected the following arguments but did not receive them: [input]."
                               }
                             ]
                           }
@@ -337,7 +337,7 @@ public class ToolTest extends FATServletClient {
                             "content": [
                               {
                                 "type": "text",
-                                    "text": "The following arguments were passed but were not found in the method: [other]. The following arguments were expected by the method but were not provided: [input]."
+                                    "text": "The following arguments were passed but were not found in the method: [other]. The method expected the following arguments but did not receive them: [input]."
                               }
                             ]
                           }
