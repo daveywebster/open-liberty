@@ -214,7 +214,7 @@ CWMCM0025E.unsupported.output.useraction=Provide a return type that is an object
 
 # Used as exception message
 # {0} = The name of the tool
-CWMCM0026E.duplicate.tool.name=CWMCM0026E: An MCP tool with the {0} name already exists.
+CWMCM0026E.duplicate.tool.name=CWMCM0026E: An MCP tool with the name {0} already exists.
 CWMCM0026E.duplicate.tool.name.explanation=Each tool must have a unique name. You cannot register a new tool that has the same name as an existing tool.
 CWMCM0026E.duplicate.tool.name.useraction=Provide a unique name for each MCP tool.
 

@@ -195,7 +195,7 @@ public class AsyncToolsTest extends FATServletClient {
                             "content": [
                               {
                                 "type": "text",
-                                "text": "The following arguments were expected by the method but were not provided: [input]."
+                                "text": "The method expected the following arguments but did not receive them: [input]."
                               }
                             ]
                           }
