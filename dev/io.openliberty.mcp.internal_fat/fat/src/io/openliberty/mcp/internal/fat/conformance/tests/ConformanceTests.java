@@ -60,7 +60,7 @@ public class ConformanceTests extends FATServletClient {
 
     // Node.js specific
     private static final String INSTALL_MCP_CONFORMANCE_PACKAGE = "npm ci --omit=dev";
-    private static final String CHECK_MCP_CONFORMANCE_PACKAGE_VERSION = "npx @modelcontextprotocol/conformance --version";
+    private static final String CHECK_MCP_CONFORMANCE_PACKAGE_VERSION = "npx --no-install @modelcontextprotocol/conformance --version";
     private static final String MCP_CONFORMANCE_TEST_VERSION = "0.1.9";
 
     // Artifactory
