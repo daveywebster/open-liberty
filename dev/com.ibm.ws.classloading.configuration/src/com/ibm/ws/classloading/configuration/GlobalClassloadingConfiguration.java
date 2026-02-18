@@ -48,10 +48,9 @@ public class GlobalClassloadingConfiguration {
     private static final String LIBRARY_PRECEDENCE_KEY = "libraryPrecedence";
     static final TraceComponent tc = Tr.register(GlobalClassloadingConfiguration.class);
 
-    static final ClassLoader platformClassLoader = getPlatformClassLoader();
     static final boolean java9Plus = JavaInfo.majorVersion() >= 9;
+    static final ClassLoader platformClassLoader = getPlatformClassLoader();
 
-    @FFDCIgnore(Throwable.class)
     private static ClassLoader getPlatformClassLoader() {
         ClassLoader result = null;
         if (java9Plus) {
