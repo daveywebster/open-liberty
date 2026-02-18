@@ -1,14 +1,11 @@
 /*******************************************************************************
- * Copyright (c) 2020, 2023 IBM Corporation and others.
+ * Copyright (c) 2020, 2026 IBM Corporation and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License 2.0
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-2.0/
  *
  * SPDX-License-Identifier: EPL-2.0
- *
- * Contributors:
- *     IBM Corporation - initial API and implementation
  *******************************************************************************/
 
 package com.ibm.ws.security.auth.data.fat;
@@ -16,8 +13,6 @@ package com.ibm.ws.security.auth.data.fat;
 import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-
-import org.junit.rules.TestName;
 
 import com.ibm.websphere.simplicity.config.ServerConfiguration;
 
@@ -42,16 +37,6 @@ public class AuthDataFatUtils {
                 JakartaEEAction.transformApp(someArchive);
             }
         }
-    }
-
-    /**
-     * Get the normalized test name. This will remove the test repeat pattern from the end of the test name.
-     *
-     * @param testName The test name.
-     * @return The normalized test name.
-     */
-    public static String normalizeTestName(TestName testName) {
-        return testName.getMethodName().replace("_EE9_FEATURES", "");
     }
 
     /**

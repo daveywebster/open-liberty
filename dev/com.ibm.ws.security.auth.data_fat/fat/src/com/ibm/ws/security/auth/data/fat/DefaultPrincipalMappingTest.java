@@ -1,14 +1,11 @@
 /*******************************************************************************
- * Copyright (c) 2015, 2020 IBM Corporation and others.
+ * Copyright (c) 2015, 2026 IBM Corporation and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License 2.0
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-2.0/
- * 
- * SPDX-License-Identifier: EPL-2.0
  *
- * Contributors:
- *     IBM Corporation - initial API and implementation
+ * SPDX-License-Identifier: EPL-2.0
  *******************************************************************************/
 
 package com.ibm.ws.security.auth.data.fat;
@@ -57,14 +54,14 @@ public class DefaultPrincipalMappingTest extends FATServletClient {
     public void programmaticLoginWithDefaultPrincipalMapping() throws Exception {
         String method = "programmaticLoginWithDefaultPrincipalMapping";
         Log.info(thisClass, method, "Executing " + testName.getMethodName());
-        runTest(server, "DefaultPrincipalMappingApp/DefaultPrincipalMappingServlet", AuthDataFatUtils.normalizeTestName(testName));
+        runTest(server, "DefaultPrincipalMappingApp/DefaultPrincipalMappingServlet", FATServletClient.getTestMethodSimpleName(testName));
     }
 
     @Test
     public void getAuthDataUsingAuthDataProvider() throws Exception {
         String method = "getAuthDataUsingAuthDataProvider";
         Log.info(thisClass, method, "Executing " + testName.getMethodName());
-        runTest(server, "DefaultPrincipalMappingApp/DefaultPrincipalMappingServlet", AuthDataFatUtils.normalizeTestName(testName));
+        runTest(server, "DefaultPrincipalMappingApp/DefaultPrincipalMappingServlet", FATServletClient.getTestMethodSimpleName(testName));
     }
 
 }
