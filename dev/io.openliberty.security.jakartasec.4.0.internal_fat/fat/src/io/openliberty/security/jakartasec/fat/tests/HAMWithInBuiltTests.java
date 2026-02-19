@@ -27,6 +27,7 @@ import componenttest.custom.junit.runner.FATRunner;
 import componenttest.custom.junit.runner.Mode;
 import componenttest.custom.junit.runner.Mode.TestMode;
 import componenttest.topology.impl.LibertyServer;
+import io.openliberty.security.jakartasec.fat.utils.Jakartasec40TestConstants;
 import multiple.ham.common.MultipleHAMProtectedResource;
 import multiple.ham.custom.hams.CustomHAMOne;
 
@@ -89,13 +90,9 @@ public class HAMWithInBuiltTests extends BaseJakartaSecurity40Test {
 
         executeGetRequestWithTraceMark(url, 200);
 
-        String startOfMessage = "Order of HttpAuthenticationMechanisms found";
-        String prioritizationOrder = "CustomHAMOne Priority = 100, BasicHttpAuthenticationMechanism";
-
-        // Check that warning appears
-        assertStringInTrace("Warning message should appear in log", startOfMessage);
-        // Check that warning appears
-        assertStringInTrace("Warning message should appear in log", prioritizationOrder);
+        // Check that warning appears in trace
+        assertStringInTrace("Warning message should appear in log", Jakartasec40TestConstants.HAM_ORDER_FOUND_MESSAGE);
+        assertStringInTrace("Warning message should appear in log", Jakartasec40TestConstants.CUSTOM_WITH_INBUILT_PRIORITY_ORDER_MESSAGE);
     }
 
     @AfterClass
