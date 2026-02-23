@@ -94,6 +94,8 @@ public class Test_Base_State {
 
     @Before
     public void setUpBase() throws Exception {
+        
+        System.setProperty("com.ibm.ws.beta.edition", "true");
         setUpSuite( getBaseCase() ); // 'setUpSuite' throws Exception
     }
 

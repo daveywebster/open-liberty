@@ -70,7 +70,8 @@ instrument.classesExcludes: \
 	com.ibm.websphere.org.osgi.core;version=latest,\
 	com.ibm.ws.org.osgi.annotation.versioning;version=latest,\
 	com.ibm.ws.kernel.security.thread;version=latest,\
-	org.eclipse.osgi;version=latest
+	org.eclipse.osgi;version=latest,\
+	com.ibm.ws.kernel.boot.core
 
 -testpath: \
 	../build.sharedResources/lib/junit/old/junit.jar;version=file, \
