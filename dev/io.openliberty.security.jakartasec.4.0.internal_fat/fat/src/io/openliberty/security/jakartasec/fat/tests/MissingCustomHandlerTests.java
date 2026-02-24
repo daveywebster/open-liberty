@@ -25,8 +25,8 @@ import componenttest.custom.junit.runner.Mode.TestMode;
 import componenttest.topology.impl.LibertyServer;
 import io.openliberty.security.jakartasec.fat.utils.AppValidator;
 import multiple.ham.common.MultipleHAMProtectedResource;
-import multiple.ham.custom.hams.CustomHAMWithQualifier;
-import multiple.ham.custom.hams.CustomHAMWithQualifierTwo;
+import multiple.ham.custom.hams.CustomHAMOneOperator;
+import multiple.ham.custom.hams.CustomHAMTwoAdmin;
 import multiple.ham.inbuilt.MultipleHAMQualifiersApplication;
 
 /**
@@ -71,7 +71,7 @@ public class MissingCustomHandlerTests extends BaseJakartaSecurity40Test {
      */
     @Test
     public void testCustomHAMAndInBuiltWithQualifierWithoutHandler() {
-        AppValidator.validateAppOn(server).withClass(MultipleHAMQualifiersApplication.class).withClass(CustomHAMWithQualifier.class).withClass(CustomHAMWithQualifierTwo.class).withClass(MultipleHAMProtectedResource.class).withPackage("multiple.ham.common.qualifiers").failsWith("CWWKS2610E|CWWKZ0002E").run();
+        AppValidator.validateAppOn(server).withClass(MultipleHAMQualifiersApplication.class).withClass(CustomHAMOneOperator.class).withClass(CustomHAMTwoAdmin.class).withClass(MultipleHAMProtectedResource.class).withPackage("multiple.ham.common.qualifiers").failsWith("CWWKS2610E|CWWKZ0002E").run();
     }
 
     /*
