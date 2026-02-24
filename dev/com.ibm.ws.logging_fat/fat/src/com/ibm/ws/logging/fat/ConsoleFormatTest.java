@@ -29,6 +29,7 @@ import java.util.Properties;
 import java.util.regex.Pattern;
 
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -95,8 +96,10 @@ public class ConsoleFormatTest {
         server.saveServerConfiguration();
     }
 
-    @Before
-    public void setupTestStart() throws Exception {
+    public void restoreServer() throws Exception {
+        if (server != null && server.isStarted()) {
+            server.stopServer(EXPECTED_FAILURES);
+        }
         if (server != null && !server.isStarted()) {
             // Restore the original server configuration, with the default settings
             server.restoreServerConfiguration();
@@ -104,8 +107,8 @@ public class ConsoleFormatTest {
         }
     }
 
-    @After
-    public void tearDown() throws Exception {
+    @AfterClass
+    public static void tearDown() throws Exception {
         if (server != null && server.isStarted()) {
             server.stopServer(EXPECTED_FAILURES);
         }
@@ -221,6 +224,7 @@ public class ConsoleFormatTest {
      */
     @Test
     public void testSimpleFormatSetInBootstrapProperties() throws Exception {
+        restoreServer();
         // Get the bootstrap.properties file and store the original content
         RemoteFile bootstrapFile = server.getServerBootstrapPropertiesFile();
         FileInputStream in = getFileInputStreamForRemoteFile(bootstrapFile);
@@ -251,6 +255,7 @@ public class ConsoleFormatTest {
      */
     @Test
     public void testInvalidConsoleFormatSetInBootstrapProperties() throws Exception {
+        restoreServer();
         // Get the bootstrap.properties file and store the original content
         RemoteFile bootstrapFile = server.getServerBootstrapPropertiesFile();
         FileInputStream in = getFileInputStreamForRemoteFile(bootstrapFile);
@@ -306,6 +311,7 @@ public class ConsoleFormatTest {
      */
     @Test
     public void testSimpleConsoleFormatWithSysOutSysErrMsgs() throws Exception {
+        restoreServer();
         // Retrieve the consoleLogFile RemoteFile
         RemoteFile consoleLogFile = server.getConsoleLogFile();
 
@@ -338,6 +344,7 @@ public class ConsoleFormatTest {
      */
     @Test
     public void testTBasicFormatWithClassMessage() throws Exception {
+        restoreServer();
         // Retrieve the consoleLogFile RemoteFile
         RemoteFile consoleLogFile = server.getConsoleLogFile();
 
