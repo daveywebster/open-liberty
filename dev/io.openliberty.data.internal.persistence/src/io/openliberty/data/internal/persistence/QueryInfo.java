@@ -3671,46 +3671,6 @@ public class QueryInfo {
     }
 
     /**
-     * Obtains cursor values for the specified entity.
-     *
-     * @param entity the entity.
-     * @return cursor values, ordering according to the sort criteria.
-     */
-    @Trivial
-    Object[] getCursorValues(Object entity) {
-        final boolean trace = TraceComponent.isAnyTracingEnabled();
-        ArrayList<Object> cursorValues = new ArrayList<>();
-        for (Sort<?> sort : sorts)
-            try {
-                List<Member> accessors = entityInfo.attributeAccessors.get(sort.property());
-                if (trace && tc.isDebugEnabled())
-                    Tr.debug(this, tc, "getCursorValues for " + loggable(entity),
-                             accessors);
-                if (accessors == null)
-                    throw exc(MappingException.class,
-                              "CWWKD1123.sort.incompat.with.cursor",
-                              method.getName(),
-                              repositoryInterface.getName(),
-                              sort.property(),
-                              "Cursor.forKey",
-                              entityInfo.getType().getName(),
-                              entityInfo.attributeTypes.keySet());
-                Object value = entity;
-                for (Member accessor : accessors)
-                    if (accessor instanceof Method)
-                        value = ((Method) accessor).invoke(value);
-                    else
-                        value = ((Field) accessor).get(value);
-                cursorValues.add(value);
-            } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException x) {
-                throw new DataException(x instanceof InvocationTargetException ? x.getCause() : x);
-            }
-        if (trace && tc.isDebugEnabled())
-            Tr.debug(this, tc, "getCursorValues: " + loggable(cursorValues));
-        return cursorValues.toArray();
-    }
-
-    /**
      * Returns the entity information for this query,
      * if known at the point when this method is invoked.
      *
@@ -4732,37 +4692,6 @@ public class QueryInfo {
                                                           method,
                                                           prefix,
                                                           possibleSuffix);
-    }
-
-    /**
-     * Raise an error because the PageRequest is missing.
-     *
-     * @throws IllegalArgumentException      if the user supplied a null PageRequest
-     * @throws UnsupportedOperationException if the repository method signature
-     *                                           lacks a parameter for supplying a
-     *                                           PageRequest
-     */
-    void missingPageRequest() {
-        Class<?>[] paramTypes = method.getParameterTypes();
-
-        // Check parameter positions after those used for query parameters
-        boolean signatureHasPageReq = false;
-        for (int i = 0; i < paramTypes.length; i++)
-            signatureHasPageReq |= PageRequest.class.equals(paramTypes[i]);
-
-        if (signatureHasPageReq)
-            // NullPointerException is required by BasicRepository.findAll
-            throw exc(NullPointerException.class,
-                      "CWWKD1087.null.param",
-                      PageRequest.class.getName(),
-                      method.getName(),
-                      repositoryInterface.getName());
-        else
-            throw exc(UnsupportedOperationException.class,
-                      "CWWKD1041.rtrn.mismatch.pagereq",
-                      method.getName(),
-                      repositoryInterface.getName(),
-                      method.getGenericReturnType().getTypeName());
     }
 
     /**
