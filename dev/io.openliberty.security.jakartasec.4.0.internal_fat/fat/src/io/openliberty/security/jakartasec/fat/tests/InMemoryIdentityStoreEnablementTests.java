@@ -12,8 +12,8 @@
  *******************************************************************************/
 package io.openliberty.security.jakartasec.fat.tests;
 
-import static io.openliberty.security.jakartasec.fat.utils.Jakartasec40TestConstants.IN_MEM_ID_STORE_EXPECTED_MESSAGES;
 import static io.openliberty.security.jakartasec.fat.utils.Jakartasec40TestConstants.PRODUCTION_USE_WARNING_MSG;
+import static io.openliberty.security.jakartasec.fat.utils.Jakartasec40TestConstants.SERVER_CONFIG_UPDATE_MESSAGES_REGEX;
 import static io.openliberty.security.jakartasec.fat.utils.Jakartasec40TestConstants.USER_JASMINE;
 import static io.openliberty.security.jakartasec.fat.utils.Jakartasec40TestConstants.USER_THEO;
 import static io.openliberty.security.jakartasec.fat.utils.Jakartasec40TestConstants.VALID_PASSWORD;
@@ -96,7 +96,7 @@ public class InMemoryIdentityStoreEnablementTests extends BaseJakartaSecurity40T
 
     @After
     public void testTearDown() throws Exception {
-        server.stopServer(IN_MEM_ID_STORE_EXPECTED_MESSAGES);
+        server.stopServer(PRODUCTION_USE_WARNING_MSG);
 
         // Restore the server configuration, after each test case.
         server.restoreServerConfiguration();
@@ -148,8 +148,6 @@ public class InMemoryIdentityStoreEnablementTests extends BaseJakartaSecurity40T
     /**
      * Update the server configuration with a specified file
      * Wait for message that indicates the config change
-     * CWWKG0017I : The server configuration successfully updated
-     * CWWKG0018I : The server configuration was not updated
      *
      * @param fileName the name of the custom configuration file
      * @param logFile
@@ -160,14 +158,14 @@ public class InMemoryIdentityStoreEnablementTests extends BaseJakartaSecurity40T
     private static String setServerConfig(String fileName, RemoteFile logFile, LibertyServer server) throws Exception {
         server.setMarkToEndOfLog(logFile);
         server.setServerConfigurationFile(fileName);
-        return server.waitForStringInLogUsingMark("CWWKG0017I.*|CWWKG0018I.*");
+        return server.waitForStringInLogUsingMark(SERVER_CONFIG_UPDATE_MESSAGES_REGEX);
     }
 
     @AfterClass
     public static void tearDown() throws Exception {
         // Expected warnings and errors during testing
         if (server != null && server.isStarted()) {
-            server.stopServer(IN_MEM_ID_STORE_EXPECTED_MESSAGES);
+            server.stopServer();
         }
     }
 }

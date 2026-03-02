@@ -13,6 +13,7 @@
 package io.openliberty.security.jakartasec.fat.tests;
 
 import static io.openliberty.security.jakartasec.fat.utils.Jakartasec40TestConstants.INVALID_PASSWORD;
+import static io.openliberty.security.jakartasec.fat.utils.Jakartasec40TestConstants.IN_MEM_ID_STORE_EXPECTED_MESSAGES;
 import static io.openliberty.security.jakartasec.fat.utils.Jakartasec40TestConstants.PRODUCTION_USE_WARNING_MSG;
 import static io.openliberty.security.jakartasec.fat.utils.Jakartasec40TestConstants.USER_BILL;
 import static io.openliberty.security.jakartasec.fat.utils.Jakartasec40TestConstants.USER_FRANK;
@@ -262,10 +263,9 @@ public class InMemoryIdentityStoreTests extends BaseJakartaSecurity40Test {
 
     @AfterClass
     public static void tearDown() throws Exception {
-        server.stopServer(
-                          "CWWKS2600W", // An in-memory identity store was detected within this application
-                          "CWWKS1859E", //  Password decoding error
-                          "CWWKS1865W" // AES-encrypted passwords without custom encryption key
-        );
+        // Expected warnings and errors during testing
+        if (server != null && server.isStarted()) {
+            server.stopServer(IN_MEM_ID_STORE_EXPECTED_MESSAGES);
+        }
     }
 }
