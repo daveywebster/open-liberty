@@ -34,7 +34,8 @@ tested.features:\
     pages-3.1, \
     expressionlanguage-6.0, \
     pages-4.0, \
-    servlet-6.1
+    servlet-6.1, \
+    osgiconsole-1.0
 
 # To define a global minimum java level for the FAT, use the following property.
 # If unspecified, the default value is ${javac.source}

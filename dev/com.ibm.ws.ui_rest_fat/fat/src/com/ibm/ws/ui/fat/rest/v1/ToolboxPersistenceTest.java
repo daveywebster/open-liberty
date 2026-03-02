@@ -550,14 +550,24 @@ public class ToolboxPersistenceTest extends CommonRESTTest implements APIConstan
 
         // Remove Admin Center feature from server.xml; wait for feature updates.
         List<String> newFeatures = new ArrayList<String>();
+        Log.info(c, method.getMethodName(), "Starting server.xml: " + FATSuite.server.getServerConfiguration());
+
+        Log.info(c, method.getMethodName(), "Removing Admin Center feature, enable only osgiConsole-1.0 feature.");
         newFeatures.add(F_OSGI);
+        FATSuite.server.setMarkToEndOfLog();
         FATSuite.server.changeFeatures(newFeatures);
-        setMarkAfterFeatureChange(FATSuite.server);
+        FATSuite.server.waitForConfigUpdateInLogUsingMark(null);
+        Log.info(c, method.getMethodName(), "server.xml: " + FATSuite.server.getServerConfiguration());
+
+        Log.info(c, method.getMethodName(), "Enable no features.");
         newFeatures.clear();
+        FATSuite.server.setMarkToEndOfLog();
         FATSuite.server.changeFeatures(newFeatures);
-        setMarkAfterFeatureChange(FATSuite.server);
+        FATSuite.server.waitForConfigUpdateInLogUsingMark(null);
+        Log.info(c, method.getMethodName(), "server.xml: " + FATSuite.server.getServerConfiguration());
 
         // Add Admin Center feature to server.xml; validate that UI started and wait for feature update.
+        Log.info(c, method.getMethodName(), "Add the Admin Center feature back.");
         newFeatures.add(F_UI);
 
         // Ensure the appropriate features are added back.
@@ -587,9 +597,16 @@ public class ToolboxPersistenceTest extends CommonRESTTest implements APIConstan
             newFeatures.add("jsp-2.2");
         }
 
+        FATSuite.server.setMarkToEndOfLog();
         FATSuite.server.changeFeatures(newFeatures);
         validateUIStarted(FATSuite.server);
-        setMarkAfterFeatureChange(FATSuite.server);
+        FATSuite.server.waitForConfigUpdateInLogUsingMark(null);
+        Log.info(c, method.getMethodName(), "server.xml: " + FATSuite.server.getServerConfiguration());
+
+        // Ensure the ssl endpoint is started to avoid intermittent test issues. The adminCenter-1.0 feature
+        // was removed and then added back so the ssl endpoint was as well.
+        assertNotNull("The server did not report that HTTPS has started.",
+                FATSuite.server.waitForStringInLogUsingMark("CWWKO0219I:.*ssl.*"));
 
         // Get the (now persisted)
         response = get(url, adminUser, adminPassword, 200);
