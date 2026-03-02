@@ -37,7 +37,7 @@ tested.features: \
 	cdi-4.0,\
 	pages-3.1,\
 	expressionLanguage-5.0,\
-	pages-4.0,,\
+	pages-4.0,\
 	expressionLanguage-6.0,\
 	appsecurity-6.0,\
 	cdi-4.1
