@@ -34,6 +34,8 @@ public abstract class BaseJakartaSecurity40Test {
 
     protected static final String SERVER_NAME = "jakartaSec40Server";
 
+    protected static final String CONFIG_SERVER_NAME = "jakartaSec40ConfigServer";
+
     /**
      * Get the test class for logging purposes.
      * Subclasses should override this to return their own class.
