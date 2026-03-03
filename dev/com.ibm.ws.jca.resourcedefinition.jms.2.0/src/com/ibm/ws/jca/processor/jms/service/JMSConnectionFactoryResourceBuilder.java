@@ -222,7 +222,7 @@ public class JMSConnectionFactoryResourceBuilder implements ResourceFactoryBuild
         connectionFactorySvcProps.put(BOOTSTRAP_CONTEXT, "(id=" + resourceAdapter + ")");
         connectionFactorySvcProps.put(CREATES_OBJECTCLASS, interfaceName);
 
-        Bundle raBundle = bundleContext.getBundle(BUNDLE_LOCATION + resourceAdapter);
+        Bundle raBundle = JMSResourceDefinitionHelper.getBundle(bundleContext, resourceAdapter);
         if (raBundle != null) {
             return createAppDefinedResourceFactory(raBundle, declaringApplication, resourceAdapter, connectionFactoryID, interfaceName, connectionFactorySvcProps, cmSvcProps,
                                                    annotationDDProps,
@@ -302,7 +302,7 @@ public class JMSConnectionFactoryResourceBuilder implements ResourceFactoryBuild
                                                             VariableRegistry variableRegistry) throws Exception {
         //Get props with default values only and see if the same is specified by the user in annotation/dd, then use that value otherwise set the default value.
         //Note: Its not necessary for the user to specify the props which has default value, so we set them in here.
-        Dictionary<String, Object> connectionFactoryDefaultProps = getDefaultProperties(resourceAdapter, interfaceName);
+        Dictionary<String, Object> connectionFactoryDefaultProps = getDefaultProperties(raBundle, resourceAdapter, interfaceName);
 
         for (Enumeration<String> keys = connectionFactoryDefaultProps.keys(); keys.hasMoreElements();) {
             String key = keys.nextElement();
@@ -408,27 +408,23 @@ public class JMSConnectionFactoryResourceBuilder implements ResourceFactoryBuild
      * @throws ConfigEvaluatorException
      * @throws ResourceException
      */
-    private Dictionary<String, Object> getDefaultProperties(String resourceAdapter, String interfaceName) throws ConfigEvaluatorException, ResourceException {
-        Bundle bundle = JMSResourceDefinitionHelper.getBundle(bundleContext, resourceAdapter);
+    private Dictionary<String, Object> getDefaultProperties(Bundle bundle, String resourceAdapter, String interfaceName) throws ConfigEvaluatorException, ResourceException {
+        MetaTypeInformation metaTypeInformation = metaTypeServiceRef.getService().getMetaTypeInformation(bundle);
+        String[] factoryPids = metaTypeInformation.getFactoryPids();
 
-        if (bundle != null) {
+        for (String factoryPid : factoryPids) {
+            ObjectClassDefinition ocd = metaTypeInformation.getObjectClassDefinition(factoryPid, null);
+            ocd.getAttributeDefinitions(0);
 
-            MetaTypeInformation metaTypeInformation = metaTypeServiceRef.getService().getMetaTypeInformation(bundle);
-            String[] factoryPids = metaTypeInformation.getFactoryPids();
-
-            for (String factoryPid : factoryPids) {
-                ObjectClassDefinition ocd = metaTypeInformation.getObjectClassDefinition(factoryPid, null);
-                ocd.getAttributeDefinitions(0);
-
-                Dictionary<String, Object> defaultProps = wsConfigurationHelperRef.getService().getMetaTypeDefaultProperties(factoryPid);
-                if (defaultProps.get(MANAGED_CONNECTION_FACTORY_CLASS) != null) {
-                    for (String createsClass : (String[]) defaultProps.get(CREATES_OBJECTCLASS)) {
-                        if (createsClass.equals(interfaceName))
-                            return defaultProps;
-                    }
+            Dictionary<String, Object> defaultProps = wsConfigurationHelperRef.getService().getMetaTypeDefaultProperties(factoryPid);
+            if (defaultProps.get(MANAGED_CONNECTION_FACTORY_CLASS) != null) {
+                for (String createsClass : (String[]) defaultProps.get(CREATES_OBJECTCLASS)) {
+                    if (createsClass.equals(interfaceName))
+                        return defaultProps;
                 }
             }
         }
+
         ResourceException x = new ResourceException();
         throw x;
     }

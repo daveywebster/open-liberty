@@ -64,14 +64,6 @@ public class JCA17CDITest extends FATServletClient {
         );
     }
 
-    private static EnterpriseArchive createEAR(String testName, String... directories) throws Exception {
-        EnterpriseArchive ear = ShrinkWrap.create(EnterpriseArchive.class, testName + ".ear");
-        for (String directory : directories) {
-            ShrinkHelper.addDirectory(ear, directory);
-        }
-        return ear;
-    }
-
     private static WebArchive createWAR(String... directories) throws Exception {
         WebArchive war = ShrinkWrap.create(WebArchive.class, WEB_MODULE_NAME + ".war");
         for (String directory : directories) {
@@ -96,18 +88,22 @@ public class JCA17CDITest extends FATServletClient {
         JavaArchive jar = ShrinkHelper.buildJavaArchive("cdiextension", "lib.cdi");
         jar.addAsServiceProvider(Extension.class, CDIExtension.class);
 
-        EnterpriseArchive ear = createEAR(getTestMethodSimpleName());
+        EnterpriseArchive ear = ShrinkWrap.create(EnterpriseArchive.class, getTestMethodSimpleName() + ".ear");
         ear.addAsModule(war);
         ear.addAsLibraries(jar);
 
         try {
             server.setMarkToEndOfLog();
             ShrinkHelper.exportDropinAppToServer(server, ear, DeployOptions.DISABLE_VALIDATION);
+            // Wait for application to install
             server.waitForStringInLogUsingMark("CWWKZ0001I:.*" + getTestMethodSimpleName());
         } finally {
             server.setMarkToEndOfLog();
             server.deleteAllDropinApplications();
         }
+
+        // Wait for application to uninstall
+        server.waitForStringInLogUsingMark("CWWKZ0009I:.*" + getTestMethodSimpleName());
     }
 
     /**
@@ -123,13 +119,14 @@ public class JCA17CDITest extends FATServletClient {
         // Create embedded resource adapter
         ResourceAdapterArchive rar = ShrinkHelper.buildDefaultRar("adminobject", "ra.ao");
 
-        EnterpriseArchive ear = createEAR(getTestMethodSimpleName());
+        EnterpriseArchive ear = ShrinkWrap.create(EnterpriseArchive.class, getTestMethodSimpleName() + ".ear");
         ear.addAsModule(war);
         ear.addAsModule(rar);
 
         try {
             server.setMarkToEndOfLog();
             ShrinkHelper.exportDropinAppToServer(server, ear, DeployOptions.DISABLE_VALIDATION);
+            // Wait for application to install
             server.waitForStringInLogUsingMark("CWWKZ0001I:.*" + getTestMethodSimpleName());
 
             runTest(server, WEB_MODULE_NAME, getTestMethodSimpleName());
@@ -138,7 +135,7 @@ public class JCA17CDITest extends FATServletClient {
             server.deleteAllDropinApplications();
         }
 
-        // Only wait if we are not throwing an exception
+        // Wait for application to uninstall
         server.waitForStringInLogUsingMark("CWWKZ0009I:.*" + getTestMethodSimpleName());
     }
 
@@ -159,7 +156,7 @@ public class JCA17CDITest extends FATServletClient {
         JavaArchive jar = ShrinkHelper.buildJavaArchive("cdiextension", "lib.cdi");
         jar.addAsServiceProvider(Extension.class, CDIExtension.class);
 
-        EnterpriseArchive ear = createEAR(getTestMethodSimpleName());
+        EnterpriseArchive ear = ShrinkWrap.create(EnterpriseArchive.class, getTestMethodSimpleName() + ".ear");
         ear.addAsModule(war);
         ear.addAsModule(rar);
         ear.addAsLibraries(jar);
@@ -167,6 +164,7 @@ public class JCA17CDITest extends FATServletClient {
         try {
             server.setMarkToEndOfLog();
             ShrinkHelper.exportDropinAppToServer(server, ear, DeployOptions.DISABLE_VALIDATION);
+            // Wait for application to install
             server.waitForStringInLogUsingMark("CWWKZ0001I:.*" + getTestMethodSimpleName());
 
             runTest(server, WEB_MODULE_NAME, getTestMethodSimpleName());
@@ -175,7 +173,7 @@ public class JCA17CDITest extends FATServletClient {
             server.deleteAllDropinApplications();
         }
 
-        // Only wait if we are not throwing an exception
+        // Wait for application to uninstall
         server.waitForStringInLogUsingMark("CWWKZ0009I:.*" + getTestMethodSimpleName());
     }
 
@@ -192,13 +190,14 @@ public class JCA17CDITest extends FATServletClient {
         // Create embedded resource adapter
         ResourceAdapterArchive rar = ShrinkHelper.buildDefaultRar("connectionfactory", "ra.cf");
 
-        EnterpriseArchive ear = createEAR(getTestMethodSimpleName());
+        EnterpriseArchive ear = ShrinkWrap.create(EnterpriseArchive.class, getTestMethodSimpleName() + ".ear");
         ear.addAsModule(war);
         ear.addAsModule(rar);
 
         try {
             server.setMarkToEndOfLog();
             ShrinkHelper.exportDropinAppToServer(server, ear, DeployOptions.DISABLE_VALIDATION);
+            // Wait for application to install
             server.waitForStringInLogUsingMark("CWWKZ0001I:.*" + getTestMethodSimpleName());
 
             runTest(server, WEB_MODULE_NAME, getTestMethodSimpleName());
@@ -207,7 +206,7 @@ public class JCA17CDITest extends FATServletClient {
             server.deleteAllDropinApplications();
         }
 
-        // Only wait if we are not throwing an exception
+        // Wait for application to uninstall
         server.waitForStringInLogUsingMark("CWWKZ0009I:.*" + getTestMethodSimpleName());
     }
 
@@ -228,7 +227,7 @@ public class JCA17CDITest extends FATServletClient {
         JavaArchive jar = ShrinkHelper.buildJavaArchive("cdiextension", "lib.cdi");
         jar.addAsServiceProvider(Extension.class, CDIExtension.class);
 
-        EnterpriseArchive ear = createEAR(getTestMethodSimpleName());
+        EnterpriseArchive ear = ShrinkWrap.create(EnterpriseArchive.class, getTestMethodSimpleName() + ".ear");
         ear.addAsModule(war);
         ear.addAsModule(rar);
         ear.addAsLibraries(jar);
@@ -236,6 +235,7 @@ public class JCA17CDITest extends FATServletClient {
         try {
             server.setMarkToEndOfLog();
             ShrinkHelper.exportDropinAppToServer(server, ear, DeployOptions.DISABLE_VALIDATION);
+            // Wait for application to install
             server.waitForStringInLogUsingMark("CWWKZ0001I:.*" + getTestMethodSimpleName());
 
             runTest(server, WEB_MODULE_NAME, getTestMethodSimpleName());
@@ -244,7 +244,7 @@ public class JCA17CDITest extends FATServletClient {
             server.deleteAllDropinApplications();
         }
 
-        // Only wait if we are not throwing an exception
+        // Wait for application to uninstall
         server.waitForStringInLogUsingMark("CWWKZ0009I:.*" + getTestMethodSimpleName());
     }
 
@@ -261,13 +261,14 @@ public class JCA17CDITest extends FATServletClient {
         // Create embedded resource adapter
         ResourceAdapterArchive rar = ShrinkHelper.buildDefaultRar("jmsconnectionfactory", "ra.jms.cf");
 
-        EnterpriseArchive ear = createEAR(getTestMethodSimpleName());
+        EnterpriseArchive ear = ShrinkWrap.create(EnterpriseArchive.class, getTestMethodSimpleName() + ".ear");
         ear.addAsModule(war);
         ear.addAsModule(rar);
 
         try {
             server.setMarkToEndOfLog();
             ShrinkHelper.exportDropinAppToServer(server, ear, DeployOptions.DISABLE_VALIDATION);
+            // Wait for application to install
             server.waitForStringInLogUsingMark("CWWKZ0001I:.*" + getTestMethodSimpleName());
 
             runTest(server, WEB_MODULE_NAME, getTestMethodSimpleName());
@@ -276,7 +277,7 @@ public class JCA17CDITest extends FATServletClient {
             server.deleteAllDropinApplications();
         }
 
-        // Only wait if we are not throwing an exception
+        // Wait for application to uninstall
         server.waitForStringInLogUsingMark("CWWKZ0009I:.*" + getTestMethodSimpleName());
     }
 
@@ -297,7 +298,7 @@ public class JCA17CDITest extends FATServletClient {
         JavaArchive jar = ShrinkHelper.buildJavaArchive("cdiextension", "lib.cdi");
         jar.addAsServiceProvider(Extension.class, CDIExtension.class);
 
-        EnterpriseArchive ear = createEAR(getTestMethodSimpleName());
+        EnterpriseArchive ear = ShrinkWrap.create(EnterpriseArchive.class, getTestMethodSimpleName() + ".ear");
         ear.addAsModule(war);
         ear.addAsModule(rar);
         ear.addAsLibrary(jar);
@@ -305,6 +306,7 @@ public class JCA17CDITest extends FATServletClient {
         try {
             server.setMarkToEndOfLog();
             ShrinkHelper.exportDropinAppToServer(server, ear, DeployOptions.DISABLE_VALIDATION);
+            // Wait for application to install
             server.waitForStringInLogUsingMark("CWWKZ0001I:.*" + getTestMethodSimpleName());
 
             runTest(server, WEB_MODULE_NAME, getTestMethodSimpleName());
@@ -313,7 +315,7 @@ public class JCA17CDITest extends FATServletClient {
             server.deleteAllDropinApplications();
         }
 
-        // Only wait if we are not throwing an exception
+        // Wait for application to uninstall
         server.waitForStringInLogUsingMark("CWWKZ0009I:.*" + getTestMethodSimpleName());
     }
 
@@ -321,7 +323,6 @@ public class JCA17CDITest extends FATServletClient {
      * Test @JMSDestinationDefinition resource is available on install.
      * Without CDI Bean discovery.
      */
-    //FIXME
     @Test
     public void testJMSDDResource() throws Exception {
         // Create web archive
@@ -331,13 +332,14 @@ public class JCA17CDITest extends FATServletClient {
         // Create embedded resource adapter
         ResourceAdapterArchive rar = ShrinkHelper.buildDefaultRar("jmsdestination", "ra.jms.dest");
 
-        EnterpriseArchive ear = createEAR(getTestMethodSimpleName());
+        EnterpriseArchive ear = ShrinkWrap.create(EnterpriseArchive.class, getTestMethodSimpleName() + ".ear");
         ear.addAsModule(war);
         ear.addAsModule(rar);
 
         try {
             server.setMarkToEndOfLog();
             ShrinkHelper.exportDropinAppToServer(server, ear, DeployOptions.DISABLE_VALIDATION);
+            // Wait for application to install
             server.waitForStringInLogUsingMark("CWWKZ0001I:.*" + getTestMethodSimpleName());
 
             runTest(server, WEB_MODULE_NAME, getTestMethodSimpleName());
@@ -346,7 +348,7 @@ public class JCA17CDITest extends FATServletClient {
             server.deleteAllDropinApplications();
         }
 
-        // Only wait if we are not throwing an exception
+        // Wait for application to uninstall
         server.waitForStringInLogUsingMark("CWWKZ0009I:.*" + getTestMethodSimpleName());
     }
 
@@ -354,7 +356,6 @@ public class JCA17CDITest extends FATServletClient {
      * Test @JMSDestinationDefinition resource is available on install.
      * with CDI Bean discovery.
      */
-    //FIXME
     @Test
     public void testJMSDDResourceWithCDI() throws Exception {
         // Create web archive
@@ -368,7 +369,7 @@ public class JCA17CDITest extends FATServletClient {
         JavaArchive jar = ShrinkHelper.buildJavaArchive("cdiextension", "lib.cdi");
         jar.addAsServiceProvider(Extension.class, CDIExtension.class);
 
-        EnterpriseArchive ear = createEAR(getTestMethodSimpleName());
+        EnterpriseArchive ear = ShrinkWrap.create(EnterpriseArchive.class, getTestMethodSimpleName() + ".ear");
         ear.addAsModule(war);
         ear.addAsModule(rar);
         ear.addAsLibrary(jar);
@@ -376,6 +377,7 @@ public class JCA17CDITest extends FATServletClient {
         try {
             server.setMarkToEndOfLog();
             ShrinkHelper.exportDropinAppToServer(server, ear, DeployOptions.DISABLE_VALIDATION);
+            // Wait for application to install
             server.waitForStringInLogUsingMark("CWWKZ0001I:.*" + getTestMethodSimpleName());
 
             runTest(server, WEB_MODULE_NAME, getTestMethodSimpleName());
@@ -384,7 +386,7 @@ public class JCA17CDITest extends FATServletClient {
             server.deleteAllDropinApplications();
         }
 
-        // Only wait if we are not throwing an exception
+        // Wait for application to uninstall
         server.waitForStringInLogUsingMark("CWWKZ0009I:.*" + getTestMethodSimpleName());
     }
 }

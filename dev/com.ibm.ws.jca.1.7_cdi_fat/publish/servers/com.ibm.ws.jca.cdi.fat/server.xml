@@ -23,8 +23,6 @@
     <include location="../fatTestPorts.xml"/>
 
     <variable name="onError" value="FAIL"/>
-	
-    <!-- <application type="ear" id="app" name="app" location="app.ear"/> -->
     
-	<javaPermission className="java.util.PropertyPermission" name="*" actions="read"/>
+    <javaPermission className="java.util.PropertyPermission" name="*" actions="read"/>
 </server>

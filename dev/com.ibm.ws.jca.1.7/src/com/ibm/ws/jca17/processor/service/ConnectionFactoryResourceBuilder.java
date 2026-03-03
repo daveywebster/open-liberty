@@ -289,7 +289,7 @@ public class ConnectionFactoryResourceBuilder implements ResourceFactoryBuilder 
                                                             Hashtable<String, Object> cmSvcProps,
                                                             Map<String, Object> annotationProps,
                                                             VariableRegistry variableRegistry) throws Exception {
-        Dictionary<String, Object> connectionFactoryDefaultProps = getDefaultProperties(resourceAdapter, interfaceName);
+        Dictionary<String, Object> connectionFactoryDefaultProps = getDefaultProperties(raBundle, resourceAdapter, interfaceName);
 
         String configPropsPid = null;
         for (Enumeration<String> keys = connectionFactoryDefaultProps.keys(); keys.hasMoreElements();) {
@@ -369,8 +369,8 @@ public class ConnectionFactoryResourceBuilder implements ResourceFactoryBuilder 
         wsConfigurationHelperRef.deactivate(context);
     }
 
-    private Dictionary<String, Object> getDefaultProperties(String resourceAdapter, String interfaceName) throws ConfigEvaluatorException, ResourceException {
-        MetaTypeInformation metaTypeInformation = metaTypeServiceRef.getService().getMetaTypeInformation(bundleContext.getBundle(BUNDLE_LOCATION + resourceAdapter));
+    private Dictionary<String, Object> getDefaultProperties(Bundle raBundle, String resourceAdapter, String interfaceName) throws ConfigEvaluatorException, ResourceException {
+        MetaTypeInformation metaTypeInformation = metaTypeServiceRef.getService().getMetaTypeInformation(raBundle);
         String[] factoryPids = metaTypeInformation.getFactoryPids();
 
         for (String factoryPid : factoryPids) {

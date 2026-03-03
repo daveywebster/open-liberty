@@ -206,7 +206,7 @@ public class JMSDestinationResourceFactoryBuilder implements ResourceFactoryBuil
             }
         }
 
-        Bundle raBundle = bundleContext.getBundle(BUNDLE_LOCATION + resourceAdapter);
+        Bundle raBundle = JMSResourceDefinitionHelper.getBundle(bundleContext, resourceAdapter);
         if (raBundle != null) {
             return createAppDefinedResourceFactory(raBundle, declaringApplication, resourceAdapter, adminObjectID, interfaceName, adminObjectSvcProps, annotationDDProps,
                                                    variableRegistry);
@@ -280,7 +280,7 @@ public class JMSDestinationResourceFactoryBuilder implements ResourceFactoryBuil
                                                             VariableRegistry variableRegistry) throws Exception {
         //Get props with default values only and see if the same is specified by the user in annotation/dd, then use that value otherwise set the default value.
         //Note: Its not necessary for the user to specify the props which has default value, so we set them in here.
-        Dictionary<String, Object> adminObjectDefaultProps = getDefaultProperties(resourceAdapter, interfaceName);
+        Dictionary<String, Object> adminObjectDefaultProps = getDefaultProperties(raBundle, resourceAdapter, interfaceName);
 
         for (Enumeration<String> keys = adminObjectDefaultProps.keys(); keys.hasMoreElements();) {
             String key = keys.nextElement();
@@ -358,27 +358,22 @@ public class JMSDestinationResourceFactoryBuilder implements ResourceFactoryBuil
         wsConfigurationHelperRef.deactivate(context);
     }
 
-    private Dictionary<String, Object> getDefaultProperties(String resourceAdapter, String interfaceName) throws ConfigEvaluatorException, ResourceException {
-        Bundle bundle;
-        bundle = JMSResourceDefinitionHelper.getBundle(bundleContext, resourceAdapter);
+    private Dictionary<String, Object> getDefaultProperties(Bundle bundle, String resourceAdapter, String interfaceName) throws ConfigEvaluatorException, ResourceException {
+        MetaTypeInformation metaTypeInformation = metaTypeServiceRef.getService().getMetaTypeInformation(bundle);
+        String[] factoryPids = metaTypeInformation.getFactoryPids();
 
-        if (bundle != null) {
+        for (String factoryPid : factoryPids) {
+            Dictionary<String, Object> defaultProps = wsConfigurationHelperRef.getService().getMetaTypeDefaultProperties(factoryPid);
+            if (defaultProps.get(ADMINISTERED_OBJECT_CLASS) != null) {
 
-            MetaTypeInformation metaTypeInformation = metaTypeServiceRef.getService().getMetaTypeInformation(bundle);
-            String[] factoryPids = metaTypeInformation.getFactoryPids();
-
-            for (String factoryPid : factoryPids) {
-                Dictionary<String, Object> defaultProps = wsConfigurationHelperRef.getService().getMetaTypeDefaultProperties(factoryPid);
-                if (defaultProps.get(ADMINISTERED_OBJECT_CLASS) != null) {
-
-                    for (String createsClass : (String[]) defaultProps.get(CREATES_OBJECTCLASS)) {
-                        if (createsClass.equals(interfaceName))
-                            return defaultProps;
-                    }
-
+                for (String createsClass : (String[]) defaultProps.get(CREATES_OBJECTCLASS)) {
+                    if (createsClass.equals(interfaceName))
+                        return defaultProps;
                 }
+
             }
         }
+
         //TODO Add meaningful exceptions statements here.
         //Like 1) Unable to find the default properties for the interface name, resource adapter specified in the annotation/dd.
         ResourceException x = new ResourceException();
