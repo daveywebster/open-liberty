@@ -24,8 +24,14 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.osgi.util.ManifestElement;
+import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleException;
+import org.osgi.framework.Constants;
+import org.osgi.framework.namespace.AbstractWiringNamespace;
+import org.osgi.framework.namespace.PackageNamespace;
+import org.osgi.framework.wiring.BundleCapability;
+import org.osgi.framework.wiring.BundleWiring;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.ConfigurationPolicy;
@@ -100,10 +106,39 @@ public class GlobalClassloadingConfiguration {
                 }
                 parentPackagesProp = null;
             }
+        } else {
+            // On Java 9+ we need to add any system packages that have the mandatory directive.
+            // These packages must remain available to applications.
+            // This must not be done on Java 8 because we never filter packages on Java 8
+            parentPackagesProp = findSystemMandatoryPackages(parentPackagesProp, context.getBundle(Constants.SYSTEM_BUNDLE_LOCATION));
         }
         jvmPackages = new JVMPackages(parentProp, parentPackagesProp, context.getProperty(BootstrapConstants.INITPROP_BOOT_PACKAGES));
 
         modified(properties);
+    }
+
+    /**
+     * @param parentPackagesProp
+     * @return
+     */
+    private String findSystemMandatoryPackages(String parentPackagesProp, Bundle systemBundle) {
+        BundleWiring systemWiring = systemBundle == null ? null : systemBundle.adapt(BundleWiring.class);
+        if (systemWiring == null) {
+            return parentPackagesProp;
+        }
+        for (BundleCapability export : systemWiring.getCapabilities(PackageNamespace.PACKAGE_NAMESPACE)) {
+            if (export.getDirectives().get(AbstractWiringNamespace.CAPABILITY_MANDATORY_DIRECTIVE) != null) {
+                // We don't care what the mandatory directive value is.  If it is anything but null
+                // we added the package name to the parent packages list to avoid filtering it.
+                if (parentPackagesProp == null) {
+                    parentPackagesProp = (String) export.getAttributes().get(PackageNamespace.PACKAGE_NAMESPACE);
+                } else {
+                    parentPackagesProp = parentPackagesProp + "," + (String) export.getAttributes().get(PackageNamespace.PACKAGE_NAMESPACE);
+                }
+            }
+        }
+        return parentPackagesProp;
+
     }
 
     private static String getPropAndIssueBetaMessages(BundleContext context, String propKey, AtomicBoolean issueBetaMessage) {
