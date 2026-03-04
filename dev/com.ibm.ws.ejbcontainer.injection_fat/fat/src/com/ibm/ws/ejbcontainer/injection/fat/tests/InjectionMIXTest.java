@@ -142,7 +142,7 @@ public class InjectionMIXTest {
             server.stopServer("J2CA8501E", "CNTR0168W", "CNTR0338W", "CWNEN0013W", "CNTR0020E", "CWWKS9582E");
         } finally {
             // Remove the appSecurity feature that was added by the CDI repeat actions
-            if (RepeatWithCDI.isActive() || RepeatWithEE9CDI.isActive()) {
+            if (RepeatWithCDI.isActive() || RepeatWithEE9CDI.isActive() || RepeatWithEE10CDI.isActive() || RepeatWithEE11CDI.isActive()) {
                 File publishConfigFile = new File("publish/servers/ejbcontainer.injection.ra.fat.MsgEndpointServer/server.xml");
                 ServerConfiguration config = ServerConfigurationFactory.fromFile(publishConfigFile);
                 Set<String> features = config.getFeatureManager().getFeatures();
