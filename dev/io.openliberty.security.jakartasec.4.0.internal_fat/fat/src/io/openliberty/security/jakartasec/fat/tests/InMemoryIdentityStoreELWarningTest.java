@@ -12,6 +12,7 @@
  *******************************************************************************/
 package io.openliberty.security.jakartasec.fat.tests;
 
+import static io.openliberty.security.jakartasec.fat.utils.Jakartasec40TestConstants.EL_WARNING_MSG;
 import static io.openliberty.security.jakartasec.fat.utils.Jakartasec40TestConstants.USER_JASMINE;
 import static io.openliberty.security.jakartasec.fat.utils.Jakartasec40TestConstants.VALID_PASSWORD;
 import static org.junit.Assert.assertNotNull;
@@ -35,11 +36,10 @@ import componenttest.custom.junit.runner.Mode;
 import componenttest.custom.junit.runner.Mode.TestMode;
 import componenttest.topology.impl.LibertyServer;
 import inmemory.identity.store.InMemoryIdentityStoreProtectedResource;
+import inmemory.identity.store.InvalidInMemoryIdentityStoreApplication;
 
 /**
- * Tests for InMemoryIdentityStoreDefinition with various password encoding schemes.
- * Tests positive scenarios (plain, XOR, AES, Hash passwords) and negative scenarios
- * (bad passwords, bad encoding, insufficient groups).
+ * Tests an invalid priorityExpression in InMemoryIdentityStoreDefinition
  */
 @RunWith(FATRunner.class)
 @Mode(TestMode.LITE)
@@ -76,7 +76,7 @@ public class InMemoryIdentityStoreELWarningTest extends BaseJakartaSecurity40Tes
 
         // Create the web application
         WebArchive app = ShrinkWrap.create(WebArchive.class,
-                                           APP_NAME + ".war").addPackage("inmemory.invalid").addClass(InMemoryIdentityStoreProtectedResource.class).addAsWebInfResource(new File("test-applications/inmemory/WEB-INF/web.xml"));
+                                           APP_NAME + ".war").addClass(InvalidInMemoryIdentityStoreApplication.class).addClass(InMemoryIdentityStoreProtectedResource.class).addAsWebInfResource(new File("test-applications/inmemory/WEB-INF/web.xml"));
 
         ShrinkHelper.exportDropinAppToServer(server, app, DeployOptions.SERVER_ONLY);
 
@@ -84,11 +84,11 @@ public class InMemoryIdentityStoreELWarningTest extends BaseJakartaSecurity40Tes
     }
 
     /**
-     * Test authentication with plain text password.
-     * User "jasmine" has password "secret1" in plain text and valid groups.
+     * Test authentication still works as expected despite an invalid PriorityExpression given in the definition
      */
     @Test
     public void testPlainTextPassword() throws Exception {
+
         logInfo("testPlainTextPassword", "Testing plain text password authentication");
 
         String response = getResponseFromGetRequest(url, USER_JASMINE, VALID_PASSWORD, 200);
@@ -97,6 +97,7 @@ public class InMemoryIdentityStoreELWarningTest extends BaseJakartaSecurity40Tes
         assertTrue("Response should contain SUCCESS", response.contains("SUCCESS"));
         assertTrue("Response should contain username", response.contains(USER_JASMINE));
 
+        assertNotNull("EL warning message should appear in log once", server.findStringsInLogs(EL_WARNING_MSG)); // The (EL) expression used for the annotation attribute cannot be resolved
         logInfo("testPlainTextPassword", "Test passed");
     }
 
@@ -105,7 +106,7 @@ public class InMemoryIdentityStoreELWarningTest extends BaseJakartaSecurity40Tes
         InMemoryIdentityStoreELWarningTest instance = new InMemoryIdentityStoreELWarningTest();
         // Expected warnings and errors during testing
         instance.stopServer("CWWKS2600W", //an identity store that is configured by using an @InMemoryIdentityStoreDefinition annotation was detected within this application. Do not use this definition in a production environment
-                            "CWWKS2603W"); // The (EL) expression used for the annotation attribute cannot be resolved
+                            EL_WARNING_MSG); // The (EL) expression used for the annotation attribute cannot be resolved
 
     }
 }

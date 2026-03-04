@@ -36,7 +36,7 @@ public class Jakartasec40TestConstants {
     // Expected messages
     public static final String PRODUCTION_USE_WARNING_MSG = "CWWKS2600W"; // Warning about using in-memory store
     public static final String WRONG_CRED_ERROR_MSG = "CWWKS1859E"; // The password was not decrypted because a decoding error was reported
-
+    public static final String EL_WARNING_MSG = "CWWKS2603W"; // The Expression Language (EL) expression for the ''{0}'' attribute of the identity store annotation cannot be resolved to a valid value
     // XOR and AES-256 encoded (All decode to "reallysecretpassw0rd")
     public static final String PASSWORD_XOR_VALID = "{xor}LTo+MzMmLDo8LTorLz4sLChvLTs=";
     public static final String PASSWORD_AES_VALID = "{aes}ARB1cE2gxoEqBslQEaIs6YtFYjKFXresn8v7rkpD7I8EnQAGL8YayKrendxKW/zv4VOxwWNUv3yAUxSsAzeMi9nkWYBGf3LblwzeJYh3/t5hjoztC0/KCILy8GLlQbN4J66gr/IS9xpTL3iF0hiqOr/UzkA+8Nw=";
