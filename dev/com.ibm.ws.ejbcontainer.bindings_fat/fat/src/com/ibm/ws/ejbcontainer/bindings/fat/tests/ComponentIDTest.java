@@ -72,7 +72,7 @@ public class ComponentIDTest extends AbstractTest {
                                                    .conditionalFullFATOnly(FeatureReplacementAction.GREATER_THAN_OR_EQUAL_JAVA_17)
                                                    .forServers("com.ibm.ws.ejbcontainer.bindings.fat.server"))
                                    .andWith(FeatureReplacementAction.EE11_FEATURES()
-                                                   .forServers("com.ibm.ws.ejbcontainer.bindings.fat.serve"));
+                                                   .forServers("com.ibm.ws.ejbcontainer.bindings.fat.server"));
     /*@formatter:on*/
 
     @BeforeClass

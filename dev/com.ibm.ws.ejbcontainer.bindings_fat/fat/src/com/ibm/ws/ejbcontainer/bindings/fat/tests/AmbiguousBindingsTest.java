@@ -122,7 +122,8 @@ public class AmbiguousBindingsTest extends AbstractTest {
 
         ShrinkHelper.exportDropinAppToServer(server, AmbiguousTestApp, DeployOptions.SERVER_ONLY);
 
-        if (RepeatOnErrorEE7.isActive(EjbOnError.FAIL) || RepeatOnErrorEE9.isActive(EjbOnError.FAIL) || RepeatOnErrorEE10.isActive(EjbOnError.FAIL)) {
+        if (RepeatOnErrorEE7.isActive(EjbOnError.FAIL) || RepeatOnErrorEE9.isActive(EjbOnError.FAIL) || RepeatOnErrorEE10.isActive(EjbOnError.FAIL)
+            || RepeatOnErrorEE11.isActive(EjbOnError.FAIL)) {
             // don't validate apps loaded like default startServer() does
             server.startServerAndValidate(true, true, false);
         } else {
@@ -141,22 +142,27 @@ public class AmbiguousBindingsTest extends AbstractTest {
             RepeatOnErrorEE9.cleanup(server);
         } else if (RepeatOnErrorEE10.isActive()) {
             RepeatOnErrorEE10.cleanup(server);
+        } else if (RepeatOnErrorEE11.isActive()) {
+            RepeatOnErrorEE11.cleanup(server);
         }
     }
 
     @Test
     @ExpectedFFDC(value = { "javax.naming.NamingException", "com.ibm.ws.container.service.state.StateChangeException" },
-                  repeatAction = { "EE7_FEATURES_EjbOnErr_FAIL", "EE8_FEATURES_EjbOnErr_FAIL", "EE9_FEATURES_EjbOnErr_FAIL", "EE10_FEATURES_EjbOnErr_FAIL" })
+                  repeatAction = { "EE7_FEATURES_EjbOnErr_FAIL", "EE8_FEATURES_EjbOnErr_FAIL", "EE9_FEATURES_EjbOnErr_FAIL", "EE10_FEATURES_EjbOnErr_FAIL",
+                                   "EE11_FEATURES_EjbOnErr_FAIL" })
     public void testAmbiguousBindings() throws Exception {
         addAppsAndStartServer();
 
-        if (RepeatOnErrorEE7.isActive(EjbOnError.FAIL) || RepeatOnErrorEE9.isActive(EjbOnError.FAIL) || RepeatOnErrorEE10.isActive(EjbOnError.FAIL)) {
+        if (RepeatOnErrorEE7.isActive(EjbOnError.FAIL) || RepeatOnErrorEE9.isActive(EjbOnError.FAIL) || RepeatOnErrorEE10.isActive(EjbOnError.FAIL)
+            || RepeatOnErrorEE11.isActive(EjbOnError.FAIL)) {
             // make sure application stopped with correct error
             String message = "CWWKZ0106E:";
             assertNotNull("Application AmbiguousTestApp should have been stopped", server.waitForStringInLog(message));
             message = "CNTR4002E:.*com.ibm.ambiguous.ejb.AmbiguousOtherNameRemoteHome";
             assertNotNull("Application AmbiguousTestApp did not get correct error", server.waitForStringInLog(message));
-        } else if (RepeatOnErrorEE7.isActive(EjbOnError.IGNORE) || RepeatOnErrorEE9.isActive(EjbOnError.IGNORE) || RepeatOnErrorEE10.isActive(EjbOnError.IGNORE)) {
+        } else if (RepeatOnErrorEE7.isActive(EjbOnError.IGNORE) || RepeatOnErrorEE9.isActive(EjbOnError.IGNORE) || RepeatOnErrorEE10.isActive(EjbOnError.IGNORE)
+                   || RepeatOnErrorEE11.isActive(EjbOnError.IGNORE)) {
             // make sure warning is not there
             String message = "CNTR0338W:";
             assertTrue("Application AmbiguousTestApp should not have got ambiguous warning", server.findStringsInLogs(message).isEmpty());
