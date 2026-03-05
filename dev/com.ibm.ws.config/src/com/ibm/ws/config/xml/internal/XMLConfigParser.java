@@ -329,6 +329,7 @@ public class XMLConfigParser {
                     Tr.debug(tc, "parseServer: event=" + eventName + " (" + event + "), depth=" + depth + ", location=" + parser.getLocation().getLineNumber());
                 }
                 
+				// Text between elements
                 if (event == XMLStreamConstants.CHARACTERS) {
                     // Check for potential malformed XML elements
                     String text = parser.getText();
@@ -347,14 +348,16 @@ public class XMLConfigParser {
                         // Skip invisible Unicode whitespace characters.
                         if (isOnlyInvisibleWhitespace(trimmed)) {
                             if (tc.isDebugEnabled()) {
-                                Tr.debug(tc, "Ignoring invisible Unicode whitespace at line " + parser.getLocation().getLineNumber());
+                                Tr.debug(tc, "Invisible Unicode whitespace found at line " + parser.getLocation().getLineNumber());
                             }
                         } else {
-                            // At the server level (between top-level elements), there should be NO text content.
-                            // Any non-whitespace text is a malformed element.
-                            Location l = parser.getLocation();
-                            String preview = trimmed.length() > 60 ? trimmed.substring(0, 60) + "..." : trimmed;
-                            Tr.warning(tc, "warning.potential.malformed.element", preview, l.getLineNumber(), docLocation);
+                            // At the server level (between top-level elements), there should be no text content.
+                            // Any non-whitespace text might be a malformed element.
+                            if (tc.isDebugEnabled()) {
+                                Location l = parser.getLocation();
+                                String preview = trimmed.length() > 60 ? trimmed.substring(0, 60) + "..." : trimmed;
+                                Tr.debug(tc, "Potential malformed XML element detected: [" + preview + "] at line " + l.getLineNumber() + " in " + docLocation);
+                            }
                         }
                     }
                 } else if (event == XMLStreamConstants.START_ELEMENT) {
