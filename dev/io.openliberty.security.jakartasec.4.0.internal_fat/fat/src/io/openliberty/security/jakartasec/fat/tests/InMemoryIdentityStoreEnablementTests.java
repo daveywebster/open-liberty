@@ -18,6 +18,7 @@ import static io.openliberty.security.jakartasec.fat.utils.Jakartasec40TestConst
 import static io.openliberty.security.jakartasec.fat.utils.Jakartasec40TestConstants.USER_THEO;
 import static io.openliberty.security.jakartasec.fat.utils.Jakartasec40TestConstants.VALID_PASSWORD;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 import java.io.File;
 
@@ -41,9 +42,9 @@ import componenttest.custom.junit.runner.Mode.TestMode;
 import componenttest.topology.impl.LibertyServer;
 
 /**
- * Tests for InMemoryIdentityStoreDefinition with various password encoding schemes.
- * Tests positive scenarios (plain, XOR, AES, Hash passwords) and negative scenarios
- * (bad passwords, bad encoding, insufficient groups).
+ * Tests for InMemoryIdentityStore enabling element on server configuration.
+ * Tests several scenarios of server configuration files
+ * (missing element, existing element set to false/true).
  */
 @RunWith(FATRunner.class)
 @Mode(TestMode.LITE)
@@ -105,6 +106,7 @@ public class InMemoryIdentityStoreEnablementTests extends BaseJakartaSecurity40T
 
     /**
      * Test that the specified in-memory identity store is enabled when having the required element in the config file.
+     * A custom server configuration is used with allowInMemoryIdentityStores = true
      * Test the log file output for in-memory store usage warning for sanity.
      * This should only ever appear once upon the first invocation of authentication against the in memory identity store data.
      */
@@ -121,13 +123,14 @@ public class InMemoryIdentityStoreEnablementTests extends BaseJakartaSecurity40T
 
     /**
      * Test that the specified in-memory identity store is not enable (by default) when the required element is missing in the config.
+     * A custom server configuration is used with no such element specified
      */
     //@Test
     public void testInMemStoreNotAllowedIfElementIsAbsent() throws Exception {
         logInfo("testInMemStoreNotAllowedIfElementIsAbsent", "Testing that in-mem identity store is not enabled when element is missing");
 
-        RemoteFile consoleLogFile = server.getConsoleLogFile();
-        setServerConfig(SERVER_XML_ID_STORE_MISSING_ELEMENT, consoleLogFile, server);
+        // Replace the server configuration file with the test case
+        updateServerConfiguration(SERVER_XML_ID_STORE_MISSING_ELEMENT);
 
         // Should get 401 since in-memory id-store is not enabled
         executeGetRequest(url, USER_THEO, VALID_PASSWORD, 401);
@@ -143,11 +146,11 @@ public class InMemoryIdentityStoreEnablementTests extends BaseJakartaSecurity40T
     public void testInMemStoreCustomConfigIsNotAllowed() throws Exception {
         logInfo("testInMemStoreCustomConfigIsNotAllowed", "Testing that in-mem identity store is not allow by the custom config file");
 
-        RemoteFile consoleLogFile = server.getConsoleLogFile();
-        setServerConfig(SERVER_XML_ID_STORE_DISABLED, consoleLogFile, server);
+        // Replace the server configuration file with the test case
+        updateServerConfiguration(SERVER_XML_ID_STORE_DISABLED);
 
         // Perform successful authentication
-        executeGetRequest(url, USER_JASMINE, VALID_PASSWORD, 400);
+        executeGetRequest(url, USER_JASMINE, VALID_PASSWORD, 401);
 
         // Check that no unexpected error messages appear
         // We expect the warning message, but no error messages
@@ -164,12 +167,26 @@ public class InMemoryIdentityStoreEnablementTests extends BaseJakartaSecurity40T
 
     /**
      * Update the server configuration with a specified file
+     * And assert successful completion
+     *
+     * @param fileName
+     * @throws Exception if the update fails
+     */
+    private void updateServerConfiguration(String fileName) throws Exception {
+        String updatedMessage = setServerConfig(fileName, server.getConsoleLogFile(), server);
+        assertNotNull("The server config change was not completed",
+                      updatedMessage);
+    }
+
+    /**
+     * Update the server configuration with a specified file
      * Wait for message that indicates the config change
      *
      * @param fileName the name of the custom configuration file
      * @param logFile
      * @param server
-     * @return
+     * @return the matching line in the log, or null if no matches
+     *         appear before the timeout expires
      * @throws Exception
      */
     private static String setServerConfig(String fileName, RemoteFile logFile, LibertyServer server) throws Exception {
