@@ -41,4 +41,4 @@ src: \
 \
   com.ibm.websphere.org.reactivestreams.reactive-streams.1.0;version=latest, \
   io.projectreactor:reactor-core;version=latest, \
-  io.openliberty.jakarta.servlet.6.1
+  io.openliberty.jakarta.servlet.6.1;version=latest
