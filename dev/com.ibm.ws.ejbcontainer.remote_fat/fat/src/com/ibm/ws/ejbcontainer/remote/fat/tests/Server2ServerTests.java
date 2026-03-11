@@ -107,7 +107,7 @@ public class Server2ServerTests extends AbstractTest {
 
     @BeforeClass
     public static void beforeClass() throws Exception {
-        isSecureActive = RepeatEE7Secure.isActive() || RepeatEE8Secure.isActive() || RepeatEE9Secure.isActive() || RepeatEE10Secure.isActive();
+        isSecureActive = RepeatEE7Secure.isActive() || RepeatEE8Secure.isActive() || RepeatEE9Secure.isActive() || RepeatEE10Secure.isActive() || RepeatEE11Secure.isActive();
         LibertyServer clientServer = isSecureActive ? secureClientServer : unsecureClientServer;
         LibertyServer remoteServer = isSecureActive ? secureRemoteServer : unsecureRemoteServer;
 
