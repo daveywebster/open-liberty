@@ -894,7 +894,7 @@ public class SingleComponentManager<S> extends AbstractComponentManager<S> imple
         }
         catch ( final IllegalStateException ise)
         {
-            // sanity test for service already unregistered
+            // the service already unregistered
             return null;
         }
         if ( m_container.getActivator().enterCreate( ref ) )
