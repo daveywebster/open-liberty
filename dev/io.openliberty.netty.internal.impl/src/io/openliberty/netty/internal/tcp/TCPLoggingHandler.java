@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2022, 2023 IBM Corporation and others.
+ * Copyright (c) 2022, 2026 IBM Corporation and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License 2.0
  * which accompanies this distribution, and is available at
@@ -130,13 +130,6 @@ class TCPLoggingHandler extends LoggingHandler {
                                                 + " did not write : " + bytesToWrite + " bytes");
             }
         });
-    }
-
-    @Override
-    public void close(ChannelHandlerContext ctx, ChannelPromise promise) throws Exception {
-        System.out.println("Closing channel! " + ctx.channel());
-        new Exception("close called!").printStackTrace();
-        ctx.close();
     }
 
     @Override
