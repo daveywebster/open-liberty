@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2017, 2020 IBM Corporation and others.
+ * Copyright (c) 2017, 2026 IBM Corporation and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License 2.0
  * which accompanies this distribution, and is available at
@@ -1199,6 +1199,7 @@ public class MPJwtConfigUsingBuilderTests extends MPJwt11MPConfigTests {
             } else {
                 // for matching signature algorithms we want to make sure that even with the same alg, using the wrong public key to sign the token will result in failure.
                 if (!sigAlg.startsWith("HS")) {
+                    // Check either that token algorithm is equal to that configured on the server, or that the algorithm is allowed by the mpJwt config using allowedSignatureAlgorithms (FROM_HEADER only)
                     if ((sigAlg.equals(serverAlg) || (allowedSigAlgs != null && allowedSigAlgs.contains(sigAlg)))){
                         // our key/trust stores have 2 keys for each sig alg.  We typically use one that is 4096 is size, but we'll use the "short" (1024 in size) cert
                         // here to create the "mis-match" - the mpJwt config doesn't use the "short" certs
@@ -1208,7 +1209,8 @@ public class MPJwtConfigUsingBuilderTests extends MPJwt11MPConfigTests {
                 // test case uses builder configs where the id's are the same as the sigAlg string (ie:  RS256, ES384, ...)
                 builtToken = actions.getJwtTokenUsingBuilder(_testName, jwtBuilderServer, sigAlg);
             }
-            // Check if algorithm matches or if FROM_HEADER is used with an allowed list
+            // Check if the token algorithm matches the algorithm from the server or is one of those allowed and test both positive and negative cases.
+            // try to use the built token with mp.jwt (behavior varies based on sig alg matching between token and config and if sig alg is PS and we're using java 11)
             if ((allowedSigAlgs != null && allowedSigAlgs.contains(sigAlg)) || (allowedSigAlgs == null && sigAlg.equals(serverAlg))) {
                 genericConfigTest(builtToken);
                 // now test that mismatched certs for the same non-HS sigAlg won't work
@@ -1422,159 +1424,172 @@ public class MPJwtConfigUsingBuilderTests extends MPJwt11MPConfigTests {
 
     /**
      * Test FROM_HEADER allowing only HS256 - tests all algorithms, expects only HS256 to succeed
+     * Algorithm mismatch between token and allowedSignatureAlgorithms expected for all other algorithms
      *
      * @throws Exception
      */
     @Mode(TestMode.LITE)
     @Test
-    public void MPJwtConfigUsingBuilderTests_FromHeader_AllowOnlyHS256() throws Exception {
+    public void MPJwtConfigUsingBuilderTests_FromHeader_AllowOnlyHS256_tokenWithMatchAndMisMatchSigAlgs() throws Exception {
         resourceServer.reconfigureServerUsingExpandedConfiguration(_testName, "rs_server_sigAlg_FROM_HEADER_allow_HS256.xml");
         genericSigAlgTest(Constants.SIGALG_FROMHEADER, Arrays.asList(Constants.SIGALG_HS256));
     }
 
     /**
      * Test FROM_HEADER allowing only HS384 - tests all algorithms, expects only HS384 to succeed
+     * Algorithm mismatch between token and allowedSignatureAlgorithms expected for all other algorithms
      *
      * @throws Exception
      */
     @Test
-    public void MPJwtConfigUsingBuilderTests_FromHeader_AllowOnlyHS384() throws Exception {
+    public void MPJwtConfigUsingBuilderTests_FromHeader_AllowOnlyHS384_tokenWithMatchAndMisMatchSigAlgs() throws Exception {
         resourceServer.reconfigureServerUsingExpandedConfiguration(_testName, "rs_server_sigAlg_FROM_HEADER_allow_HS384.xml");
         genericSigAlgTest(Constants.SIGALG_FROMHEADER, Arrays.asList(Constants.SIGALG_HS384));
     }
 
     /**
      * Test FROM_HEADER allowing only HS512 - tests all algorithms, expects only HS512 to succeed
+     * Algorithm mismatch between token and allowedSignatureAlgorithms expected for all other algorithms
      *
      * @throws Exception
      */
     @Test
-    public void MPJwtConfigUsingBuilderTests_FromHeader_AllowOnlyHS512() throws Exception {
+    public void MPJwtConfigUsingBuilderTests_FromHeader_AllowOnlyHS512_tokenWithMatchAndMisMatchSigAlgs() throws Exception {
         resourceServer.reconfigureServerUsingExpandedConfiguration(_testName, "rs_server_sigAlg_FROM_HEADER_allow_HS512.xml");
         genericSigAlgTest(Constants.SIGALG_FROMHEADER, Arrays.asList(Constants.SIGALG_HS512));
     }
 
     /**
      * Test FROM_HEADER allowing only RS256 - tests all algorithms, expects only RS256 to succeed
+     * Algorithm mismatch between token and allowedSignatureAlgorithms expected for all other algorithms
      *
      * @throws Exception
      */
     @ExpectedFFDC({ "org.jose4j.jwt.consumer.InvalidJwtSignatureException" })
     @Mode(TestMode.LITE)
     @Test
-    public void MPJwtConfigUsingBuilderTests_FromHeader_AllowOnlyRS256() throws Exception {
+    public void MPJwtConfigUsingBuilderTests_FromHeader_AllowOnlyRS256_tokenWithMatchAndMisMatchSigAlgs() throws Exception {
         resourceServer.reconfigureServerUsingExpandedConfiguration(_testName, "rs_server_sigAlg_FROM_HEADER_allow_RS256.xml");
         genericSigAlgTest(Constants.SIGALG_FROMHEADER, Arrays.asList(Constants.SIGALG_RS256));
     }
 
     /**
      * Test FROM_HEADER allowing only RS384 - tests all algorithms, expects only RS384 to succeed
+     * Algorithm mismatch between token and allowedSignatureAlgorithms expected for all other algorithms
      *
      * @throws Exception
      */
     @ExpectedFFDC({ "org.jose4j.jwt.consumer.InvalidJwtSignatureException" })
     @Test
-    public void MPJwtConfigUsingBuilderTests_FromHeader_AllowOnlyRS384() throws Exception {
+    public void MPJwtConfigUsingBuilderTests_FromHeader_AllowOnlyRS384_tokenWithMatchAndMisMatchSigAlgs() throws Exception {
         resourceServer.reconfigureServerUsingExpandedConfiguration(_testName, "rs_server_sigAlg_FROM_HEADER_allow_RS384.xml");
         genericSigAlgTest(Constants.SIGALG_FROMHEADER, Arrays.asList(Constants.SIGALG_RS384));
     }
 
     /**
      * Test FROM_HEADER allowing only RS512 - tests all algorithms, expects only RS512 to succeed
+     * Algorithm mismatch between token and allowedSignatureAlgorithms expected for all other algorithms
      *
      * @throws Exception
      */
     @ExpectedFFDC({ "org.jose4j.jwt.consumer.InvalidJwtSignatureException" })
     @Test
-    public void MPJwtConfigUsingBuilderTests_FromHeader_AllowOnlyRS512() throws Exception {
+    public void MPJwtConfigUsingBuilderTests_FromHeader_AllowOnlyRS512_tokenWithMatchAndMisMatchSigAlgs() throws Exception {
         resourceServer.reconfigureServerUsingExpandedConfiguration(_testName, "rs_server_sigAlg_FROM_HEADER_allow_RS512.xml");
         genericSigAlgTest(Constants.SIGALG_FROMHEADER, Arrays.asList(Constants.SIGALG_RS512));
     }
 
     /**
      * Test FROM_HEADER allowing only ES256 - tests all algorithms, expects only ES256 to succeed
+     * Algorithm mismatch between token and allowedSignatureAlgorithms expected for all other algorithms
      *
      * @throws Exception
      */
     @ExpectedFFDC({ "org.jose4j.jwt.consumer.InvalidJwtSignatureException" })
     @Mode(TestMode.LITE)
     @Test
-    public void MPJwtConfigUsingBuilderTests_FromHeader_AllowOnlyES256() throws Exception {
+    public void MPJwtConfigUsingBuilderTests_FromHeader_AllowOnlyES256_tokenWithMatchAndMisMatchSigAlgs() throws Exception {
         resourceServer.reconfigureServerUsingExpandedConfiguration(_testName, "rs_server_sigAlg_FROM_HEADER_allow_ES256.xml");
         genericSigAlgTest(Constants.SIGALG_FROMHEADER, Arrays.asList(Constants.SIGALG_ES256));
     }
 
     /**
      * Test FROM_HEADER allowing only ES384 - tests all algorithms, expects only ES384 to succeed
+     * Algorithm mismatch between token and allowedSignatureAlgorithms expected for all other algorithms
      *
      * @throws Exception
      */
     @ExpectedFFDC({ "org.jose4j.jwt.consumer.InvalidJwtSignatureException" })
     @Test
-    public void MPJwtConfigUsingBuilderTests_FromHeader_AllowOnlyES384() throws Exception {
+    public void MPJwtConfigUsingBuilderTests_FromHeader_AllowOnlyES384_tokenWithMatchAndMisMatchSigAlgs() throws Exception {
         resourceServer.reconfigureServerUsingExpandedConfiguration(_testName, "rs_server_sigAlg_FROM_HEADER_allow_ES384.xml");
         genericSigAlgTest(Constants.SIGALG_FROMHEADER, Arrays.asList(Constants.SIGALG_ES384));
     }
 
     /**
      * Test FROM_HEADER allowing only ES512 - tests all algorithms, expects only ES512 to succeed
+     * Algorithm mismatch between token and allowedSignatureAlgorithms expected for all other algorithms
      *
      * @throws Exception
      */
     @ExpectedFFDC({ "org.jose4j.jwt.consumer.InvalidJwtSignatureException" })
     @Test
-    public void MPJwtConfigUsingBuilderTests_FromHeader_AllowOnlyES512() throws Exception {
+    public void MPJwtConfigUsingBuilderTests_FromHeader_AllowOnlyES512_tokenWithMatchAndMisMatchSigAlgs() throws Exception {
         resourceServer.reconfigureServerUsingExpandedConfiguration(_testName, "rs_server_sigAlg_FROM_HEADER_allow_ES512.xml");
         genericSigAlgTest(Constants.SIGALG_FROMHEADER, Arrays.asList(Constants.SIGALG_ES512));
     }
 
     /**
      * Test FROM_HEADER allowing all HS algorithms - tests all algorithms, expects HS256/384/512 to succeed
+     * Algorithm mismatch between token and allowedSignatureAlgorithms expected for all other algorithms
      *
      * @throws Exception
      */
     @Mode(TestMode.LITE)
     @Test
-    public void MPJwtConfigUsingBuilderTests_FromHeader_AllowAllHSAlgs() throws Exception {
+    public void MPJwtConfigUsingBuilderTests_FromHeader_AllowAllHSAlgs_tokenWithMatchAndMisMatchSigAlgs() throws Exception {
         resourceServer.reconfigureServerUsingExpandedConfiguration(_testName, "rs_server_sigAlg_FROM_HEADER_allow_HSAlgs.xml");
         genericSigAlgTest(Constants.SIGALG_FROMHEADER, Arrays.asList(Constants.ALL_TEST_HSSIGALGS));
     }
 
     /**
      * Test FROM_HEADER allowing all RS algorithms - tests all algorithms, expects RS256/384/512 to succeed
+     * Algorithm mismatch between token and allowedSignatureAlgorithms expected for all other algorithms
      *
      * @throws Exception
      */
     @ExpectedFFDC({ "org.jose4j.jwt.consumer.InvalidJwtSignatureException" })
     @Mode(TestMode.LITE)
     @Test
-    public void MPJwtConfigUsingBuilderTests_FromHeader_AllowAllRSAlgs() throws Exception {
+    public void MPJwtConfigUsingBuilderTests_FromHeader_AllowAllRSAlgs_tokenWithMatchAndMisMatchSigAlgs() throws Exception {
         resourceServer.reconfigureServerUsingExpandedConfiguration(_testName, "rs_server_sigAlg_FROM_HEADER_allow_RSAlgs.xml");
         genericSigAlgTest(Constants.SIGALG_FROMHEADER, Arrays.asList(Constants.ALL_TEST_RSSIGALGS));
     }
 
     /**
      * Test FROM_HEADER allowing all ES algorithms - tests all algorithms, expects ES256/384/512 to succeed
+     * Algorithm mismatch between token and allowedSignatureAlgorithms expected for all other algorithms
      *
      * @throws Exception
      */
     @ExpectedFFDC({ "org.jose4j.jwt.consumer.InvalidJwtSignatureException" })
     @Mode(TestMode.LITE)
     @Test
-    public void MPJwtConfigUsingBuilderTests_FromHeader_AllowAllESAlgs() throws Exception {
+    public void MPJwtConfigUsingBuilderTests_FromHeader_AllowAllESAlgs_tokenWithMatchAndMisMatchSigAlgs() throws Exception {
         resourceServer.reconfigureServerUsingExpandedConfiguration(_testName, "rs_server_sigAlg_FROM_HEADER_allow_ESAlgs.xml");
         genericSigAlgTest(Constants.SIGALG_FROMHEADER, Arrays.asList(Constants.ALL_TEST_ESSIGALGS));
     }
 
     /**
      * Test FROM_HEADER allowing mixed algorithms (HS256, RS384, ES512) - tests all algorithms, expects HS256/RS384/ES512 to succeed
+     * Algorithm mismatch between token and allowedSignatureAlgorithms expected for all other algorithms
      *
      * @throws Exception
      */
     @ExpectedFFDC({ "org.jose4j.jwt.consumer.InvalidJwtSignatureException" })
     @Mode(TestMode.LITE)
     @Test
-    public void MPJwtConfigUsingBuilderTests_FromHeader_AllowMixedAlgs() throws Exception {
+    public void MPJwtConfigUsingBuilderTests_FromHeader_AllowMixedAlgs_tokenWithMatchAndMisMatchSigAlgs() throws Exception {
         resourceServer.reconfigureServerUsingExpandedConfiguration(_testName, "rs_server_sigAlg_FROM_HEADER_allow_HS256RS384ES512.xml");
         genericSigAlgTest(Constants.SIGALG_FROMHEADER, Arrays.asList(Constants.SIGALG_HS256, Constants.SIGALG_RS384, Constants.SIGALG_ES512));
     }
@@ -1587,7 +1602,7 @@ public class MPJwtConfigUsingBuilderTests extends MPJwt11MPConfigTests {
     @ExpectedFFDC({ "org.jose4j.jwt.consumer.InvalidJwtSignatureException" })
     @Mode(TestMode.LITE)
     @Test
-    public void MPJwtConfigUsingBuilderTests_FromHeader_NoRestrictions() throws Exception {
+    public void MPJwtConfigUsingBuilderTests_FromHeader_tokenWithMatchAndMisMatchSigAlgs() throws Exception {
         resourceServer.reconfigureServerUsingExpandedConfiguration(_testName, "rs_server_sigAlg_FROM_HEADER.xml");
         genericSigAlgTest(Constants.SIGALG_FROMHEADER, Arrays.asList(Constants.ALL_TEST_SIGALGS));
     }

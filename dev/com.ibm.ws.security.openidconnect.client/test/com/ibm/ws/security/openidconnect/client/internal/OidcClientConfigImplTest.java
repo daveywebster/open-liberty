@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2014, 2020 IBM Corporation and others.
+ * Copyright (c) 2014, 2026 IBM Corporation and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License 2.0
  * which accompanies this distribution, and is available at
@@ -69,8 +69,6 @@ public class OidcClientConfigImplTest extends CommonTestClass {
     final String SHA256 = "HS256";//"SHA256";
     final String RS256 = "RS256";
     final String ES256 = "ES256";
-    final String[] ALL_ALLOWED_SIG_ALGS = { "RS256", "RS384", "RS512", "ES256", "ES384", "ES512", "HS256", "HS384", "HS512" };
-    final String FROM_HEADER = "FROM_HEADER";
     final String NONE = "none";
     //final String DISCOVERY_ENDPOINT_URL = "authorizationEndpointUrl";
     final String AUTHORIZATION_ENDPOINT_URL = "authorizationEndpointUrl";
@@ -812,86 +810,6 @@ public class OidcClientConfigImplTest extends CommonTestClass {
         }
     }
 
-    @Test
-    public void test_checkSignatureAlgorithmAgainstAllowedList_signatureAlgorithmIsFromHeader() throws Exception {
-        final Map<String, Object> props = createProps(true);
-        props.remove(OidcClientConfigImpl.CFG_KEY_SIGNATURE_ALGORITHM);
-        props.put(OidcClientConfigImpl.CFG_KEY_SIGNATURE_ALGORITHM, FROM_HEADER);
-        mock.checking(new Expectations() {
-            {
-                one(configAdmin).getConfiguration(authFilterId, null);
-                will(returnValue(config));
-                one(config).getProperties();
-                will(returnValue(adminProps));
-            }
-        });
-        oidcClientConfig.modify(props);
-
-        oidcClientConfig.checkSignatureAlgorithmAgainstAllowedList();
-
-        verifyNoLogMessage(outputMgr, "CWWKS1558E");
-    }
-
-    @Test
-    public void test_checkSignatureAlgorithmAgainstAllowedList_signatureAlgorithmIsNone() throws Exception {
-        final Map<String, Object> props = createProps(true);
-        props.remove(OidcClientConfigImpl.CFG_KEY_SIGNATURE_ALGORITHM);
-        props.put(OidcClientConfigImpl.CFG_KEY_SIGNATURE_ALGORITHM, NONE);
-        mock.checking(new Expectations() {
-            {
-                one(configAdmin).getConfiguration(authFilterId, null);
-                will(returnValue(config));
-                one(config).getProperties();
-                will(returnValue(adminProps));
-            }
-        });
-        oidcClientConfig.modify(props);
-
-        oidcClientConfig.checkSignatureAlgorithmAgainstAllowedList();
-
-        verifyNoLogMessage(outputMgr, "CWWKS1558E");
-    }
-
-    @Test
-    public void test_checkSignatureAlgorithmAgainstAllowedList_algorithmInAllowedList() throws Exception {
-        final Map<String, Object> props = createProps(true);
-        props.remove(OidcClientConfigImpl.CFG_KEY_SIGNATURE_ALGORITHM);
-        props.put(OidcClientConfigImpl.CFG_KEY_SIGNATURE_ALGORITHM, ES256);
-        mock.checking(new Expectations() {
-            {
-                one(configAdmin).getConfiguration(authFilterId, null);
-                will(returnValue(config));
-                one(config).getProperties();
-                will(returnValue(adminProps));
-            }
-        });
-        oidcClientConfig.modify(props);
-
-        oidcClientConfig.checkSignatureAlgorithmAgainstAllowedList();
-
-        verifyNoLogMessage(outputMgr, "CWWKS1558E");
-    }
-
-    @Test
-    public void test_checkSignatureAlgorithmAgainstAllowedList_algorithmNotInAllowedList() throws Exception {
-        final Map<String, Object> props = createProps(true);
-        props.remove(OidcClientConfigImpl.CFG_KEY_ALLOWED_SIGNATURE_ALGORITHMS);
-        props.put(OidcClientConfigImpl.CFG_KEY_ALLOWED_SIGNATURE_ALGORITHMS, new String[] { RS256, ES256 });
-        mock.checking(new Expectations() {
-            {
-                one(configAdmin).getConfiguration(authFilterId, null);
-                will(returnValue(config));
-                one(config).getProperties();
-                will(returnValue(adminProps));
-            }
-        });
-        oidcClientConfig.modify(props);
-
-        oidcClientConfig.checkSignatureAlgorithmAgainstAllowedList();
-
-        verifyLogMessage(outputMgr, "CWWKS1558E");
-    }
-
     public Map<String, Object> createProps(boolean value) {
         final Map<String, Object> props = new Hashtable<String, Object>();
 
@@ -911,7 +829,6 @@ public class OidcClientConfigImplTest extends CommonTestClass {
         props.put(OidcClientConfigImpl.CFG_KEY_NONCE_ENABLED, false); // default is false
         props.put(OidcClientConfigImpl.CFG_KEY_SSL_REF, MY_SSL_REF);
         props.put(OidcClientConfigImpl.CFG_KEY_SIGNATURE_ALGORITHM, SHA256);
-        props.put(OidcClientConfigImpl.CFG_KEY_ALLOWED_SIGNATURE_ALGORITHMS, ALL_ALLOWED_SIG_ALGS);
         props.put(OidcClientConfigImpl.CFG_KEY_CLOCK_SKEW, 300000L);
         //props.put(OidcClientConfigImpl.CFG_KEY_DISCOVERY_ENDPOINT_URL, DISCOVERY_ENDPOINT_URL);
         props.put(OidcClientConfigImpl.CFG_KEY_DISCOVERY_POLLING_RATE, 400000L);

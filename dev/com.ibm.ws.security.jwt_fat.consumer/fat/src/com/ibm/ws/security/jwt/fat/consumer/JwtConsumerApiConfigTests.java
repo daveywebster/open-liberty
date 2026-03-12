@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2019, 2025 IBM Corporation and others.
+ * Copyright (c) 2019, 2026 IBM Corporation and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License 2.0
  * which accompanies this distribution, and is available at
@@ -2980,7 +2980,7 @@ public class JwtConsumerApiConfigTests extends CommonSecurityFat {
     /**
      * Test shows that the JWT Consumer can consume JWTs signed with RS256, RS384 and RS512 when configured with FROM_HEADER and allowing RS256, RS384, RS512
      * The configured trust store does not contain algorithm prefixed keys, so the configured alias (altrs256) is used for signature verification of each token
-     * The builders all sign with the same altrs256 private key, so all three tokens can be verified by the RP.
+     * The builders all sign with the same altrs256 private key, so all three tokens can be verified by the consumer.
      * 
      * Note: For RS-based algorithms (RS256, RS384, RS512), the same RSA key can be used for signing with each algorithm.
      * 
@@ -3003,8 +3003,8 @@ public class JwtConsumerApiConfigTests extends CommonSecurityFat {
     /**
      * Test shows that the JWT Consumer can consume a JWT signed with RS256, but not RS384 and RS512 using the trustedAlias when configured with FROM_HEADER and allowing RS256, RS384 and RS512
      * The configured trust store does not contain algorithm prefixed keys, so the configured fallback alias (altrs256) is used for signature verification of each token
-     * The RS256 builder signs using the altrs256 private key, which the RP can successfully verify
-     * The RS384 and RS512 builder sign with their standard keys and signature verification fails on the RP due to a key mismatch
+     * The RS256 builder signs using the altrs256 private key, which the consumer can successfully verify
+     * The RS384 and RS512 builder sign with their standard keys and signature verification fails on the consumer due to a key mismatch
      *
      * @throws Exception
      */
@@ -3028,8 +3028,8 @@ public class JwtConsumerApiConfigTests extends CommonSecurityFat {
     /**
      * Test shows that the JWT Consumer can consume a JWT signed with ES256, but not ES384 and ES512 using the trustedAlias when configured with FROM_HEADER and allowing ES256, ES384 and ES512
      * The configured trust store does not contain algorithm prefixed keys, so the configured fallback alias (altes256) is used for signature verification of each token
-     * The ES256 builder signs using the altes256 (secp256r1) private key, which the RP can successfully verify
-     * The ES384 and ES512 builder sign with their standard keys (secp384r1 and secp521r1) and signature verification fails on the RP due to a key mismatch
+     * The ES256 builder signs using the altes256 (secp256r1) private key, which the consumer can successfully verify
+     * The ES384 and ES512 builder sign with their standard keys (secp384r1 and secp521r1) and signature verification fails on the consumer due to a key mismatch
      * 
      * Note: ES-based algorithms (ES256, ES384, ES512) each require algorithm-specific elliptic curve keys and cannot share the same key:
      * - ES256 requires P-256 (secp256r1) curve

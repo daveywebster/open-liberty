@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2021 IBM Corporation and others.
+ * Copyright (c) 2021, 2026 IBM Corporation and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License 2.0
  * which accompanies this distribution, and is available at
@@ -53,8 +53,8 @@ public class SignatureEncryptionUserinfoUtils extends CommonTest {
     public List<validationData> setBasicSigningExpectations(String sigAlgForBuilder, String sigAlgForRP, List<String> allowedSigAlgs, TestSettings settings, String test_finalAction, boolean isImplicit) throws Exception {
         
         List<validationData> expectations = null;
-        // if the signature alg in the build matches what's in the RP, the test should succeed - validate status codes and token content
-        // if the sig alg for the rp contains FROM_HEADER and allowed algs is null, the test should succeed
+        // if the signature alg in the builder matches what's in the RP, the test should succeed - validate status codes and token content
+        // if the sig alg for the rp is FROM_HEADER and allowed algs is null (no restrictions), the test should succeed
         // if the sig alg for the rp contains FROM_HEADER and the allowed algs contain the builder alg, the test should succeed
         if (sigAlgForBuilder.equals(sigAlgForRP) || (sigAlgForRP.contains("FROM_HEADER") && (allowedSigAlgs == null || allowedSigAlgs.contains(sigAlgForBuilder)))) {
             expectations = vData.addSuccessStatusCodes(null);
@@ -72,7 +72,7 @@ public class SignatureEncryptionUserinfoUtils extends CommonTest {
             expectations = validationTools.addRequestParmsExpectations(expectations, _testName, test_finalAction, settings);
         } else {
             // validate that we get the correct error message(s) for tests that use the same sig alg, but have mis-matched keys
-            // If the allowed algs contain the builder alg, then there is a key mismatch
+            // If the allowed algs contain the builder alg as a partial substring match, then this is a key mismatch scenario
             if (sigAlgForBuilder.contains(sigAlgForRP) || allowedSigAlgsStringContainBuilder(allowedSigAlgs, sigAlgForBuilder)) {
                 expectations = validationTools.add401Responses(test_finalAction);
                 expectations = validationTools.addMessageExpectation(testRPServer, expectations, test_finalAction, Constants.MESSAGES_LOG, Constants.STRING_MATCHES, "Client messages.log should contain a message indicating that there is a signature mismatch", MessageConstants.CWWKS1756E_OIDC_IDTOKEN_SIGNATURE_VERIFY_ERR + ".*client01.*" + (sigAlgForRP.equals("FROM_HEADER") ? allowedSigAlgs : sigAlgForRP) + ".*");

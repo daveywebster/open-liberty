@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016, 2018 IBM Corporation and others.
+ * Copyright (c) 2016, 2026 IBM Corporation and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License 2.0
  * which accompanies this distribution, and is available at
@@ -166,7 +166,7 @@ public class SslRefInfoImpl implements SslRefInfo {
                 try {
                     return keyStoreService.getCertificateFromKeyStore(sslKeyStoreName, alias).getPublicKey();
                 } catch (GeneralSecurityException e) {
-                    throw new SocialLoginException("ERROR_LOADING_CERTIFICATE", e, new Object[] { alias, sslTrustStoreName, e.getLocalizedMessage() });
+                    throw new SocialLoginException("ERROR_LOADING_CERTIFICATE", e, new Object[] { alias, sslKeyStoreName, e.getLocalizedMessage() });
                 }
             } else {
                 Iterator<Entry<String, PublicKey>> publicKeysIterator = null;

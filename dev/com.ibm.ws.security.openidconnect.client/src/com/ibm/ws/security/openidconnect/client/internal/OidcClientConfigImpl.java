@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2013, 2023 IBM Corporation and others.
+ * Copyright (c) 2013, 2026 IBM Corporation and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License 2.0
  * which accompanies this distribution, and is available at
@@ -470,6 +470,11 @@ public class OidcClientConfigImpl implements OidcClientConfig {
             Tr.warning(tc, "OIDC_CLIENT_NONE_ALG", new Object[] { id, signatureAlgorithm });
         }
         allowedSignatureAlgorithms = trimIt((String[]) props.get(CFG_KEY_ALLOWED_SIGNATURE_ALGORITHMS ));
+        if (!ClientConstants.ALGORITHM_FROM_HEADER.equals(signatureAlgorithm)) {
+            if (tc.isDebugEnabled()) {
+                Tr.debug(tc, "The 'allowedSignatureAlgorithms' list " + Arrays.toString(allowedSignatureAlgorithms) + " will be ignored because a specific signature algorithm has been explicitly set. " + "Verification will proceed using only: " + signatureAlgorithm);
+            }
+        }
         clockSkew = (Long) props.get(CFG_KEY_CLOCK_SKEW);
         clockSkewInSeconds = clockSkew / 1000; // Duration types are always in milliseconds, convert to seconds.
         authenticationTimeLimitInSeconds = (Long) props.get(CFG_KEY_AUTHENTICATION_TIME_LIMIT) / 1000;
@@ -583,7 +588,7 @@ public class OidcClientConfigImpl implements OidcClientConfig {
             initializeAccessTokenCache();
         }
 
-        checkSignatureAlgorithmAgainstAllowedList();
+        // checkSignatureAlgorithmAgainstAllowedList();
 
         if (TraceComponent.isAnyTracingEnabled() && tc.isDebugEnabled()) {
             Tr.debug(tc, "id: " + id);
@@ -653,17 +658,6 @@ public class OidcClientConfigImpl implements OidcClientConfig {
             Tr.debug(tc, "tokenRequestOriginHeader:" + tokenRequestOriginHeader);
             Tr.debug(tc, "tokenOrderToFetchCallerClaims:" + tokenOrderToFetchCallerClaims);
         }
-
-    }
-
-    void checkSignatureAlgorithmAgainstAllowedList() {
-        if (ClientConstants.ALGORITHM_FROM_HEADER.equals(signatureAlgorithm) || ClientConstants.ALGORITHM_NONE.equals(signatureAlgorithm)) {
-            return;
-        }
-        if (Arrays.asList(allowedSignatureAlgorithms).contains(signatureAlgorithm)) {
-            return;
-        }
-        Tr.error(tc, "OIDC_CLIENT_SIGNATURE_ALGORITHM_NOT_IN_ALLOWED_LIST", new Object[] { id, signatureAlgorithm, Arrays.toString(allowedSignatureAlgorithms) });
     }
 
     private void initializeAccessTokenCache() {

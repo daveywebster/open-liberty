@@ -1,5 +1,5 @@
 <!--
-    Copyright (c) 2021 IBM Corporation and others.
+    Copyright (c) 2021, 2026 IBM Corporation and others.
     All rights reserved. This program and the accompanying materials
     are made available under the terms of the Eclipse Public License 2.0
     which accompanies this distribution, and is available at
@@ -248,7 +248,7 @@
 	<authFilter id="authFilterFromHeaderHS256">
 		<requestUrl
 			id="requestUrlFromHeaderHS256"
-			urlPattern="/rest/helloworldFROM_HEADER_AllowingOnly_HS256"
+			urlPattern="/rest/helloworldFROM_HEADER_HS256_"
 			MatchType="contains" />
 	</authFilter>
 
@@ -275,7 +275,7 @@
 	<authFilter id="authFilterFromHeaderHS384">
 		<requestUrl
 			id="requestUrlFromHeaderHS384"
-			urlPattern="/rest/helloworldFROM_HEADER_AllowingOnly_HS384"
+			urlPattern="/rest/helloworldFROM_HEADER_HS384_"
 			MatchType="contains" />
 	</authFilter>
 
@@ -302,7 +302,7 @@
 		<authFilter id="authFilterFromHeaderHS512">
 		<requestUrl
 			id="requestUrlFromHeaderHS512"
-			urlPattern="/rest/helloworldFROM_HEADER_AllowingOnly_HS512"
+			urlPattern="/rest/helloworldFROM_HEADER_HS512_"
 			MatchType="contains" />
 	</authFilter>
 
@@ -329,7 +329,7 @@
 	<authFilter id="authFilterFromHeaderRS256">
 		<requestUrl
 			id="requestUrlFromHeaderRS256"
-			urlPattern="/rest/helloworldFROM_HEADER_AllowingOnly_RS256"
+			urlPattern="/rest/helloworldFROM_HEADER_RS256_"
 			MatchType="contains" />
 	</authFilter>
 
@@ -356,7 +356,7 @@
 	<authFilter id="authFilterFromHeaderRS384">
 		<requestUrl
 			id="requestUrlFromHeaderRS384"
-			urlPattern="/rest/helloworldFROM_HEADER_AllowingOnly_RS384"
+			urlPattern="/rest/helloworldFROM_HEADER_RS384_"
 			MatchType="contains" />
 	</authFilter>
 
@@ -383,7 +383,7 @@
 	<authFilter id="authFilterFromHeaderRS512">
 		<requestUrl
 			id="requestUrlFromHeaderRS512"
-			urlPattern="/rest/helloworldFROM_HEADER_AllowingOnly_RS512"
+			urlPattern="/rest/helloworldFROM_HEADER_RS512_"
 			MatchType="contains" />
 	</authFilter>
 
@@ -410,7 +410,7 @@
 	<authFilter id="authFilterFromHeaderES256">
 		<requestUrl
 			id="requestUrlFromHeaderES256"
-			urlPattern="/rest/helloworldFROM_HEADER_AllowingOnly_ES256"
+			urlPattern="/rest/helloworldFROM_HEADER_ES256_"
 			MatchType="contains" />
 	</authFilter>
 
@@ -437,7 +437,7 @@
 	<authFilter id="authFilterFromHeaderES384">
 		<requestUrl
 			id="requestUrlFromHeaderES384"
-			urlPattern="/rest/helloworldFROM_HEADER_AllowingOnly_ES384"
+			urlPattern="/rest/helloworldFROM_HEADER_ES384_"
 			MatchType="contains" />
 	</authFilter>
 
@@ -464,7 +464,7 @@
 	<authFilter id="authFilterFromHeaderES512">
 		<requestUrl
 			id="requestUrlFromHeaderES512"
-			urlPattern="/rest/helloworldFROM_HEADER_AllowingOnly_ES512"
+			urlPattern="/rest/helloworldFROM_HEADER_ES512_"
 			MatchType="contains" />
 	</authFilter>
 
@@ -491,7 +491,7 @@
 	<authFilter id="authFilterFromHeaderHSSigAlg">
 		<requestUrl
 			id="requestUrlFromHeaderHSSigAlg"
-			urlPattern="/rest/helloworldFROM_HEADER_AllowingMultiple_HS256HS384HS512"
+			urlPattern="/rest/helloworldFROM_HEADER_HS256-HS384-HS512_"
 			MatchType="contains" />
 	</authFilter>
 
@@ -518,7 +518,7 @@
 	<authFilter id="authFilterFromHeaderRSSigAlg">
 		<requestUrl
 			id="requestUrlFromHeaderRSSigAlg"
-			urlPattern="/rest/helloworldFROM_HEADER_AllowingMultiple_RS256RS384RS512"
+			urlPattern="/rest/helloworldFROM_HEADER_RS256-RS384-RS512_"
 			MatchType="contains" />
 	</authFilter>
 
@@ -545,7 +545,7 @@
 	<authFilter id="authFilterFromHeaderESSigAlg">
 		<requestUrl
 			id="requestUrlFromHeaderESSigAlg"
-			urlPattern="/rest/helloworldFROM_HEADER_AllowingMultiple_ES256ES384ES512"
+			urlPattern="/rest/helloworldFROM_HEADER_ES256-ES384-ES512_"
 			MatchType="contains" />
 	</authFilter>
 
@@ -572,7 +572,7 @@
 	<authFilter id="authFilterFromHeaderHS256RS384ES512">
 		<requestUrl
 			id="requestUrlFromHeaderHS256RS384ES512"
-			urlPattern="/rest/helloworldFROM_HEADER_AllowingMultiple_HS256RS384ES512"
+			urlPattern="/rest/helloworldFROM_HEADER_HS256-RS384-ES512_"
 			MatchType="contains" />
 	</authFilter>
 
@@ -625,7 +625,7 @@
 	<authFilter id="diff_authFilterFromHeaderRS256RS384RS512">
 		<requestUrl
 			id="diff_requestUrlFromHeaderRS256RS384RS512"
-			urlPattern="/rest/helloworldFROM_HEADER_AllowingMultiple_diff_RS256diff_RS384diff_RS512"
+			urlPattern="/rest/helloworldFROM_HEADER_diff_RS256-diff_RS384-diff_RS512_"
 			MatchType="contains" />
 	</authFilter>
 
@@ -653,7 +653,7 @@
 	<authFilter id="diff_authFilterFromHeaderES256ES384ES512">
 		<requestUrl
 			id="diff_requestUrlFromHeaderES256ES384ES512"
-			urlPattern="/rest/helloworldFROM_HEADER_AllowingMultiple_diff_ES256diff_ES384diff_ES512"
+			urlPattern="/rest/helloworldFROM_HEADER_diff_ES256-diff_ES384-diff_ES512_"
 			MatchType="contains" />
 	</authFilter>
 

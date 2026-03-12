@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2017, 2024 IBM Corporation and others.
+ * Copyright (c) 2017, 2026 IBM Corporation and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License 2.0
  * which accompanies this distribution, and is available at
@@ -214,9 +214,12 @@ public class MicroProfileJwtConfigImpl implements MicroProfileJwtConfig {
         consumerUtils = null; // the parameters in consumerUtils may have been changed during dynamic changing
         this.signatureAlgorithm = configUtils.getConfigAttribute(props, CFG_KEY_SIGALG);
         this.allowedSignatureAlgorithms = configUtils.getStringArrayConfigAttribute(props, CFG_KEY_ALLOWEDSIGNATUREALGS);
+        if (!Constants.SIGNATURE_FROM_HEADER.equals(signatureAlgorithm)) {
+            if (tc.isDebugEnabled()) {
+                Tr.debug(tc, "The 'allowedSignatureAlgorithms' list " + Arrays.toString(allowedSignatureAlgorithms) + " will be ignored because a specific signature algorithm has been explicitly set. " + "Verification will proceed using only: " + signatureAlgorithm);
+            }
+        }
         sharedKey = JwtUtils.processProtectedString(props, JwtUtils.CFG_KEY_SHARED_KEY);
-
-        checkSignatureAlgorithmAgainstAllowedList();
 
         loadConfigValuesForHigherVersions(cc, props);
 
@@ -224,17 +227,6 @@ public class MicroProfileJwtConfigImpl implements MicroProfileJwtConfig {
         if (tc.isDebugEnabled()) {
             Tr.exit(tc, methodName);
         }
-    }
-
-    void checkSignatureAlgorithmAgainstAllowedList() {
-        if (Constants.SIGNATURE_FROM_HEADER.equals(signatureAlgorithm)) {
-            return;
-        }
-        if (Arrays.asList(allowedSignatureAlgorithms).contains(signatureAlgorithm)) {
-            return;
-        }
-        Tr.error(tc, "MPJWT_SIGNATURE_ALGORITHM_NOT_IN_ALLOWED_LIST",
-                new Object[] { uniqueId, signatureAlgorithm, Arrays.toString(allowedSignatureAlgorithms) });
     }
 
     void loadConfigValuesForHigherVersions(ComponentContext cc, Map<String, Object> props) {

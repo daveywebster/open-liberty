@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016, 2022 IBM Corporation and others.
+ * Copyright (c) 2016, 2026 IBM Corporation and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License 2.0
  * which accompanies this distribution, and is available at
@@ -122,6 +122,11 @@ public class JwtConsumerConfigImpl implements JwtConsumerConfig {
         audiences = JwtUtils.trimIt((String[]) props.get(JwtUtils.CFG_KEY_AUDIENCES));
         sigAlg = JwtConfigUtil.getSignatureAlgorithm(getId(), props, JwtUtils.CFG_KEY_SIGNATURE_ALGORITHM);
         allowedSignatureAlgorithms = JwtUtils.trimIt((String[]) props.get(JwtUtils.CFG_KEY_ALLOWED_SIGNATURE_ALGORITHMS)).toArray(new String[0]);
+        if (!Constants.SIGNATURE_FROM_HEADER.equals(sigAlg)) {
+            if (tc.isDebugEnabled()) {
+                Tr.debug(tc, "The 'allowedSignatureAlgorithms' list " + Arrays.toString(allowedSignatureAlgorithms) + " will be ignored because a specific signature algorithm has been explicitly set. " + "Verification will proceed using only: " + sigAlg);
+            }
+        }
         trustStoreRef = JwtUtils.trimIt((String) props.get(JwtUtils.CFG_KEY_TRUSTSTORE_REF));
         trustedAlias = JwtUtils.trimIt((String) props.get(JwtUtils.CFG_KEY_TRUSTED_ALIAS));
         clockSkewMilliSeconds = (Long) props.get(JwtUtils.CFG_KEY_CLOCK_SKEW);
@@ -138,18 +143,6 @@ public class JwtConsumerConfigImpl implements JwtConsumerConfig {
         jwkSet = null; // the jwkEndpoint may have been changed during dynamic
                        // update
 
-        checkSignatureAlgorithmAgainstAllowedList();
-    }
-
-    void checkSignatureAlgorithmAgainstAllowedList() {
-        if (Constants.SIGNATURE_FROM_HEADER.equals(sigAlg)) {
-            return;
-        }
-        if (Arrays.asList(allowedSignatureAlgorithms).contains(sigAlg)) {
-            return;
-        }
-        Tr.error(tc, "JWT_SIGNATURE_ALGORITHM_NOT_IN_ALLOWED_LIST",
-                new Object[] { getId(), sigAlg, Arrays.toString(allowedSignatureAlgorithms) });
     }
 
     @Override

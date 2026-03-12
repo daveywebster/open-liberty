@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016, 2025 IBM Corporation and others.
+ * Copyright (c) 2016, 2026 IBM Corporation and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License 2.0
  * which accompanies this distribution, and is available at
@@ -329,19 +329,19 @@ public class ConsumerUtil {
         if (Constants.SIGNATURE_FROM_HEADER.equals(configuredAlgorithm)) {
             try {
                 trustedAlias = getAlgorithmPrefixedAlias(signatureAlgorithm, trustStoreRef);
+                if (trustedAlias == null){
+                    trustedAlias = config.getTrustedAlias();
+                    if (tc.isDebugEnabled()) {
+                        Tr.debug(tc, "Falling back to using configured trust alias " + trustedAlias + " in truststore: " + trustStoreRef);
+                    }
+                }
             } catch (Exception e) {
                 String msg = Tr.formatMessage(tc, "JWT_ERROR_GETTING_CERT_ENTRIES",
                         new Object[] { trustStoreRef, e.getLocalizedMessage() });
                 throw new KeyStoreException(msg, e);
             }
-        }
-        
-        // If no algorithm-prefixed alias was found, fall back to the configured trustedAlias
-        if (trustedAlias == null) {
+        } else {
             trustedAlias = config.getTrustedAlias();
-            if (tc.isDebugEnabled()) {
-                Tr.debug(tc, "Falling back to using configured trust alias " + trustedAlias + " in truststore: " + trustStoreRef);
-            }
         }
         
         try {

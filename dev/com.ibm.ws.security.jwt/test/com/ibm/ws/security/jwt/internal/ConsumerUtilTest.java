@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2017, 2023 IBM Corporation and others.
+ * Copyright (c) 2017, 2026 IBM Corporation and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License 2.0
  * which accompanies this distribution, and is available at
@@ -2806,8 +2806,7 @@ public class ConsumerUtilTest {
                 consumerUtil.validateAlgorithm(jwtContext, Constants.SIGNATURE_FROM_HEADER, allowedAlgs);
                 fail("Should have thrown InvalidTokenException but did not.");
             } catch (InvalidTokenException e) {
-                validateException(e, MSG_JWT_ALGORITHM_MISMATCH + ".+\\[" + unsupportedAlg + "\\].+\\[" + Constants.SIGNATURE_FROM_HEADER + "\\]");
-            }
+                validateException(e, MSG_JWT_ALGORITHM_MISMATCH + ".+\\[" + unsupportedAlg + "\\].+\\Q" + Arrays.toString(allowedAlgs) + "\\E.*");            }
         } catch (Throwable t) {
             outputMgr.failWithThrowable(testName.getMethodName(), t);
         }

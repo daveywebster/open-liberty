@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016, 2025 IBM Corporation and others.
+ * Copyright (c) 2016, 2026 IBM Corporation and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License 2.0
  * which accompanies this distribution, and is available at
@@ -433,27 +433,22 @@ public class Jose4jUtil {
         if (Constants.SIG_FROM_HEADER.equals(configuredAlgorithm)) {
             try {
                 trustedAlias = getAlgorithmPrefixedAlias(signatureAlgorithm, trustStoreRef, clientConfig);
+                if (trustedAlias == null){
+                    trustedAlias = clientConfig.getTrustedAlias();
+                    if (tc.isDebugEnabled()) {
+                        Tr.debug(tc, "Falling back to using configured trust alias " + trustedAlias + " in truststore: " + trustStoreRef);
+                    }
+                }
             } catch (Exception e) {
                 String msg = Tr.formatMessage(tc, "OIDC_CLIENT_ERROR_GETTING_CERT_ENTRIES",
                         new Object[] { trustStoreRef, e.getLocalizedMessage() });
                 throw new KeyStoreException(msg, e);
             }
-        }
-        
-        // If no algorithm-prefixed alias was found, fall back to the configured trustedAlias
-        if (trustedAlias == null) {
+        } else {
             trustedAlias = clientConfig.getTrustedAlias();
-            if (tc.isDebugEnabled()) {
-                Tr.debug(tc, "Falling back to using configured trust alias " + trustedAlias + " in truststore: " + trustStoreRef);
-            }
         }
 
-        try {
-            return clientConfig.getPublicKey(trustedAlias);
-        } catch (Exception e) {
-            Tr.error(tc, "OIDC_CLIENT_NO_VERIFYING_KEY", new Object[] { signatureAlgorithm, e.getLocalizedMessage() });
-            throw e;
-        }
+        return clientConfig.getPublicKey(trustedAlias);
     }
 
     String getAlgorithmPrefixedAlias(String algorithm, String trustStoreRef, ConvergedClientConfig clientConfig) throws Exception {

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2021, 2025 IBM Corporation and others.
+ * Copyright (c) 2021, 2026 IBM Corporation and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License 2.0
  * which accompanies this distribution, and is available at
@@ -105,8 +105,10 @@ public class Social_SignatureAlgTests extends SocialCommonTest {
 
         String urlPath = sigAlgForSocialClient;
         if (Constants.SIGALG_FROMHEADER.equals(adjustSigAlg(sigAlgForSocialClient)) && allowedSigAlgs != null) {
-            urlPath += (allowedSigAlgs.size() > 1) ? "_AllowingMultiple_" : "_AllowingOnly_";
-            urlPath += String.join("", allowedSigAlgs);
+            // When using FROM_HEADER with a defined allowedSignatureAlgorithms list
+            // We 'box' the algorithm list with underscores and separate them with dashes (e.g., _HS256-HS384_).
+            // This specifies the correct auth filter, removing ambiguity
+            urlPath += "_" + String.join("-", allowedSigAlgs) + "_";
         }
         updatedSocialTestSettings.setProtectedResource(updatedSocialTestSettings.getProtectedResource() + urlPath);
 

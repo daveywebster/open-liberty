@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016, 2018 IBM Corporation and others.
+ * Copyright (c) 2016, 2026 IBM Corporation and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License 2.0
  * which accompanies this distribution, and is available at
@@ -644,7 +644,7 @@ public class SslRefInfoImplTest extends CommonTestClass {
                 PublicKey result = refInfo.getPublicKey();
                 fail("Should have thrown SocialLoginException but did not. Result was [" + result + "].");
             } catch (SocialLoginException e) {
-                verifyException(e, CWWKS5469E_ERROR_LOADING_CERTIFICATE + ".*\\[" + keyAliasName + "\\].*\\[" + trustStoreName + "\\].*" + Pattern.quote(defaultExceptionMsg));
+                verifyException(e, CWWKS5469E_ERROR_LOADING_CERTIFICATE + ".*\\[" + keyAliasName + "\\].*\\[" + keyStoreName + "\\].*" + Pattern.quote(defaultExceptionMsg));
             }
 
             verifyNoLogMessage(outputMgr, MSG_BASE);
