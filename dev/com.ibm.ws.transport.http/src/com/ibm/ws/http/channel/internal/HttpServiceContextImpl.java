@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2004, 2025 IBM Corporation and others.
+ * Copyright (c) 2004, 2026 IBM Corporation and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License 2.0
  * which accompanies this distribution,  and is available at
@@ -112,6 +112,7 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.VoidChannelPromise;
+import io.netty.handler.codec.DecoderResult;
 import io.netty.handler.codec.http.DefaultFullHttpRequest;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
 import io.netty.handler.codec.http.DefaultHttpContent;
@@ -3116,13 +3117,15 @@ public abstract class HttpServiceContextImpl implements HttpServiceContext, FFDC
         this.nettyContext.channel().eventLoop().execute(() -> {
             ChannelFuture promise = handler.encoder().writePushPromise(nettyContext, currentStreamId, nextPromisedStreamId, headers, 0,
                                                                        new VoidChannelPromise(nettyContext.channel(), true));
-                    promise.addListener(future -> {
-                        if (future.isSuccess()){
-                            // Should we process the new request here when we ensure we wrote out a push promise?
-                            // Follow up issue https://github.com/OpenLiberty/open-liberty/issues/31439
-                            nettyContext.pipeline().get(HttpDispatcherHandler.class).channelRead(nettyContext, newRequest);
-                        }
-                    });
+            promise.addListener(future -> {
+                if (!(future.isDone() && future.isSuccess())){
+                    if(future.cause() == null)
+                        newRequest.setDecoderResult(DecoderResult.failure(new IOException("Failed to properly finish writing push promise!")));
+                    else
+                        newRequest.setDecoderResult(DecoderResult.failure(future.cause()));
+                }
+                nettyContext.pipeline().get(HttpDispatcherHandler.class).channelRead(nettyContext, newRequest);
+            });
         });
     }
 
