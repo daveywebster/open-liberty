@@ -17,7 +17,11 @@ import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
 
 import componenttest.custom.junit.runner.AlwaysPassesTest;
+import io.openliberty.security.jakartasec.fat.tests.AppBndRolesTests;
+import io.openliberty.security.jakartasec.fat.tests.AppRolesTests;
 import io.openliberty.security.jakartasec.fat.tests.HAMWithInBuiltTests;
+import io.openliberty.security.jakartasec.fat.tests.InMemoryIdStoreAesEncodedPwdTests;
+import io.openliberty.security.jakartasec.fat.tests.InMemoryIdStoreBadlyEncodedPwdTests;
 import io.openliberty.security.jakartasec.fat.tests.InMemoryIdentityStoreELWarningTest;
 import io.openliberty.security.jakartasec.fat.tests.InMemoryIdentityStoreEnablementTests;
 import io.openliberty.security.jakartasec.fat.tests.InMemoryIdentityStoreTests;
@@ -27,8 +31,6 @@ import io.openliberty.security.jakartasec.fat.tests.MultipleHAMDuplicateTests;
 import io.openliberty.security.jakartasec.fat.tests.MultipleHAMInbuiltQualifiersTests;
 import io.openliberty.security.jakartasec.fat.tests.MultipleHAMInbuiltTests;
 import io.openliberty.security.jakartasec.fat.tests.SingleHAMInbuiltCustomQualifierTests;
-import io.openliberty.security.jakartasec.fat.tests.AppRolesTests;
-import io.openliberty.security.jakartasec.fat.tests.AppBndRolesTests;
 
 @RunWith(Suite.class)
 @SuiteClasses({
@@ -37,14 +39,16 @@ import io.openliberty.security.jakartasec.fat.tests.AppBndRolesTests;
                 MultipleHAMDuplicateTests.class,
                 MultipleHAMInbuiltTests.class,
                 MultipleHAMInbuiltQualifiersTests.class,
-                InMemoryIdentityStoreTests.class,
                 HAMWithInBuiltTests.class,
                 SingleHAMInbuiltCustomQualifierTests.class,
                 MissingCustomHandlerTests.class,
+                InMemoryIdentityStoreTests.class,
                 InMemoryIdentityStoreELWarningTest.class,
                 InMemoryIdentityStoreEnablementTests.class,
                 AppRolesTests.class,
-                AppBndRolesTests.class
+                AppBndRolesTests.class,
+                InMemoryIdStoreBadlyEncodedPwdTests.class,
+                InMemoryIdStoreAesEncodedPwdTests.class
 })
 public class FATSuite {
 }
