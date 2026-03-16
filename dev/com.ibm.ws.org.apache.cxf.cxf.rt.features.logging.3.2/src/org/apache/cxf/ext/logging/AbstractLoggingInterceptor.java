@@ -56,6 +56,39 @@ public abstract class AbstractLoggingInterceptor extends AbstractPhaseIntercepto
 
     protected Set<String> sensitiveProtocolHeaderNames = new HashSet();
 
+    // Liberty change begin
+    // from LibertyApplicationBusFactory disableLogging is set to false always
+    // from LibertyServiceImpl disableLogging toggles true and false depending on
+    // trace enablement and EnableLoggingInOutInterceptor configuration settings 
+    private static Boolean disableLogging = false;
+
+    /**
+     * @return the disableLogging
+     */
+    public static Boolean getDisableLogging() {
+        return disableLogging;
+    } 
+    
+    /**
+     * @return the enableLoggingInOutInterceptor property value from endpoint info 
+     */
+    private static boolean isEndpointEnableLoggingInOutInterceptorTrue(Message message) {
+        if (null != message.getExchange().getEndpoint()) {
+            if (null != message.getExchange().getEndpoint().getEndpointInfo()) {
+                Object prop = message.getExchange().getEndpoint().getEndpointInfo().getProperties().get("enableLoggingInOutInterceptor");
+                return PropertyUtils.isTrue(prop);
+            }
+        }
+        return false;
+    }
+
+    /**
+     * @param disableLogging the disableLogging to set
+     */
+    public static void setDisableLogging(Boolean disable) {
+        disableLogging = disable;
+    } // Liberty change end
+    
     public AbstractLoggingInterceptor(String phase, LogEventSender sender) {
         super(phase);
         this.sender = sender;
@@ -63,7 +96,13 @@ public abstract class AbstractLoggingInterceptor extends AbstractPhaseIntercepto
 
     protected static boolean isLoggingDisabledNow(Message message) throws Fault {
         Object liveLoggingProp = message.getContextualProperty(LIVE_LOGGING_PROP);
-        return liveLoggingProp != null && PropertyUtils.isFalse(liveLoggingProp);
+        // Liberty change begin 
+        boolean isLiveLoggingFalse = liveLoggingProp != null && PropertyUtils.isFalse(liveLoggingProp);
+        if(isLiveLoggingFalse || (getDisableLogging() && !isEndpointEnableLoggingInOutInterceptorTrue(message)))    {
+            return true;
+        }
+        return false;
+     // Liberty change end
     }
 
     public void addBinaryContentMediaTypes(String mediaTypes) {
