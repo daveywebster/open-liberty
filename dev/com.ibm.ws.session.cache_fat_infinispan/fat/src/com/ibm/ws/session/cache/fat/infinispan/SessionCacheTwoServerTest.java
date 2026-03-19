@@ -142,9 +142,28 @@ public class SessionCacheTwoServerTest extends FATServletClient {
         List<String> session = new ArrayList<>();
         appA.sessionPut("testFailover-1", "foo", session, true);
         appA.sessionGet("testFailover-1", "foo", session);
+        
+        // Poll for session replication to serverB before stopping serverA (especially important on slower platforms like z/OS)
+        long timeout = System.currentTimeMillis() + 10_000; // 10 second max wait
+        boolean replicated = false;
+        AssertionError lastError = null;
+        while (System.currentTimeMillis() < timeout) {
+            try {
+                appB.sessionGet("testFailover-1", "foo", session);
+                replicated = true;
+                break; // replication succeeded
+            } catch (AssertionError e) {
+                lastError = e;
+                TimeUnit.MILLISECONDS.sleep(500);
+            }
+        }
+        if (!replicated) {
+            throw new AssertionError("Session did not replicate to appB within 10 seconds before failover", lastError);
+        }
+        
         serverA.stopServer();
 
-        // Now verify the cache failed over to Server B
+        // Now verify the cache is still available on Server B after failover
         appB.sessionGet("testFailover-1", "foo", session);
         serverB.stopServer();
 
@@ -251,6 +270,25 @@ public class SessionCacheTwoServerTest extends FATServletClient {
     public void testModifyWithoutPut() throws Exception {
         List<String> session = new ArrayList<>();
         appA.sessionPut("testModifyWithoutPut-key", new StringBuffer("MyValue"), session, true);
+        
+        // Poll for session replication to appB (especially important on slower platforms like z/OS)
+        long timeout = System.currentTimeMillis() + 10_000; // 10 second max wait
+        boolean replicated = false;
+        AssertionError lastError = null;
+        while (System.currentTimeMillis() < timeout) {
+            try {
+                appB.sessionGet("testModifyWithoutPut-key&compareAsString=true", new StringBuffer("MyValue"), session);
+                replicated = true;
+                break; // replication succeeded
+            } catch (AssertionError e) {
+                lastError = e;
+                TimeUnit.MILLISECONDS.sleep(500);
+            }
+        }
+        if (!replicated) {
+            throw new AssertionError("Session attribute did not replicate to appB within 10 seconds", lastError);
+        }
+        
         try {
             appB.invokeServlet("testStringBufferAppendWithoutSetAttribute&key=testModifyWithoutPut-key", session);
             // appA should not see the update because it does not get written to the persistent store without a putAttribute per writeContents=ONLY_SET_ATTRIBUTES
@@ -340,7 +378,24 @@ public class SessionCacheTwoServerTest extends FATServletClient {
     public void testMaxInactiveInterval() throws Exception {
         List<String> session = new ArrayList<>();
         appA.sessionPut("testMaxInactiveInterval-key", 55901, session, true);
-        appB.sessionGet("testMaxInactiveInterval-key", 55901, session);
+        
+        // Poll for session replication to appB (especially important on slower platforms like z/OS)
+        long timeout = System.currentTimeMillis() + 10_000; // 10 second max wait
+        boolean replicated = false;
+        AssertionError lastError = null;
+        while (System.currentTimeMillis() < timeout) {
+            try {
+                appB.sessionGet("testMaxInactiveInterval-key", 55901, session);
+                replicated = true;
+                break; // replication succeeded
+            } catch (AssertionError e) {
+                lastError = e;
+                TimeUnit.MILLISECONDS.sleep(500);
+            }
+        }
+        if (!replicated) {
+            throw new AssertionError("Session did not replicate to appB within 10 seconds", lastError);
+        }
         appA.invokeServlet("setMaxInactiveInterval", session); //set max inactive interval to 1 second
 
         for (int attempt = 0; attempt < 5; attempt++) {
