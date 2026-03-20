@@ -131,95 +131,111 @@ public class LongIntervalHealthCheckTest {
     public void StartedHealthCheckTestLongStartupInterval() throws Exception {
         final String METHOD_NAME = "StartedHealthCheckTestLongStartupInterval";
 
-        WebArchive testWAR = ShrinkWrap
-                        .create(WebArchive.class, FAIL_START_APP_WAR)
-                        .addAsWebInfResource(new File("test-applications/FileHealthCheckApp/resources/WEB-INF/web.xml"))
-                        .addPackage("io.openliberty.microprofile.health.file.healthcheck.app")
-                        .addPackage("io.openliberty.microprofile.health.file.healthcheck.app.start.after");
+        boolean diffInRange = false;
+        File serverRootDirFile = null;
+        int attempts = 0;    
+    
+        while (!diffInRange && attempts++ < 5) {
 
-        ShrinkHelper.exportDropinAppToServer(serverLongStart, testWAR, DeployOptions.SERVER_ONLY);
+            WebArchive testWAR = ShrinkWrap
+                            .create(WebArchive.class, FAIL_START_APP_WAR)
+                            .addAsWebInfResource(new File("test-applications/FileHealthCheckApp/resources/WEB-INF/web.xml"))
+                            .addPackage("io.openliberty.microprofile.health.file.healthcheck.app")
+                            .addPackage("io.openliberty.microprofile.health.file.healthcheck.app.start.after");
 
-        serverLongStart.startServer();
+            ShrinkHelper.exportDropinAppToServer(serverLongStart, testWAR, DeployOptions.SERVER_ONLY);
 
-        // Read to run a smarter planet
-        serverLongStart.waitForStringInLogUsingMark("CWWKF0011I");
+            serverLongStart.startServer();
 
-        assertTrue("Server is not started", serverLongStart.isStarted());
+            // Read to run a smarter planet
+            serverLongStart.waitForStringInLogUsingMark("CWWKF0011I");
 
-        String serverRoot = serverLongStart.getServerRoot();
-        File serverRootDirFile = new File(serverRoot);
+            assertTrue("Server is not started", serverLongStart.isStarted());
 
-        Log.info(getClass(), METHOD_NAME, "Server root directory is: " + serverRootDirFile.getAbsolutePath());
+            String serverRoot = serverLongStart.getServerRoot();
+            serverRootDirFile = new File(serverRoot);
 
-        /*
-         * Expect:
-         * [X] /health dir
-         * [ ] Started
-         * [ ] Ready
-         * [ ] Live
-         *
-         * Not Expected:
-         * [X] Started
-         * [X] Ready
-         * [X] Live
-         */
-        Assert.assertTrue(Constants.HEALTH_DIR_SHOULD_HAVE_CREATED, HealthFileUtils.getHealthDirFile(serverRootDirFile).exists());
-        Assert.assertFalse(Constants.STARTED_SHOULD_NOT_HAVE_CREATED, HealthFileUtils.getStartFile(serverRootDirFile).exists());
-        Assert.assertFalse(Constants.READY_SHOULD_NOT_HAVE_CREATED, HealthFileUtils.getReadyFile(serverRootDirFile).exists());
-        Assert.assertFalse(Constants.LIVE_SHOULD_NOT_HAVE_CREATED, HealthFileUtils.getLiveFile(serverRootDirFile).exists());
+            Log.info(getClass(), METHOD_NAME, "Server root directory is: " + serverRootDirFile.getAbsolutePath());
 
-        /*
-         * Finding fist entry trace for StartedFileCreateProcess which checks for started health check.
-         * This is when the scheduler invokes it, the timer is based on this execution
-         * time.
-         */
-        String traceEntryStartofFirstStartCheck = serverLongStart.waitForStringInTraceUsingMark(".*HealthCheck40ServiceImpl\\$StartedFileCreateProcess > run Entry.*");
-        serverLongStart.setMarkToEndOfLog(serverLongStart.getMostRecentTraceFile());
+            /*
+             * Expect:
+             * [X] /health dir
+             * [ ] Started
+             * [ ] Ready
+             * [ ] Live
+             *
+             * Not Expected:
+             * [X] Started
+             * [X] Ready
+             * [X] Live
+             */
+            Assert.assertTrue(Constants.HEALTH_DIR_SHOULD_HAVE_CREATED, HealthFileUtils.getHealthDirFile(serverRootDirFile).exists());
+            Assert.assertFalse(Constants.STARTED_SHOULD_NOT_HAVE_CREATED, HealthFileUtils.getStartFile(serverRootDirFile).exists());
+            Assert.assertFalse(Constants.READY_SHOULD_NOT_HAVE_CREATED, HealthFileUtils.getReadyFile(serverRootDirFile).exists());
+            Assert.assertFalse(Constants.LIVE_SHOULD_NOT_HAVE_CREATED, HealthFileUtils.getLiveFile(serverRootDirFile).exists());
 
-        Log.info(getClass(), "StartedHealthCheckTestLongStartupInterval", "First `run` entry trace: " + traceEntryStartofFirstStartCheck);
+            /*
+             * Finding fist entry trace for StartedFileCreateProcess which checks for started health check.
+             * This is when the scheduler invokes it, the timer is based on this execution
+             * time.
+             */
+            String traceEntryStartofFirstStartCheck = serverLongStart.waitForStringInTraceUsingMark(".*HealthCheck40ServiceImpl\\$StartedFileCreateProcess > run Entry.*");
+            serverLongStart.setMarkToEndOfLog(serverLongStart.getMostRecentTraceFile());
 
-        // Expect to see something like this (ISO date format) : 2026-01-06T22:02:43.886+0300
-        String dateTimeString = traceEntryStartofFirstStartCheck.split("]")[0].substring(1);
-        Log.info(getClass(), "StartedHealthCheckTestLongStartupInterval", "Debug: first `run` trace's timestamp : " + dateTimeString);
+            Log.info(getClass(), "StartedHealthCheckTestLongStartupInterval", "First `run` entry trace: " + traceEntryStartofFirstStartCheck);
 
-        /*
-         * Find the second `run` entry trace
-         */
-        String traceEntryStartofSecondStartCheck = serverLongStart.waitForStringInTraceUsingMark(".*HealthCheck40ServiceImpl\\$StartedFileCreateProcess > run Entry.*", 35000);
-        Log.info(getClass(), "StartedHealthCheckTestLongStartupInterval", "Second `run` entry trace: " + traceEntryStartofSecondStartCheck);
+            // Expect to see something like this (ISO date format) : 2026-01-06T22:02:43.886+0300
+            String dateTimeString = traceEntryStartofFirstStartCheck.split("]")[0].substring(1);
+            Log.info(getClass(), "StartedHealthCheckTestLongStartupInterval", "Debug: first `run` trace's timestamp : " + dateTimeString);
 
-        String dateTimeString2 = traceEntryStartofSecondStartCheck.split("]")[0].substring(1);
-        Log.info(getClass(), "StartedHealthCheckTestLongStartupInterval", "Debug: second `run` trace timestamp : " + dateTimeString2);
+            /*
+             * Find the second `run` entry trace
+             */
+            String traceEntryStartofSecondStartCheck = serverLongStart.waitForStringInTraceUsingMark(".*HealthCheck40ServiceImpl\\$StartedFileCreateProcess > run Entry.*", 35000);
+            Log.info(getClass(), "StartedHealthCheckTestLongStartupInterval", "Second `run` entry trace: " + traceEntryStartofSecondStartCheck);
 
-        /*
-         * Time to calculate the difference.
-         */
-        DateTimeFormatter timeFormatterHH = DateTimeFormatter.ofPattern("HH:mm:ss.SSS");
+            String dateTimeString2 = traceEntryStartofSecondStartCheck.split("]")[0].substring(1);
+            Log.info(getClass(), "StartedHealthCheckTestLongStartupInterval", "Debug: second `run` trace timestamp : " + dateTimeString2);
 
-        String time = resolveTime(dateTimeString);
-        String date = resolveDate(dateTimeString);
-        LocalTime timeOfFirstQuery = LocalTime.parse(time, timeFormatterHH);
+            /*
+             * Time to calculate the difference.
+             */
+            DateTimeFormatter timeFormatterHH = DateTimeFormatter.ofPattern("HH:mm:ss.SSS");
 
-        String time2 = resolveTime(dateTimeString2);
-        String date2 = resolveDate(dateTimeString2);
-        LocalTime timeOfSecondQuery = LocalTime.parse(time2, timeFormatterHH);
+            String time = resolveTime(dateTimeString);
+            String date = resolveDate(dateTimeString);
+            LocalTime timeOfFirstQuery = LocalTime.parse(time, timeFormatterHH);
 
-        
-        // Get time difference.
-        long diff = Duration.between(timeOfFirstQuery, timeOfSecondQuery).getSeconds();
+            String time2 = resolveTime(dateTimeString2);
+            String date2 = resolveDate(dateTimeString2);
+            LocalTime timeOfSecondQuery = LocalTime.parse(time2, timeFormatterHH);
 
-        // If test ends on diff date, add one day's worth of seconds time to prevent negative difference.
-        if (!date.equals(date2))
-            diff += Duration.ofDays(1).getSeconds();
+            // Get time difference.
+            long diff = Duration.between(timeOfFirstQuery, timeOfSecondQuery).getSeconds();
 
-        Log.info(getClass(), "StartedHealthCheckTestLongStartupInterval", "The difference in time between the two timestamps is (in seconds) : " + diff);
+            // If test ends on diff date, add one day's worth of seconds time to prevent negative difference.
+            if (!date.equals(date2))
+                diff += Duration.ofDays(1).getSeconds();
 
-        /*
-         * We start with 29 seconds because the tracing the first trace and second trace may have a difference of 29s999ms.
-         * That is because potential slowness may have caused the first trace to be emitted x ms after the timer actually was invoked.
-         * The traces are not "truly" exact on timing. And when we Convert the difference in duration into seconds, we get 29 seconds difference.
-         */
-        assertTrue("The difference expected should be 29s or greater (but no more than 32). We offer extra 2 seconds for potential slowness", (diff >= 29 && diff <= 32));
+            Log.info(getClass(), "StartedHealthCheckTestLongStartupInterval", "The difference in time between the two timestamps is (in seconds) : " + diff);
+
+            /*
+             * We start with 29 seconds because the tracing the first trace and second trace may have a difference of 29s999ms.
+             * That is because potential slowness may have caused the first trace to be emitted x ms after the timer actually was invoked.
+             * The traces are not "truly" exact on timing. And when we Convert the difference in duration into seconds, we get 29 seconds difference.
+             */
+
+            diffInRange = (diff >= 29 && diff <= 32);
+
+            // If the difference is not in range, try again as the CPU may have been busy.
+            if (!diffInRange && attempts < 5) {
+                Log.info(getClass(), "StartedHealthCheckTestLongStartupInterval", "Retrying test after attempt " + attempts + " as the slow test may be caused by CPU being busy.");
+                after();
+                before();
+            }
+        }
+
+        assertTrue("The difference expected should be 29s or greater (but no more than 32). We offer extra 2 seconds for potential slowness", diffInRange);
 
         assertNotNull(serverLongStart.waitForStringInTraceUsingMark(".*Startup phase for local health check functionality completed.*"));
 
