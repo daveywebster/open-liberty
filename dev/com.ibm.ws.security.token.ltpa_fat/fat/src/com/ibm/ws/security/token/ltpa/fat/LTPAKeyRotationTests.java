@@ -1230,7 +1230,7 @@ public class LTPAKeyRotationTests {
 
         // Successful authentication to simple servlet
         String response2 = flClient1.accessProtectedServletWithAuthorizedCookie(FormLoginClient.PROTECTED_SIMPLE, cookie1);
-        cookie1 = flClient2.getCookieFromLastLogin();
+        cookie1 = flClient1.getCookieFromLastLogin();
         assertNotNull("Expected SSO Cookie is missing.", cookie1);
     }
 
