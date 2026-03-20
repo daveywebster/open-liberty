@@ -118,6 +118,7 @@ import io.netty.handler.codec.http.DefaultFullHttpResponse;
 import io.netty.handler.codec.http.DefaultHttpContent;
 import io.netty.handler.codec.http.DefaultLastHttpContent;
 import io.netty.handler.codec.http.FullHttpRequest;
+import io.netty.handler.codec.http.HttpHeaderValues;
 import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpResponse;
@@ -3006,7 +3007,9 @@ public abstract class HttpServiceContextImpl implements HttpServiceContext, FFDC
             if (!isPartialBody() && !getRequest().getMethod().equals(MethodValues.HEAD.getName())) {
                 msg.setContentLength(GenericUtils.sizeOf(buffers));
             } else if (addedCompressionContentLength || (!msg.isChunkedEncodingSet() && msg.getContentLength() == HttpGenerics.NOT_SET)) {
-                HttpUtil.setTransferEncodingChunked(nettyResponse, true);
+                nettyResponse.headers().set(HttpHeaderKeys.HDR_TRANSFER_ENCODING.getName(), HttpHeaderValues.CHUNKED);
+                nettyResponse.headers().remove(HttpHeaderKeys.HDR_CONTENT_LENGTH.getName());
+
                 if (nettyContext.channel().hasAttr(NettyHttpConstants.CONTENT_LENGTH)) {
                     nettyContext.channel().attr(NettyHttpConstants.CONTENT_LENGTH).set(null);
                 }
@@ -3112,7 +3115,7 @@ public abstract class HttpServiceContextImpl implements HttpServiceContext, FFDC
         DefaultFullHttpRequest newRequest = new DefaultFullHttpRequest(nettyRequest.protocolVersion(), HttpMethod.GET, uri);
         newRequest.headers().set(HttpConversionUtil.ExtensionHeaderNames.STREAM_ID.text(), nextPromisedStreamId);
         newRequest.headers().set(HttpConversionUtil.ExtensionHeaderNames.SCHEME.text(), scheme);
-        HttpUtil.setContentLength(newRequest, 0);
+        newRequest.headers().set(HttpHeaderKeys.HDR_CONTENT_LENGTH.getName(), 0);
 
         this.nettyContext.channel().eventLoop().execute(() -> {
             ChannelFuture promise = handler.encoder().writePushPromise(nettyContext, currentStreamId, nextPromisedStreamId, headers, 0,
@@ -3333,7 +3336,8 @@ public abstract class HttpServiceContextImpl implements HttpServiceContext, FFDC
                 complete = true;
                 getResponse().setContentLength(GenericUtils.sizeOf(buffers));
             } else if (!msg.isChunkedEncodingSet() && msg.getContentLength() == HttpGenerics.NOT_SET) {
-                HttpUtil.setTransferEncodingChunked(nettyResponse, true);
+                nettyResponse.headers().set(HttpHeaderKeys.HDR_TRANSFER_ENCODING.getName(), HttpHeaderValues.CHUNKED);
+                nettyResponse.headers().remove(HttpHeaderKeys.HDR_CONTENT_LENGTH.getName());
             }
 
             if (msg.isBodyExpected()) {
