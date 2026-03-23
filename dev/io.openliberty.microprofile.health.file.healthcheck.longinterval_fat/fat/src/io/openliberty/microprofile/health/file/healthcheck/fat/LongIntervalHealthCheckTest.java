@@ -242,6 +242,8 @@ public class LongIntervalHealthCheckTest {
 
         assertTrue("The difference expected should be 29s or greater (but no more than 32). We offer extra 2 seconds for potential slowness.", diffInRange);
 
+        Log.info(getClass(), METHOD_NAME, "Passed after " + attempts + " attempts.");
+
         assertNotNull(serverLongStart.waitForStringInTraceUsingMark(".*Startup phase for local health check functionality completed.*"));
 
         /*
@@ -405,6 +407,9 @@ public class LongIntervalHealthCheckTest {
         }
 
         assertTrue("Difference between create time and initial modified time is too great for the ready file.", readyCreatedModifiedTimeDiffInRange);
+
+        Log.info(getClass(), METHOD_NAME, "Passed after " + attempts + " attempts.");
+        
         assertTrue("The modified time is out of bounds(ms): " + readyUpdateDiff, readyUpdateDiffInRange); //Allow for 29.5-32 range to allow for quickness or slowness of system.
 
     }
