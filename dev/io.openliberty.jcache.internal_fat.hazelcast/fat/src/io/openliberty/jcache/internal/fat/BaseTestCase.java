@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2022, 2024 IBM Corporation and others.
+ * Copyright (c) 2022, 2026 IBM Corporation and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License 2.0
  * which accompanies this distribution, and is available at
@@ -359,7 +359,7 @@ public abstract class BaseTestCase {
      * @throws Exception If the check failed for some unforeseen reason.
      */
     protected static void assertJwtLoggedOutCookieCacheHit(boolean expectCacheHit, LibertyServer server, String cookie) throws Exception {
-        String hashedCookie = LoggedOutJwtSsoCookieCache.toDigest(cookie);
+        String hashedCookie = LoggedOutCookieCacheHelper.generateTokenHashKey(cookie);
         String encodedCookie = encodeForRegex(hashedCookie);
 
         if (expectCacheHit) {
