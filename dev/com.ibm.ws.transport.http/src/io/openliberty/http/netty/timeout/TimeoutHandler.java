@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2025 IBM Corporation and others.
+ * Copyright (c) 2025, 2026 IBM Corporation and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License 2.0
  * which accompanies this distribution, and is available at
@@ -116,11 +116,11 @@ public class TimeoutHandler extends ChannelDuplexHandler{
         @Override
         public void handlerAdded(ChannelHandlerContext context){
             this.parentContext = context;
-
+    
             if(streamOnly){
                 return;
             }
-
+    
             if(getProtocol(context)==ProtocolName.HTTP2){
                     arm(context, Phase.H2_IDLE);
                 }else{
@@ -144,23 +144,27 @@ public class TimeoutHandler extends ChannelDuplexHandler{
                 super.channelRead(context, message);
                 return;
             }
-
+    
             if(isRequestStart(message)){
                 cancel();
                 clientRequestedKeepAlive = shouldKeepAliveRequest(context, message);
-            }
-
-
-            switch(phase){
-                case TCP_IDLE:
-                    arm(context, Phase.READ);
-                    break;
-                case READ:
-                    resetRead(context);
-                    break;
-                default:
+                // READ timeout when request starts
+                arm(context, Phase.READ);
+            } else if(message instanceof HttpContent && !(message instanceof LastHttpContent)){
+                // Handle intermediate content (not request start) based on current phase
+                switch(phase){
+                    case TCP_IDLE:
+                        // Transition from TCP_IDLE to READ when data arrives
+                        arm(context, Phase.READ);
+                        break;
+                    case READ:
+                        // Do NOT reset read timeout when intermediate content arrives
+                        // This is to match CHFW behavior
+                        break;
+                    default:
                 }
-
+            }
+    
             super.channelRead(context, message);
     
             if(isRequestEnd(message)){
@@ -226,12 +230,6 @@ public class TimeoutHandler extends ChannelDuplexHandler{
         }
     
     
-        private void resetRead(ChannelHandlerContext context){
-            if(phase == Phase.READ){
-                arm(context, Phase.READ);
-            }
-        }
-    
         private void armPersistIfNeeded(ChannelHandlerContext context){
             if(getProtocol(context) != ProtocolName.WEBSOCKET){
                 arm(context, Phase.PERSIST);
@@ -249,29 +247,26 @@ public class TimeoutHandler extends ChannelDuplexHandler{
         private void onTimeout(ChannelHandlerContext context){
             switch (phase) {
                 case TCP_IDLE:
-                    
                 case READ:
                     if (firstRequest && !readRetried) {
                         readRetried = true;
                         arm(context, Phase.READ);
                         return;
                     }
-                    if(firstRequest){
-                        if (TraceComponent.isAnyTracingEnabled() && tc.isDebugEnabled()) {
-                            Tr.debug(tc, "The connection closed due to idle timeout");
-                        }
-                        context.close();
-                    }else{
-                        context.fireExceptionCaught(new ReadTimeoutException(readTimeout, LEGACY_UNIT));
+                    if (TraceComponent.isAnyTracingEnabled() && tc.isDebugEnabled()) {
+                        Tr.debug(tc, "The connection closed due to idle timeout");
                     }
+                    context.fireExceptionCaught(new ReadTimeoutException(readTimeout / 1000, TimeUnit.SECONDS,
+                        context.channel().localAddress(), context.channel().remoteAddress()));
                     break;
                     
                 case PERSIST:
-                    context.fireExceptionCaught(new PersistTimeoutException(persistTimeout, LEGACY_UNIT));
-                    //context.close();
+                    context.fireExceptionCaught(new PersistTimeoutException(persistTimeout / 1000, TimeUnit.SECONDS,
+                        context.channel().localAddress(), context.channel().remoteAddress()));
                     break;
                 case H2_IDLE:
-                    context.fireExceptionCaught(new H2IdleTimeoutException(h2InactivityTimeout, LEGACY_UNIT));
+                    context.fireExceptionCaught(new H2IdleTimeoutException(h2InactivityTimeout / 1000, TimeUnit.SECONDS,
+                        context.channel().localAddress(), context.channel().remoteAddress()));
                     break;
                 default:
             }
@@ -282,6 +277,9 @@ public class TimeoutHandler extends ChannelDuplexHandler{
         }
     
         private static boolean isRequestEnd(Object message){
+            if(message instanceof FullHttpRequest){
+                return true;
+            }
             if(message instanceof HttpRequest){
                 HttpRequest req = (HttpRequest) message;
                 boolean hasBody = HttpUtil.isTransferEncodingChunked(req) || HttpUtil.isContentLengthSet(req);

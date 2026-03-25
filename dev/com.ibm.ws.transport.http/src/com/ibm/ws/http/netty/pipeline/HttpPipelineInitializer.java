@@ -246,6 +246,12 @@ public class HttpPipelineInitializer extends ChannelInitializerWrapper {
 
                 pipeline.addBefore("transportHandler", HTTP_KEEP_ALIVE_HANDLER_NAME, new HttpServerKeepAliveHandler());
                 ctx.channel().attr(NettyHttpConstants.PROTOCOL).set(ProtocolName.HTTP1.name());
+                
+                // Add TimeoutHandler before the aggregator
+                if (pipeline.get(TimeoutHandler.class) == null) {
+                    pipeline.addAfter(HTTP_KEEP_ALIVE_HANDLER_NAME, TimeoutHandler.NAME, new TimeoutHandler(httpConfig));
+                }
+                
                 //TODO: this is a very large number (under https://github.com/OpenLiberty/open-liberty/issues/33114)
                 pipeline.addAfter(HTTP_KEEP_ALIVE_HANDLER_NAME, HTTP_AGGREGATOR_HANDLER_NAME,
                                   new LibertyHttpObjectAggregator(httpConfig.getMessageSizeLimit() == -1 ? maxContentLength : httpConfig.getMessageSizeLimit(), httpConfig));
@@ -288,17 +294,25 @@ public class HttpPipelineInitializer extends ChannelInitializerWrapper {
 
         if (!isHttp2) {
             pipeline.addAfter(NETTY_HTTP_SERVER_CODEC, HTTP_KEEP_ALIVE_HANDLER_NAME, new HttpServerKeepAliveHandler());
+            
+            // Add TimeoutHandler before the aggregator
+            if (pipeline.get(TimeoutHandler.class) == null) {
+                pipeline.addAfter(HTTP_KEEP_ALIVE_HANDLER_NAME, TimeoutHandler.NAME, new TimeoutHandler(httpConfig));
+            }
+            
             //TODO: this is a very large number (under https://github.com/OpenLiberty/open-liberty/issues/33114)
             pipeline.addAfter(HTTP_KEEP_ALIVE_HANDLER_NAME, HTTP_AGGREGATOR_HANDLER_NAME,
                               new LibertyHttpObjectAggregator(httpConfig.getMessageSizeLimit() == -1 ? maxContentLength : httpConfig.getMessageSizeLimit(), httpConfig));
             pipeline.addAfter(HTTP_AGGREGATOR_HANDLER_NAME, HTTP_REQUEST_HANDLER_NAME, new LibertyHttpRequestHandler(httpConfig));
             
+        } else {
+            // For HTTP/2, add TimeoutHandler before dispatcher
+            if (pipeline.get(TimeoutHandler.class) == null) {
+                pipeline.addBefore(HttpDispatcherHandler.NAME, TimeoutHandler.NAME, new TimeoutHandler(httpConfig));
+            }
         }
         pipeline.addBefore(HttpDispatcherHandler.NAME,"transportHandler", TransportHandler.INSTANCE);
 
-        if (pipeline.get(TimeoutHandler.class) == null) {
-            pipeline.addBefore(HttpDispatcherHandler.NAME, TimeoutHandler.NAME, new TimeoutHandler(httpConfig));
-        }
         if (httpConfig.useForwardingHeaders()) {
             pipeline.addBefore(HttpDispatcherHandler.NAME, RemoteIpHandler.NAME, new RemoteIpHandler(httpConfig));
         }
