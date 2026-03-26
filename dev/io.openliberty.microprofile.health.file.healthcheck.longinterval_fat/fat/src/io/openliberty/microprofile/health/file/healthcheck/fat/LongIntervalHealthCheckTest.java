@@ -138,6 +138,8 @@ public class LongIntervalHealthCheckTest {
 
         while (!diffInRange && attempts++ < MAX_ATTEMPTS) {
 
+            Log.info(getClass(), METHOD_NAME, "Attempt: " + attempts);
+
             // If the difference is not in range, try again as the CPU may have been busy, so restart/cleanup the servers.
             if (attempts > 1) {
                 after();
@@ -308,6 +310,8 @@ public class LongIntervalHealthCheckTest {
         int attempts = 0;
 
         while ((!readyCreatedModifiedTimeDiffInRange || !readyUpdateDiffInRange) && attempts++ < MAX_ATTEMPTS) {
+
+            Log.info(getClass(), METHOD_NAME, "Attempt: " + attempts);
 
             // If the difference is not in range, try again as the CPU may have been busy, so restart/cleanup the servers.
             if (attempts > 1) {
