@@ -479,7 +479,7 @@ public class RepositoryImpl<R> implements InvocationHandler {
                                '.' + method.getName(),
                      provider.loggable(repositoryInterface, method, args));
 
-        EntityInfo entityInfo = null;
+        QueryInfo queryInfo = null;
 
         try {
             if (isDisposed.get())
@@ -530,8 +530,7 @@ public class RepositoryImpl<R> implements InvocationHandler {
             boolean startedTransaction = false;
 
             try {
-                QueryInfo queryInfo = queryInfoFuture.join();
-                entityInfo = queryInfo.entityInfo;
+                queryInfo = queryInfoFuture.join();
 
                 if (trace && tc.isDebugEnabled())
                     Tr.debug(this, tc, queryInfo.toString());
@@ -540,7 +539,7 @@ public class RepositoryImpl<R> implements InvocationHandler {
                     validator.validateParameters(proxy, method, args);
 
                 int txStatus = provider.tranMgr.getStatus();
-                if ((queryType = queryInfo.type).requiresTransaction &&
+                if ((queryType = queryInfo.type).autoStartTransaction &&
                     txStatus == Status.STATUS_NO_TRANSACTION) {
                     suspendedLTC = provider.localTranCurrent.suspend();
                     provider.tranMgr.begin();
@@ -553,7 +552,7 @@ public class RepositoryImpl<R> implements InvocationHandler {
                 }
 
                 if (queryType != RESOURCE_ACCESS)
-                    em = entityInfo.builder.createEntityManager();
+                    em = queryInfo.entityInfo.builder.createEntityManager();
 
                 returnValue = switch (queryType) {
                     case FIND, FIND_AND_DELETE -> queryInfo.find(em, txStatus, args);
@@ -566,6 +565,7 @@ public class RepositoryImpl<R> implements InvocationHandler {
                     case LC_UPDATE -> queryInfo.update(args[0], em);
                     case LC_UPDATE_MERGE -> queryInfo.findAndUpdate(args[0], em);
                     case RESOURCE_ACCESS -> getResource(method);
+                    default -> throw new UnsupportedOperationException(queryType.operationName);
                 };
 
                 if (queryInfo.validateResult)
@@ -588,25 +588,26 @@ public class RepositoryImpl<R> implements InvocationHandler {
                             provider.tranMgr.commit();
                         }
                     } else {
+                        boolean detach;
+                        detach = em != null &&
+                                 queryType.detachEntities(queryInfo.producer.stateful());
                         if (Status.STATUS_ACTIVE == provider.tranMgr.getStatus()) {
                             if (failed) {
                                 if (trace && tc.isDebugEnabled())
                                     Tr.debug(this, tc, "set rollback only");
                                 provider.tranMgr.setRollbackOnly();
-                            } else if (em != null && queryType.detachEntities) {
+                            } else if (detach) {
                                 // flush changes first because detach interferes with updates
                                 if (trace && tc.isDebugEnabled())
                                     Tr.debug(this, tc, "flush");
                                 em.flush();
-                                // TODO 1.1 only detach if a stateless repository
-                                if (entityInfo != null) {
+                                if (queryInfo.entityInfo != null) {
                                     if (trace && tc.isDebugEnabled())
                                         Tr.debug(this, tc, "clear");
                                     em.clear();
                                 }
                             }
-                        } else if (em != null && queryType.detachEntities) {
-                            // TODO 1.1 only detach if a stateless repository
+                        } else if (detach) {
                             if (trace && tc.isDebugEnabled())
                                 Tr.debug(this, tc, "clear");
                             em.clear();
@@ -637,7 +638,10 @@ public class RepositoryImpl<R> implements InvocationHandler {
             return returnValue;
         } catch (Throwable x) {
             if (!isDefaultMethod && x instanceof Exception)
-                x = failure((Exception) x, entityInfo == null ? null : entityInfo.builder);
+                x = failure((Exception) x,
+                            queryInfo == null || queryInfo.entityInfo == null //
+                                            ? null //
+                                            : queryInfo.entityInfo.builder);
             if (trace && tc.isEntryEnabled())
                 Tr.exit(this, tc, "invoke " + repositoryInterface.getSimpleName() +
                                   '.' + method.getName(),
