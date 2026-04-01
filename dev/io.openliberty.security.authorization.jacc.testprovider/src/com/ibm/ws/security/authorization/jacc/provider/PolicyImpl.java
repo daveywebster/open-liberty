@@ -28,6 +28,7 @@ import jakarta.security.jacc.Policy;
 import jakarta.security.jacc.PolicyConfiguration;
 import jakarta.security.jacc.PolicyConfigurationFactory;
 import jakarta.security.jacc.PolicyContext;
+import jakarta.security.jacc.PolicyContextException;
 import jakarta.security.jacc.PrincipalMapper;
 
 public class PolicyImpl implements Policy {
@@ -42,7 +43,7 @@ public class PolicyImpl implements Policy {
     public boolean implies(Permission p, Subject subject) {
         // If there is no policy configuration, the application doesn't
         // have any security constraints.  In that case return true.
-        PolicyConfiguration pc = PolicyConfigurationFactory.get().getPolicyConfiguration(contextID);
+        PolicyConfiguration pc = getPolicyConfiguration();
         if (pc == null) {
             return true;
         }
@@ -51,7 +52,7 @@ public class PolicyImpl implements Policy {
 
     @Override
     public boolean impliesByRole(Permission p, Subject subject) {
-        Map<String, PermissionCollection> perRolePermissions = PolicyConfigurationFactory.get().getPolicyConfiguration(contextID).getPerRolePermissions();
+        Map<String, PermissionCollection> perRolePermissions = getPolicyConfiguration().getPerRolePermissions();
         if (p instanceof EJBMethodPermission) {
             List<String> requiredRoleList = getRequiredRoleList(perRolePermissions, p);
             if (requiredRoleList == null || requiredRoleList.size() == 0) {
@@ -94,12 +95,12 @@ public class PolicyImpl implements Policy {
 
     @Override
     public boolean isExcluded(Permission p) {
-        return PolicyConfigurationFactory.get().getPolicyConfiguration(contextID).getExcludedPermissions().implies(p);
+        return getPolicyConfiguration().getExcludedPermissions().implies(p);
     }
 
     @Override
     public boolean isUnchecked(Permission p) {
-        return PolicyConfigurationFactory.get().getPolicyConfiguration(contextID).getUncheckedPermissions().implies(p);
+        return getPolicyConfiguration().getUncheckedPermissions().implies(p);
     }
 
     @Override
@@ -109,5 +110,11 @@ public class PolicyImpl implements Policy {
     @Override
     public PermissionCollection getPermissionCollection(Subject subject) {
         throw new UnsupportedOperationException();
+    }
+
+    private PolicyConfiguration getPolicyConfiguration() {
+        PolicyConfigurationFactory factory = PolicyConfigurationFactory.get();
+        
+        return contextID == null ? factory.getPolicyConfiguration() : factory.getPolicyConfiguration(contextID);
     }
 }
