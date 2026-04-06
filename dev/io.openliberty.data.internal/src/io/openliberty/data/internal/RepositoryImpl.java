@@ -15,12 +15,14 @@ package io.openliberty.data.internal;
 import static io.openliberty.data.internal.QueryType.RESOURCE_ACCESS;
 import static io.openliberty.data.internal.cdi.DataExtension.exc;
 
+import java.io.PrintWriter;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.SQLIntegrityConstraintViolationException;
 import java.sql.SQLSyntaxErrorException;
+import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.HashMap;
@@ -377,6 +379,42 @@ public class RepositoryImpl<R> implements InvocationHandler {
     }
 
     /**
+     * Obtains a shared EntityManager instance if running in a transaction
+     * and the repository is stateful. Otherwise create a new instance.
+     *
+     * @param stateful indicates a stateful repository.
+     * @return EntityManager and indicator of whether the EntityManager will be
+     *         automatically closed by the current transaction.
+     * @throws Exception if an error occurs.
+     */
+    private SimpleEntry<EntityManager, Boolean> getEntityManager(boolean stateful) //
+                    throws Exception {
+        boolean autoClosedByTx;
+        EntityManager em;
+
+        if (stateful) {
+            Transaction tx = provider.tranMgr.getTransaction();
+            if (tx == null) {
+                autoClosedByTx = false;
+                em = builder.createEntityManager();
+            } else {
+                autoClosedByTx = true;
+                em = entityManagerPerTx.get(tx);
+                if (em == null) {
+                    em = builder.createEntityManager();
+                    tx.registerSynchronization(new EntityManagerCleanup(tx));
+                    entityManagerPerTx.put(tx, em);
+                }
+            }
+        } else {
+            autoClosedByTx = false;
+            em = builder.createEntityManager();
+        }
+
+        return new SimpleEntry<>(em, autoClosedByTx);
+    }
+
+    /**
      * Used during introspection to report errors that occurred when processing
      * repository methods.
      *
@@ -391,37 +429,44 @@ public class RepositoryImpl<R> implements InvocationHandler {
     /**
      * Request an instance of a resource of the specified type.
      *
-     * @param method the repository method.
+     * @param info query information.
      * @return instance of the resource. Never null.
+     * @throws Exception                     if unable to obtain an EntityManager.
      * @throws UnsupportedOperationException if the type of resource is not available.
      */
-    private <T> T getResource(Method method) {
-        Deque<AutoCloseable> resources = defaultMethodResources.get();
+    private <T> T getResource(QueryInfo info) throws Exception {
         Object resource = null;
-        Class<?> type = method.getReturnType();
-        if (EntityManager.class.equals(type))
-            resource = builder.createEntityManager();
-        else if (DataSource.class.equals(type))
-            resource = builder.getDataSource(method, repositoryInterface);
-        else if (Connection.class.equals(type))
+        boolean resourceAutoClosedByTx = false;
+        boolean stateful = info.producer.stateful();
+        Class<?> type = info.method.getReturnType();
+
+        if (EntityManager.class.equals(type)) {
+            SimpleEntry<EntityManager, Boolean> emAutoCloseable = //
+                            getEntityManager(stateful);
+            resource = emAutoCloseable.getKey();
+            resourceAutoClosedByTx = emAutoCloseable.getValue();
+        } else if (DataSource.class.equals(type)) {
+            resource = builder.getDataSource(info.method, repositoryInterface);
+        } else if (Connection.class.equals(type)) {
             try {
-                resource = builder.getDataSource(method, repositoryInterface) //
+                resource = builder.getDataSource(info.method, repositoryInterface) //
                                 .getConnection();
             } catch (SQLException x) {
                 throw new DataConnectionException(x);
             }
+        }
 
         if (resource == null)
             throw exc(UnsupportedOperationException.class,
                       "CWWKD1044.invalid.resource.type",
-                      method.getName(),
+                      info.method.getName(),
                       repositoryInterface.getName(),
                       type.getName(),
-                      List.of(Connection.class.getName(),
-                              DataSource.class.getName(),
-                              EntityManager.class.getName()));
+                      Util.names(provider.compat.resourceAccessorTypes(stateful)));
 
-        if (resource instanceof AutoCloseable) {
+        if (!resourceAutoClosedByTx &&
+            resource instanceof AutoCloseable) {
+            Deque<AutoCloseable> resources = defaultMethodResources.get();
             if (resources == null) {
                 if (TraceComponent.isAnyTracingEnabled() && tc.isDebugEnabled()) {
                     StackTraceElement[] stack = Thread.currentThread().getStackTrace();
@@ -447,6 +492,28 @@ public class RepositoryImpl<R> implements InvocationHandler {
         @SuppressWarnings("unchecked")
         T t = (T) resource;
         return t;
+    }
+
+    /**
+     * Write information about this instance to the introspection file for
+     * Jakarta Data.
+     *
+     * @param writer writes to the introspection file.
+     * @param indent indentation for lines.
+     */
+    @Trivial
+    public void introspect(PrintWriter writer, String indent) {
+
+        writer.println(indent + "RepositoryImpl@" + Integer.toHexString(hashCode()));
+        writer.println(indent + "  builder: " + builder);
+        writer.println(indent + "  isDisposed? " + isDisposed);
+        writer.println(indent + "  primary entity future: " + primaryEntityInfoFuture);
+        writer.println(indent + "  provider: " + provider);
+        writer.println(indent + "  repository: " + repositoryInterface.getName());
+        writer.println(indent + "  validator: " + validator);
+        writer.println(indent + "  stateless entity manager per transaction:");
+        entityManagerPerTx.forEach((tx, em) -> writer //
+                        .println(indent + "    " + tx + " -> " + em));
     }
 
     /**
@@ -534,8 +601,8 @@ public class RepositoryImpl<R> implements InvocationHandler {
                 }
             }
 
-            boolean closeEntityManager = true;
             Object returnValue;
+            boolean emAutoClosedByTx = false;
             boolean failed = true;
             QueryType queryType = null;
             boolean startedTransaction = false;
@@ -567,21 +634,11 @@ public class RepositoryImpl<R> implements InvocationHandler {
                     Tr.debug(this, tc, Util.txStatusToString(txStatus));
                 }
 
-                if (stateful) {
-                    Transaction tx = provider.tranMgr.getTransaction();
-                    if (tx == null) {
-                        em = builder.createEntityManager();
-                    } else {
-                        closeEntityManager = false;
-                        em = entityManagerPerTx.get(tx);
-                        if (em == null) {
-                            em = builder.createEntityManager();
-                            tx.registerSynchronization(new EntityManagerCleanup(tx));
-                            entityManagerPerTx.put(tx, em);
-                        }
-                    }
-                } else if (queryType != RESOURCE_ACCESS) {
-                    em = builder.createEntityManager();
+                if (queryType != RESOURCE_ACCESS) {
+                    SimpleEntry<EntityManager, Boolean> emAutoCloseable = //
+                                    getEntityManager(stateful);
+                    em = emAutoCloseable.getKey();
+                    emAutoClosedByTx = emAutoCloseable.getValue();
                 }
 
                 returnValue = switch (queryType) {
@@ -595,7 +652,7 @@ public class RepositoryImpl<R> implements InvocationHandler {
                     case LC_UPDATE -> queryInfo.update(args[0], em);
                     case LC_UPDATE_MERGE -> queryInfo.findAndUpdate(args[0], em);
                     case DETACH -> queryInfo.detach(args[0], em);
-                    case RESOURCE_ACCESS -> getResource(method); // TODO share em if statefuL?
+                    case RESOURCE_ACCESS -> getResource(queryInfo);
                     default -> throw new UnsupportedOperationException(queryType.operationName);
                 };
 
@@ -649,7 +706,7 @@ public class RepositoryImpl<R> implements InvocationHandler {
                             provider.localTranCurrent.resume(suspendedLTC);
                         }
                     } finally {
-                        if (closeEntityManager && em != null)
+                        if (!emAutoClosedByTx && em != null)
                             em.close();
                     }
                 }
