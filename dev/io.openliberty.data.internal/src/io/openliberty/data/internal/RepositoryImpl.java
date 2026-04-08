@@ -15,12 +15,14 @@ package io.openliberty.data.internal;
 import static io.openliberty.data.internal.QueryType.RESOURCE_ACCESS;
 import static io.openliberty.data.internal.cdi.DataExtension.exc;
 
+import java.io.PrintWriter;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.SQLIntegrityConstraintViolationException;
 import java.sql.SQLSyntaxErrorException;
+import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.HashMap;
@@ -74,6 +76,11 @@ public class RepositoryImpl<R> implements InvocationHandler {
                     new ThreadLocal<>();
 
     /**
+     * Creates EntityManager instances.
+     */
+    private final EntityManagerBuilder builder;
+
+    /**
      * Indicates if the bean for the repository has been disposed.
      */
     private final AtomicBoolean isDisposed = new AtomicBoolean();
@@ -125,6 +132,7 @@ public class RepositoryImpl<R> implements InvocationHandler {
                           Class<R> repositoryInterface,
                           Class<?> primaryEntityClass,
                           Map<Class<?>, List<QueryInfo>> queriesPerEntityClass) {
+        this.builder = builder;
 
         // EntityManagerBuilder implementations guarantee that the future
         // in the following map will be completed even if an error occurs
@@ -280,6 +288,7 @@ public class RepositoryImpl<R> implements InvocationHandler {
      * jakarta.persistence.PersistenceException (and subclasses).
      *
      * @param original exception to possibly replace.
+     * @param emb      entity manager builder.
      * @return exception to replace with, if any. Otherwise, the original.
      */
     @Trivial
@@ -375,39 +384,44 @@ public class RepositoryImpl<R> implements InvocationHandler {
     /**
      * Request an instance of a resource of the specified type.
      *
-     * @param method the repository method.
+     * @param info query information.
      * @return instance of the resource. Never null.
+     * @throws Exception                     if unable to obtain an EntityManager.
      * @throws UnsupportedOperationException if the type of resource is not available.
      */
-    private <T> T getResource(Method method) {
-        Deque<AutoCloseable> resources = defaultMethodResources.get();
+    private <T> T getResource(QueryInfo info) throws Exception {
         Object resource = null;
-        Class<?> type = method.getReturnType();
-        if (EntityManager.class.equals(type))
-            resource = primaryEntityInfoFuture.join().builder.createEntityManager();
-        else if (DataSource.class.equals(type))
-            resource = primaryEntityInfoFuture.join().builder //
-                            .getDataSource(method, repositoryInterface);
-        else if (Connection.class.equals(type))
+        boolean resourceAutoClosedByTx = false;
+        boolean stateful = info.producer.stateful();
+        Class<?> type = info.method.getReturnType();
+
+        if (EntityManager.class.equals(type)) {
+            SimpleEntry<EntityManager, Boolean> emAutoCloseable = //
+                            builder.getEntityManager(stateful);
+            resource = emAutoCloseable.getKey();
+            resourceAutoClosedByTx = emAutoCloseable.getValue();
+        } else if (DataSource.class.equals(type)) {
+            resource = builder.getDataSource(info.method, repositoryInterface);
+        } else if (Connection.class.equals(type)) {
             try {
-                resource = primaryEntityInfoFuture.join().builder //
-                                .getDataSource(method, repositoryInterface) //
+                resource = builder.getDataSource(info.method, repositoryInterface) //
                                 .getConnection();
             } catch (SQLException x) {
                 throw new DataConnectionException(x);
             }
+        }
 
         if (resource == null)
             throw exc(UnsupportedOperationException.class,
                       "CWWKD1044.invalid.resource.type",
-                      method.getName(),
+                      info.method.getName(),
                       repositoryInterface.getName(),
                       type.getName(),
-                      List.of(Connection.class.getName(),
-                              DataSource.class.getName(),
-                              EntityManager.class.getName()));
+                      Util.names(provider.compat.resourceAccessorTypes(stateful)));
 
-        if (resource instanceof AutoCloseable) {
+        if (!resourceAutoClosedByTx &&
+            resource instanceof AutoCloseable) {
+            Deque<AutoCloseable> resources = defaultMethodResources.get();
             if (resources == null) {
                 if (TraceComponent.isAnyTracingEnabled() && tc.isDebugEnabled()) {
                     StackTraceElement[] stack = Thread.currentThread().getStackTrace();
@@ -436,6 +450,25 @@ public class RepositoryImpl<R> implements InvocationHandler {
     }
 
     /**
+     * Write information about this instance to the introspection file for
+     * Jakarta Data.
+     *
+     * @param writer writes to the introspection file.
+     * @param indent indentation for lines.
+     */
+    @Trivial
+    public void introspect(PrintWriter writer, String indent) {
+
+        writer.println(indent + "RepositoryImpl@" + Integer.toHexString(hashCode()));
+        writer.println(indent + "  builder: " + builder);
+        writer.println(indent + "  isDisposed? " + isDisposed);
+        writer.println(indent + "  primary entity future: " + primaryEntityInfoFuture);
+        writer.println(indent + "  provider: " + provider);
+        writer.println(indent + "  repository: " + repositoryInterface.getName());
+        writer.println(indent + "  validator: " + validator);
+    }
+
+    /**
      * Provides the implementation of repository interface methods.
      *
      * @param proxy  instance upon which the method is invoked.
@@ -452,7 +485,6 @@ public class RepositoryImpl<R> implements InvocationHandler {
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
         CompletableFuture<QueryInfo> queryInfoFuture = queries.get(method);
         boolean isDefaultMethod = false;
-        EntityManager em = null;
 
         if (queryInfoFuture == null)
             if (method.isDefault()) {
@@ -479,8 +511,7 @@ public class RepositoryImpl<R> implements InvocationHandler {
                                '.' + method.getName(),
                      provider.loggable(repositoryInterface, method, args));
 
-        EntityInfo entityInfo = null;
-
+        EntityManager em = null;
         try {
             if (isDisposed.get())
                 throw exc(IllegalStateException.class,
@@ -522,38 +553,45 @@ public class RepositoryImpl<R> implements InvocationHandler {
                 }
             }
 
-            LocalTransactionCoordinator suspendedLTC = null;
-
             Object returnValue;
+            boolean emAutoClosedByTx = false;
             boolean failed = true;
             QueryType queryType = null;
             boolean startedTransaction = false;
+            boolean stateful = false;
+            LocalTransactionCoordinator suspendedLTC = null;
 
             try {
                 QueryInfo queryInfo = queryInfoFuture.join();
-                entityInfo = queryInfo.entityInfo;
 
                 if (trace && tc.isDebugEnabled())
                     Tr.debug(this, tc, queryInfo.toString());
+
+                stateful = queryInfo.producer.stateful();
 
                 if (queryInfo.validateParams)
                     validator.validateParameters(proxy, method, args);
 
                 int txStatus = provider.tranMgr.getStatus();
-                if ((queryType = queryInfo.type).requiresTransaction &&
+                if ((queryType = queryInfo.type).autoStartTransaction &&
                     txStatus == Status.STATUS_NO_TRANSACTION) {
                     suspendedLTC = provider.localTranCurrent.suspend();
                     provider.tranMgr.begin();
                     startedTransaction = true;
                     if (trace && tc.isDebugEnabled())
-                        Tr.debug(this, tc, "started global tran",
+                        Tr.debug(this, tc,
+                                 "started global tran",
                                  "suspended LTC: " + suspendedLTC);
                 } else if (trace && tc.isDebugEnabled()) {
                     Tr.debug(this, tc, Util.txStatusToString(txStatus));
                 }
 
-                if (queryType != RESOURCE_ACCESS)
-                    em = entityInfo.builder.createEntityManager();
+                if (queryType != RESOURCE_ACCESS) {
+                    SimpleEntry<EntityManager, Boolean> emAutoCloseable = //
+                                    builder.getEntityManager(stateful);
+                    em = emAutoCloseable.getKey();
+                    emAutoClosedByTx = emAutoCloseable.getValue();
+                }
 
                 returnValue = switch (queryType) {
                     case FIND, FIND_AND_DELETE -> queryInfo.find(em, txStatus, args);
@@ -565,7 +603,10 @@ public class RepositoryImpl<R> implements InvocationHandler {
                     case LC_DELETE -> queryInfo.delete(args[0], em);
                     case LC_UPDATE -> queryInfo.update(args[0], em);
                     case LC_UPDATE_MERGE -> queryInfo.findAndUpdate(args[0], em);
-                    case RESOURCE_ACCESS -> getResource(method);
+                    case DETACH -> queryInfo.detach(args[0], em);
+                    case PERSIST -> queryInfo.persist(args[0], em);
+                    case RESOURCE_ACCESS -> getResource(queryInfo);
+                    default -> throw new UnsupportedOperationException(queryType.operationName);
                 };
 
                 if (queryInfo.validateResult)
@@ -588,25 +629,23 @@ public class RepositoryImpl<R> implements InvocationHandler {
                             provider.tranMgr.commit();
                         }
                     } else {
+                        boolean detach = em != null &&
+                                         queryType.detachEntities(stateful);
                         if (Status.STATUS_ACTIVE == provider.tranMgr.getStatus()) {
                             if (failed) {
                                 if (trace && tc.isDebugEnabled())
                                     Tr.debug(this, tc, "set rollback only");
                                 provider.tranMgr.setRollbackOnly();
-                            } else if (em != null && queryType.detachEntities) {
+                            } else if (detach) {
                                 // flush changes first because detach interferes with updates
                                 if (trace && tc.isDebugEnabled())
                                     Tr.debug(this, tc, "flush");
                                 em.flush();
-                                // TODO 1.1 only detach if a stateless repository
-                                if (entityInfo != null) {
-                                    if (trace && tc.isDebugEnabled())
-                                        Tr.debug(this, tc, "clear");
-                                    em.clear();
-                                }
+                                if (trace && tc.isDebugEnabled())
+                                    Tr.debug(this, tc, "clear");
+                                em.clear();
                             }
-                        } else if (em != null && queryType.detachEntities) {
-                            // TODO 1.1 only detach if a stateless repository
+                        } else if (detach) {
                             if (trace && tc.isDebugEnabled())
                                 Tr.debug(this, tc, "clear");
                             em.clear();
@@ -620,7 +659,7 @@ public class RepositoryImpl<R> implements InvocationHandler {
                             provider.localTranCurrent.resume(suspendedLTC);
                         }
                     } finally {
-                        if (em != null)
+                        if (!emAutoClosedByTx && em != null)
                             em.close();
                     }
                 }
@@ -637,7 +676,7 @@ public class RepositoryImpl<R> implements InvocationHandler {
             return returnValue;
         } catch (Throwable x) {
             if (!isDefaultMethod && x instanceof Exception)
-                x = failure((Exception) x, entityInfo == null ? null : entityInfo.builder);
+                x = failure((Exception) x, builder);
             if (trace && tc.isEntryEnabled())
                 Tr.exit(this, tc, "invoke " + repositoryInterface.getSimpleName() +
                                   '.' + method.getName(),
@@ -645,4 +684,5 @@ public class RepositoryImpl<R> implements InvocationHandler {
             throw x;
         }
     }
+
 }
