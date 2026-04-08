@@ -24,7 +24,8 @@ When available, add links to required feature documents. Use "N/A" to mark parti
   - [Upload the feature UFO to Box](https://ibm.ent.box.com/folder/52716090328) and set the link to be publicly accessible, with a long expiration (10 years)
     - Click "Share" > select "People with link" > click "Link Settings" > under "Link Expiration" select "Disable Shared Link on" > set an expiration date ~10 years into the future
     - If you lack permissions, contact [OpenLiberty/release-architect](https://github.com/orgs/OpenLiberty/teams/release-architect)
-- FTS: Link to Feature Test Summary GH Issue
+- Feature Test Summary (FTS): Link to Feature Test Summary GH Issue
+- Feature Serviceability Summary: Link to Feature Serviceability Summary GH Issue
 - Beta Blog(s): Link to Beta Blog Post GH Issue(s)
 - GA Blog: Link to GA Blog Post GH Issue
 
@@ -145,10 +146,15 @@ That gives the [Chief Architect](https://github.com/orgs/OpenLiberty/teams/chief
 
 See the [WebSphere Dates Monday.com board](https://ibm.monday.com/boards/7779679996) or [Current Liberty Release Schedule](https://github.ibm.com/websphere/WS-CD-Open/wiki/Current-Liberty-Release-Schedule) for relevant dates.
 
-### **FAT Documentation**
+### FAT Documentation
 - [ ] "Feature Test Summary" child task created
   - Use the [Feature Test Summary Template](https://github.com/OpenLiberty/open-liberty/issues/new?assignees=&labels=Feature+Test+Summary&template=06_feature_test_summary.md&title=)
   - Add FTS issue link to the [Documents](#documents) section.
+
+### Serviceability Documentation
+- [ ] "Feature Serviceability Summary" child task created
+  - Use the [Feature Serviceability Summary Template](https://github.com/OpenLiberty/open-liberty/issues/new?assignees=&labels=Feature+Serviceability+Summary&template=07_feature_serviceability_summary.md&title=)
+  - Add issue link to the [Documents](#documents) section.
 
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ## **Implementation**
