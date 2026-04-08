@@ -1025,7 +1025,7 @@ public class H2InboundLink extends HttpInboundLink {
                 Tr.debug(tc, "HttpDispatcherLink found: " + hdLink);
             }
             try {
-                if (!hdLink.awaitFinishComplete(5, TimeUnit.SECONDS)) {
+                if (!hdLink.awaitH2FinishComplete(5, TimeUnit.SECONDS)) {
                     if (TraceComponent.isAnyTracingEnabled() && tc.isDebugEnabled()) {
                         Tr.debug(tc, "closeConnectionLink: timeout waiting for finish() to complete");
                     }

@@ -160,9 +160,9 @@ public class HttpDispatcherLink extends InboundApplicationLink implements HttpIn
 
     private volatile boolean destroyed = false; //New variable to track if the connection objects are destroyed during concurrent operations
     
-    private final AtomicBoolean connectionCountDecremneted = new AtomicBoolean(false); //Dedicated variable to track connection count decrement
+    private final AtomicBoolean connectionCountDecremented = new AtomicBoolean(false); //Dedicated variable to track connection count decrement
 
-    private final AtomicInteger activeFinishOperations = new AtomicInteger(0);
+    private final AtomicInteger activeFinishOperations = new AtomicInteger(0); //Tracks active finish() operations for HTTP/2 connections to prevent race between GOAWAY frame processing calling the close on the connection and request completion calling close concurrently.
     
     private final CountDownLatch finishCompleteLatch = new CountDownLatch(1);
 
@@ -331,7 +331,7 @@ public class HttpDispatcherLink extends InboundApplicationLink implements HttpIn
             if (this.decrementNeeded.compareAndSet(true, false)) {
                 // ^ set back to false in case close is called more than once after destroy is called (highly unlikely)
                 this.myChannel.decrementActiveConns();
-                connectionCountDecremneted.set(true);
+                connectionCountDecremented.set(true);
             }
 
             if (TraceComponent.isAnyTracingEnabled() && tc.isDebugEnabled()) {
@@ -453,7 +453,7 @@ public class HttpDispatcherLink extends InboundApplicationLink implements HttpIn
                     Tr.debug(tc, "close, decrement active connection count");
                 }
                 this.myChannel.decrementActiveConns();
-                connectionCountDecremneted.set(true);
+                connectionCountDecremented.set(true);
             }
             closeCompleted.compareAndSet(false, true);
         }
@@ -673,7 +673,7 @@ public class HttpDispatcherLink extends InboundApplicationLink implements HttpIn
             Tr.debug(tc, "increment active connection count");
         }
 
-        this.connectionCountDecremneted.set(false); // Reset the decrement flag for this new request
+        this.connectionCountDecremented.set(false); // Reset the decrement flag for this new request
 
         this.myChannel.incrementActiveConns();
         init(inVC);
@@ -1403,7 +1403,7 @@ public class HttpDispatcherLink extends InboundApplicationLink implements HttpIn
     @Override
     public void finish(Exception e) {
 
-        //Race check
+        //Race check to prevent finish being called on connection that is already closed concurrently by another thread
         if (destroyed) {
             if (TraceComponent.isAnyTracingEnabled() && tc.isEventEnabled()) {
                 Tr.event(tc, "finish() called on destroyed connection, returning early");
@@ -1411,8 +1411,11 @@ public class HttpDispatcherLink extends InboundApplicationLink implements HttpIn
             close(getVirtualConnection(), e);
             return;
         }
-
-        activeFinishOperations.incrementAndGet();
+        boolean isH2 = (isc != null && isc.isH2Connection());
+        if(isH2){
+            activeFinishOperations.incrementAndGet();
+        }
+        
         final HttpInboundServiceContextImpl finalSc = this.isc;
         Exception error = e;
         boolean doCloseStreams = false;
@@ -1489,8 +1492,10 @@ public class HttpDispatcherLink extends InboundApplicationLink implements HttpIn
                 }
             }
         } finally {
-            if(activeFinishOperations.decrementAndGet() == 0) {
+            if(isH2){
+                if(activeFinishOperations.decrementAndGet() == 0) {
                 finishCompleteLatch.countDown();
+                }
             }
         }
 
@@ -1652,12 +1657,12 @@ public class HttpDispatcherLink extends InboundApplicationLink implements HttpIn
                         Tr.debug(tc, "decrementNeeded was true: decrement active connection");
                     }
                     ic.myChannel.decrementActiveConns();
-                    ic.connectionCountDecremneted.set(true);
+                    ic.connectionCountDecremented.set(true);
                 }
 
-                if (ic.connectionCountDecremneted.compareAndSet(false, true)) {
+                if (ic.connectionCountDecremented.compareAndSet(false, true)) {
                     if (TraceComponent.isAnyTracingEnabled() && tc.isDebugEnabled()) {
-                        Tr.debug(tc, "connectionCountDecremneted was false: decrement active connection");
+                        Tr.debug(tc, "connectionCountDecremented was false: decrement active connection");
                     }
                     ic.myChannel.decrementActiveConns();
                 }
@@ -1872,13 +1877,16 @@ public class HttpDispatcherLink extends InboundApplicationLink implements HttpIn
         return connectionId;
     }
 
-    public boolean awaitFinishComplete(long timeout, TimeUnit unit) {
+    public boolean awaitH2FinishComplete(long timeout, TimeUnit unit) {
         try {
-            return finishCompleteLatch.await(timeout, unit);
+            if (isc != null && isc.isH2Connection()) {
+                return finishCompleteLatch.await(timeout, unit);
+            }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             return false;
         }
+        return true;
     }
 
 
