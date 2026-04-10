@@ -46,13 +46,9 @@ public class H2StreamResultManager {
     private static final String CLASS_NAME = H2StreamResultManager.class.getName();
     private static final Logger LOGGER = Logger.getLogger(CLASS_NAME);
 
-    public H2StreamResultManager() {
+    public H2StreamResultManager(H2Connection h2Connection) {
         this.streamHashtable = new ConcurrentHashMap<Integer, H2StreamResult>();
         this.pushPromiseH2StreamResults = new ConcurrentHashMap<FramePushPromiseClient, H2StreamResult>();
-    }
-
-    public H2StreamResultManager(H2Connection h2Connection) {
-        this();
         this.h2Connection = h2Connection;
 
         if (LOGGER.isLoggable(Level.FINEST))
@@ -83,6 +79,7 @@ public class H2StreamResultManager {
             } else { //it is an expected GoAway, so start finishing test
                 receivedExpectedGoAway = true;
             }
+            h2Connection.goAwayReceived();
         } else if (frame.getFrameType() == FrameTypes.PUSH_PROMISE) {
             //this will update the H2StreamResult to have the right streamID!
             H2StreamResult pushPromisedStreamResults = pushPromiseH2StreamResults.get(frame);

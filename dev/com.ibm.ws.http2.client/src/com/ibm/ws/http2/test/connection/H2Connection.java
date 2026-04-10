@@ -95,6 +95,7 @@ public class H2Connection {
     private boolean serverFirstConnectReceived = false;
     private boolean prefaceSent = false;
     private boolean firstConnectSent = false;
+    private boolean goAwayReceived = false;
 
     private final List<Exception> reportedExceptions = Collections.synchronizedList(new ArrayList<Exception>());
 
@@ -920,5 +921,13 @@ public class H2Connection {
 
     public AtomicBoolean getWaitingForACK() {
         return this.waitingForACK;
+    }
+
+    public void goAwayReceived() {
+        goAwayReceived = true;
+    }
+
+    public boolean receivedGoAway() {
+        return goAwayReceived;
     }
 }
