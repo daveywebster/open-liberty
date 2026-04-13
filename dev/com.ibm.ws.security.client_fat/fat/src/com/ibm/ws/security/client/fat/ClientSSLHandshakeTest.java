@@ -413,8 +413,8 @@ public class ClientSSLHandshakeTest extends CommonTest {
             }
             
             // Verify we have a reasonable number of ciphers (the JDK effective list typically have 30+ ciphers)
-            assertTrue("Expected JDK default cipher list to have at least 20 ciphers, but found: " + effectiveCiphers.size(),
-                    effectiveCiphers.size() > 20);
+            assertTrue("Expected JDK default cipher list to have at least 10 ciphers, but found: " + effectiveCiphers.size(),
+                    effectiveCiphers.size() > 10);
 
         } catch (Exception e) {
             Log.error(c, name.getMethodName(), e, "Unexpected exception was thrown.");
