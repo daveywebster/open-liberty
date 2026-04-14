@@ -81,10 +81,6 @@ public class CustomIdentityStoreHandler implements IdentityStoreHandler {
             // Aggregate groups from all stores that support PROVIDE_GROUPS
             Set<String> allGroups = aggregateGroups(stores, validationResult, supportGroups);
 
-//            // Merge with groups from validation result
-//            Set<String> allGroups = new HashSet<>(validationResult.getCallerGroups());
-//            allGroups.addAll(aggregatedGroups);
-
             log.info(CLASS_NAME + " - Total aggregated groups: " + allGroups);
 
             // Return new result with aggregated groups
@@ -158,8 +154,9 @@ public class CustomIdentityStoreHandler implements IdentityStoreHandler {
      * Aggregate groups from all identity stores that support PROVIDE_GROUPS.
      * This is mainly for stores that might provide additional groups beyond what was returned during validation.
      *
-     * @param callerName The name of the authenticated caller
-     * @param stores     List of all identity stores
+     * @param identityStores List of all identity stores
+     * @param result         The validation result of type CredentialValidationResult
+     * @param supportGroups  boolean
      * @return Set of aggregated groups from all stores
      */
     protected Set<String> aggregateGroups(List<IdentityStore> identityStores, CredentialValidationResult result, boolean supportGroups) {
