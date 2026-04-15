@@ -562,9 +562,8 @@ public class Constants {
      * @param enabledCiphers the enabled cipher string
      * @return the adjusted cipher list
      */
-    @Deprecated
     public static String[] adjustSupportedCiphers(String[] supportedCiphers, String enabledCiphers) {
-        
+
         if (TraceComponent.isAnyTracingEnabled() && tc.isEntryEnabled()) {
             Tr.entry(tc, "adjustSupportedCiphers", new Object[] { convertCipherListToString(supportedCiphers), enabledCiphers });
         }

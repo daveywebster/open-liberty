@@ -56,11 +56,8 @@ public class LibertySSLServerSocketFactoryWrapper extends SSLServerSocketFactory
 
     @Override
     public String[] getSupportedCipherSuites() {
-        
-        String enabledCiphers = props.getProperty(Constants.SSLPROP_ENABLED_CIPHERS);
-        if (tc.isDebugEnabled())
-            Tr.debug(tc, "enabledCiphers from properties is " + enabledCiphers);
-        return Constants.adjustSupportedCiphers(delegate.getSupportedCipherSuites(), enabledCiphers);
+
+        return Constants.adjustSupportedCiphers(delegate.getSupportedCipherSuites(), null);
     
     }
 
