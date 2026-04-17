@@ -153,6 +153,12 @@ public class QueryInfo_1_0 extends QueryInfo {
 
     @Override
     @Trivial
+    protected String getNullOrdering(Sort<?> sort, boolean sameDirection) {
+        return null;
+    }
+
+    @Override
+    @Trivial
     protected String getQueryAnnoValue() {
         return methodTypeAnno instanceof Query query ? query.value() : null;
     }

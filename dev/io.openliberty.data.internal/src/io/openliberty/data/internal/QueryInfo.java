@@ -2970,6 +2970,10 @@ public abstract class QueryInfo {
             if (sort.isAscending())
                 q.append(" DESC");
         }
+
+        String nullOrdering = getNullOrdering(sort, sameDirection);
+        if (nullOrdering != null)
+            q.append(" NULLS ").append(nullOrdering);
     }
 
     /**
@@ -3262,6 +3266,17 @@ public abstract class QueryInfo {
                                (methodAnno == null ? null : methodAnno.annotationType()));
         return methodAnno;
     }
+
+    /**
+     * Returns Sort.nullOrdering as a String if FIRST or LAST, otherwise null.
+     *
+     * @param sort          sort criteria.
+     * @param sameDirection indicates to interpret the Sort in the normal direction.
+     *                          Otherwise reverses it (for cursor pagination in the
+     *                          previous page direction).
+     * @return "FIRST", "LAST", or null.
+     */
+    protected abstract String getNullOrdering(Sort<?> sort, boolean sameDirection);
 
     /**
      * Value (representing a JPQL or JCQL query) from the Query annotation or
