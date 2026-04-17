@@ -427,28 +427,20 @@ public abstract class QueryInfo {
     /**
      * Adds Sort criteria to the end of the tracked list of sort criteria.
      *
-     * @param ignoreCase if ordering is to be independent of case.
-     * @param attribute  name of attribute (@OrderBy value, Sort property,
-     *                       or parsed from OrderBy method name keyword).
-     * @param descending if ordering is to be in descending order
+     * @param orderBy OrderBy annotation from a repository method.
      */
     @Trivial
-    private void addSort(boolean ignoreCase, String attribute, boolean descending) {
+    private void addSort(OrderBy orderBy) {
         if (entityInfo.idClassAttributeAccessors == null ||
-            !ID.equalsIgnoreCase(attribute)) {
-            String name = getAttributeName(attribute, true);
-
-            sorts.add(ignoreCase ? //
-                            descending ? //
-                                            Sort.descIgnoreCase(name) : //
-                                            Sort.ascIgnoreCase(name) : //
-                            descending ? //
-                                            Sort.desc(name) : //
-                                            Sort.asc(name));
+            !ID.equalsIgnoreCase(orderBy.value())) {
+            String expression = getAttributeName(orderBy.value(), true);
+            sorts.add(createSort(expression, orderBy));
         } else {
             // Expand ID(THIS) for composite IdClass into separate attributes
-            for (String name : entityInfo.idClassAttributeAccessors.keySet())
-                addSort(ignoreCase, name, descending);
+            for (String name : entityInfo.idClassAttributeAccessors.keySet()) {
+                name = getAttributeName(name, true);
+                sorts.add(createSort(name, orderBy));
+            }
         }
     }
 
@@ -1113,6 +1105,29 @@ public abstract class QueryInfo {
         setParameters(query, args, deferredConstraints, addedJPQLParams);
         return query;
     }
+
+    /**
+     * Creates a new Sort instance equivalent to the behavior of the given
+     * OrderBy annotation.
+     *
+     * @param expression usually an entity attribute name but might be
+     *                       another type of expression instead.
+     * @param orderBy    annotation found on a repository method.
+     * @return the new Sort instance.
+     */
+    protected abstract <T> Sort<T> createSort(String expression, OrderBy orderBy);
+
+    /**
+     * Creates a new Sort instance with the corresponding entity attribute name
+     * or expression, with all other fields copied from the given Sort instance.
+     *
+     * @param expression usually an entity attribute name but might be
+     *                       another type of expression instead.
+     * @param sort       the Sort from which to copy.
+     * @return an otherwise identical Sort instance, but with the corresponding
+     *         entity attribute name or expression.
+     */
+    protected abstract <T> Sort<T> createSort(String expression, Sort<T> sort);
 
     /**
      * Deletes entities that were found by a find-and-delete operation.
@@ -3259,25 +3274,6 @@ public abstract class QueryInfo {
     protected abstract String getQueryAnnoValue();
 
     /**
-     * Creates a Sort instance with the corresponding entity attribute name
-     * or returns the existing instance if it already matches.
-     *
-     * @param name name provided by the user to sort by.
-     * @param sort the Sort to add.
-     * @return a Sort instance with the corresponding entity attribute name.
-     */
-    @Trivial
-    private <T> Sort<T> getWithAttributeName(String name, Sort<T> sort) {
-        name = getAttributeName(name, true);
-        if (name == sort.property())
-            return sort;
-        else
-            return sort.isAscending() //
-                            ? sort.ignoreCase() ? Sort.ascIgnoreCase(name) : Sort.asc(name) //
-                            : sort.ignoreCase() ? Sort.descIgnoreCase(name) : Sort.desc(name);
-    }
-
-    /**
      * Identifies the repository method type based on life cycle annotations.
      * For example (Insert, Update, Save, Delete, Detach, Merge, ...).
      */
@@ -3443,7 +3439,7 @@ public abstract class QueryInfo {
                     }
 
                 for (int i = 0; i < orderBy.length; i++)
-                    addSort(orderBy[i].ignoreCase(), orderBy[i].value(), orderBy[i].descending());
+                    addSort(orderBy[i]);
 
                 if (sortPositions.length == 0) {
                     sortPositions = NONE_STATIC_SORT_ONLY;
@@ -4516,7 +4512,8 @@ public abstract class QueryInfo {
                 }
             }
 
-            addSort(ignoreCase, attribute, descending);
+            String name = getAttributeName(attribute, true);
+            sorts.add(new Sort<>(name, !descending, ignoreCase));
 
             if (iNext > 0)
                 iNext += (iNext == desc ? 4 : 3);
@@ -5569,15 +5566,21 @@ public abstract class QueryInfo {
             combined = sorts == null ? new ArrayList<>() : new ArrayList<>(sorts);
         while (addIt.hasNext()) {
             Sort<Object> sort = addIt.next();
-            if (sort == null)
+            if (sort == null) {
                 throw new IllegalArgumentException("Sort: null");
-            // IdClass is split up so that it can be possible to create a cursor
-            // that corresponds to sort criteria
-            else if (hasIdClass && ID.equalsIgnoreCase(sort.property()))
-                for (String name : entityInfo.idClassAttributeAccessors.keySet())
-                    combined.add(getWithAttributeName(getAttributeName(name, true), sort));
-            else
-                combined.add(getWithAttributeName(sort.property(), sort));
+            } else if (hasIdClass && ID.equalsIgnoreCase(sort.property())) {
+                // IdClass is split up so that it can be possible to create a cursor
+                // that corresponds to sort criteria
+                for (String name : entityInfo.idClassAttributeAccessors.keySet()) {
+                    name = getAttributeName(name, true);
+                    sort = name == sort.property() ? sort : createSort(name, sort);
+                    combined.add(sort);
+                }
+            } else {
+                String name = getAttributeName(sort.property(), true);
+                sort = name == sort.property() ? sort : createSort(name, sort);
+                combined.add(sort);
+            }
         }
         return combined;
     }
@@ -5598,15 +5601,21 @@ public abstract class QueryInfo {
         if (combined == null && additional.length > 0)
             combined = sorts == null ? new ArrayList<>() : new ArrayList<>(sorts);
         for (Sort<Object> sort : additional) {
-            if (sort == null)
+            if (sort == null) {
                 throw new IllegalArgumentException("Sort: null");
-            // IdClass is split up so that it can be possible to create a cursor
-            // that corresponds to sort criteria
-            else if (hasIdClass && ID.equalsIgnoreCase(sort.property()))
-                for (String name : entityInfo.idClassAttributeAccessors.keySet())
-                    combined.add(getWithAttributeName(getAttributeName(name, true), sort));
-            else
-                combined.add(getWithAttributeName(sort.property(), sort));
+            } else if (hasIdClass && ID.equalsIgnoreCase(sort.property())) {
+                // IdClass is split up so that it can be possible to create a cursor
+                // that corresponds to sort criteria
+                for (String name : entityInfo.idClassAttributeAccessors.keySet()) {
+                    name = getAttributeName(name, true);
+                    sort = name == sort.property() ? sort : createSort(name, sort);
+                    combined.add(sort);
+                }
+            } else {
+                String name = getAttributeName(sort.property(), true);
+                sort = name == sort.property() ? sort : createSort(name, sort);
+                combined.add(sort);
+            }
         }
         return combined;
     }
