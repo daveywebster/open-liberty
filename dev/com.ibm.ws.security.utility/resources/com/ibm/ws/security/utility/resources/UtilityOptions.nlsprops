@@ -78,11 +78,10 @@ encode.option-key.key=\
 encode.option-desc.key=\
 \tSpecify a key to be used when encoding using AES. This string will be\n\
 \tused to derive an AES encryption key, which is used to encrypt and\n\
-\tdecrypt the password. The key can be provided to the server by\n\
-\tdefining the variable wlp.password.encryption.key whose value is the\n\
-\tkey. Starting in 26.0.0.3 a default key is no longer used. When this\n\
-\toption is not specified one of the following arguments must be\n\
-\tspecified: --base64Key, --aesConfigFile, or --keyring.
+\tdecrypt the password. The key can be provided to the server by defining\n\
+\tthe variable wlp.password.encryption.key whose value is the\n\
+\tkey. Starting in 26.0.0.3, a default key is no longer used. Instead,\n\
+\tspecify one of the following arguments: --key, --base64Key, --aesConfigFile, or --keyring.
 encode.option-key.base64Key=\
 \ \ \ \ --base64Key=base64Key
 encode.option-desc.base64Key=\
