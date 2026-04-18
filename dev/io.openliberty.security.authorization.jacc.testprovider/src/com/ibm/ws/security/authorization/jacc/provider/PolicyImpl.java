@@ -12,8 +12,6 @@ package com.ibm.ws.security.authorization.jacc.provider;
 
 import java.security.Permission;
 import java.security.PermissionCollection;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -22,13 +20,13 @@ import javax.security.auth.Subject;
 
 import com.ibm.websphere.ras.Tr;
 import com.ibm.websphere.ras.TraceComponent;
+import com.ibm.websphere.security.cred.WSCredential;
 
 import jakarta.security.jacc.EJBMethodPermission;
 import jakarta.security.jacc.Policy;
 import jakarta.security.jacc.PolicyConfiguration;
 import jakarta.security.jacc.PolicyConfigurationFactory;
 import jakarta.security.jacc.PolicyContext;
-import jakarta.security.jacc.PolicyContextException;
 import jakarta.security.jacc.PrincipalMapper;
 
 public class PolicyImpl implements Policy {
@@ -54,13 +52,13 @@ public class PolicyImpl implements Policy {
     public boolean impliesByRole(Permission p, Subject subject) {
         Map<String, PermissionCollection> perRolePermissions = getPolicyConfiguration().getPerRolePermissions();
         if (p instanceof EJBMethodPermission) {
-            List<String> requiredRoleList = getRequiredRoleList(perRolePermissions, p);
-            if (requiredRoleList == null || requiredRoleList.size() == 0) {
+            if (!hasRequiredRolePermission(perRolePermissions, p)) {
                 return true;
             }
         }
+
         PrincipalMapper principalMapper = PolicyContext.get(PolicyContext.PRINCIPAL_MAPPER);
-        if (!principalMapper.isAnyAuthenticatedUserRoleMapped() && !subject.getPrincipals().isEmpty()) {
+        if (!principalMapper.isAnyAuthenticatedUserRoleMapped() && !isUnAuthenticatedSubject(subject)) {
             PermissionCollection rolePermissions = perRolePermissions.get("**");
             if (rolePermissions != null && rolePermissions.implies(p)) {
                 return true;
@@ -76,21 +74,33 @@ public class PolicyImpl implements Policy {
         return false;
     }
 
-    private List<String> getRequiredRoleList(Map<String, PermissionCollection> perRolePermissions, Permission p) {
-        List<String> requiredRoleList = null;
+    private boolean isUnAuthenticatedSubject(Subject subject) {
+        if (subject.getPrincipals().size() == 0) {
+            return true;
+        }
+        Set<WSCredential> credentials = subject.getPublicCredentials(WSCredential.class);
+        for (WSCredential wscred : credentials) {
+            if (wscred.isUnauthenticated()) {
+                return true;
+            }
+        }
+        return false;
+
+    }
+
+    private boolean hasRequiredRolePermission(Map<String, PermissionCollection> perRolePermissions, Permission p) {
         if (!perRolePermissions.isEmpty()) {
-            requiredRoleList = new ArrayList<String>();
             for (Entry<String, PermissionCollection> e : perRolePermissions.entrySet()) {
                 PermissionCollection perm = e.getValue();
                 if (perm.implies(p)) {
                     String role = e.getKey();
-                    requiredRoleList.add(role);
                     if (tc.isDebugEnabled())
-                        Tr.debug(tc, "Added role: " + role + " to the requiredRoleList for Permission: " + p + " granted by : " + perm);
+                        Tr.debug(tc, "Found a required role: " + role + " for Permission: " + p + " granted by : " + perm);
+                    return true;
                 }
             }
         }
-        return requiredRoleList;
+        return false;
     }
 
     @Override
@@ -114,7 +124,7 @@ public class PolicyImpl implements Policy {
 
     private PolicyConfiguration getPolicyConfiguration() {
         PolicyConfigurationFactory factory = PolicyConfigurationFactory.get();
-        
+
         return contextID == null ? factory.getPolicyConfiguration() : factory.getPolicyConfiguration(contextID);
     }
 }
