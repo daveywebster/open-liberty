@@ -11,9 +11,12 @@ triggers:
   triggerRank: 5
   groups: ["LibertyDev"]
   propertyDefinitions:
-    - name: githubPRNumber
+    - name: github_pr_number
       isRequired: true
-      description: "PR number to perform delivery requirement verification against e.g. 30188"
+      defaultValue: "PR number in Open Liberty to run scan against"
+      description: "PR number in Open Liberty to run scan against"
+    - name: github_pr_api
+      defaultValue: "https://api.github.com/repos/OpenLiberty/open-liberty/pulls/${github_pr_number}"
 
 - type: github
   description: "Trigger a scan of pull request changes to find certain cryptography algorithms and send Slack notice if found"
@@ -32,4 +35,5 @@ steps:
   projectName: cryptoAlgorithmsScan
   timeoutInMinutes: 1440
   properties:
-    githubPRApi: "https://api.github.com/repos/OpenLiberty/open-liberty/pulls/${githubPRNumber}"
+    githubPRApi: ${github_pr_api}
+    githubPRNumber: ${github_pr_number}
