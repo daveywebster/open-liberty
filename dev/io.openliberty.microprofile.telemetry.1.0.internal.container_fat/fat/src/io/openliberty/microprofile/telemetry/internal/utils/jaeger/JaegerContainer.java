@@ -45,8 +45,6 @@ public class JaegerContainer extends GenericContainer<JaegerContainer> {
     public static final int HTTP_QUERY_PORT = 16686;
     public static final int GRPC_QUERY_PORT = 16685;
 
-    //private static final RemoteDockerImage JaegerAllInOne = ImageBuilder.build("jaegertracing:1.54.0").getFuture();
-
     public JaegerContainer(File tlsCert, File tlsKey) {
 
         super(TestConstants.DOCKER_IMAGE_JAEGER_ALL_IN_ONE);
@@ -56,7 +54,9 @@ public class JaegerContainer extends GenericContainer<JaegerContainer> {
                          JAEGER_THRIFT_PORT,
                          GRPC_QUERY_PORT,
                          HTTP_QUERY_PORT);
+        withEnv("COLLECTOR_OTLP_ENABLED", "true");
         withEnv("QUERY_GRPC_TLS_ENABLED", "true");
+        withEnv("OTEL_TRACES_SAMPLER", "always_off"); // Disable Jaeger's own trace export
         withEnv("QUERY_GRPC_TLS_CERT", "/etc/certificate.crt");
         withEnv("QUERY_GRPC_TLS_KEY", "/etc/private.key");
         withCopyFileToContainer(MountableFile.forHostPath(tlsCert.toPath()), "/etc/certificate.crt");
@@ -75,6 +75,7 @@ public class JaegerContainer extends GenericContainer<JaegerContainer> {
                          HTTP_QUERY_PORT);
 
         withEnv("COLLECTOR_OTLP_ENABLED", "true");
+        withEnv("OTEL_TRACES_SAMPLER", "always_off"); // Disable Jaeger's own trace export
         withEnv("COLLECTOR_OTLP_GRPC_TLS_ENABLED", "true");
         withEnv("COLLECTOR_OTLP_GRPC_TLS_CERT", "/etc/otelCollectorCertificate.crt");
         withEnv("COLLECTOR_OTLP_GRPC_TLS_KEY", "/etc/otelCollectorPrivateKey.key");
