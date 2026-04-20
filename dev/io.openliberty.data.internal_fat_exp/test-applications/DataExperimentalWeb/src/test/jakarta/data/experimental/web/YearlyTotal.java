@@ -39,7 +39,7 @@ public class YearlyTotal {
     //@Column(columnDefinition = "VARCHAR(50)")
     public CharSequence comments;
 
-    // avoid collision with Derby reserved word YEAR
+    // avoid collision with H2 reserved word YEAR
     @Column(name = "YEARVALUE")
     @Id
     public Year year;
