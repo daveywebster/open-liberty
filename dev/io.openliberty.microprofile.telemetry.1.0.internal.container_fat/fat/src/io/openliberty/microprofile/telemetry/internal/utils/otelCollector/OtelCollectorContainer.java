@@ -49,7 +49,6 @@ public class OtelCollectorContainer extends GenericContainer<OtelCollectorContai
         this(TestConstants.DOCKER_IMAGE_OPENTELEMETRY_COLLECTOR, configFile, tlsCert, tlsKey);
     }
 
-    //TODO switch to use ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector:0.117.0
     public OtelCollectorContainer(DockerImageName imageName, File configFile) {
         super(TestConstants.DOCKER_IMAGE_OPENTELEMETRY_COLLECTOR);
         withCopyFileToContainer(MountableFile.forHostPath(configFile.toPath()), "/etc/otel-collector-config.yaml");
@@ -57,7 +56,6 @@ public class OtelCollectorContainer extends GenericContainer<OtelCollectorContai
         withCommand("--config=/etc/otel-collector-config.yaml");
     }
 
-    //TODO switch to use ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector:0.117.0
     public OtelCollectorContainer(DockerImageName imageName, File configFile, int PROMETHEUS_METRIC_PORT) {
         super(TestConstants.DOCKER_IMAGE_OPENTELEMETRY_COLLECTOR);
         withCopyFileToContainer(MountableFile.forHostPath(configFile.toPath()), "/etc/otel-collector-config.yaml");
@@ -65,7 +63,6 @@ public class OtelCollectorContainer extends GenericContainer<OtelCollectorContai
         withCommand("--config=/etc/otel-collector-config.yaml");
     }
 
-    //TODO switch to use ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector:0.117.0
     public OtelCollectorContainer(DockerImageName imageName, File configFile, File tlsCert, File tlsKey) {
         super(TestConstants.DOCKER_IMAGE_OPENTELEMETRY_COLLECTOR);
         withCopyFileToContainer(MountableFile.forHostPath(configFile.toPath()), "/etc/otel-collector-config.yaml");

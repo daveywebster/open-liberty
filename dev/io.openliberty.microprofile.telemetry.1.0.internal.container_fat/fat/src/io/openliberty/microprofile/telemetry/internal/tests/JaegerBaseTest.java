@@ -175,7 +175,7 @@ public abstract class JaegerBaseTest {
         assertThat(span.getLogs(0).hasTimestamp(), is(true));
     }
 
-    //@Test
+    @Test
     public void testAttributeAdded() throws Exception {
         HttpRequest request = new HttpRequest(server, "/spanTest/attributeAdded");
         String traceId = request.run(String.class);
