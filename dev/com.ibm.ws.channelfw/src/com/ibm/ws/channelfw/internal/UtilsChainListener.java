@@ -147,12 +147,11 @@ public class UtilsChainListener {
             try {
                 Thread.sleep(100);  // Poll every 100ms
             } catch (InterruptedException ie) {
+                elapsedTime = System.nanoTime() - startTime;  // Update for trace.
                 break;
             }
             
-        } while (true);
-        
-        elapsedTime = System.nanoTime() - startTime;
+        } while (true);        
         
         if (TraceComponent.isAnyTracingEnabled() && tc.isEventEnabled()) {
             if (waitingChainNames.isEmpty()) {
