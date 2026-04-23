@@ -98,5 +98,3 @@ public class DataStoreH2UserInit implements ServletContextListener {
         // No cleanup needed
     }
 }
-
-// Made with Bob
