@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2025 IBM Corporation and others.
+ * Copyright (c) 2025, 2026 IBM Corporation and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License 2.0
  * which accompanies this distribution, and is available at
@@ -47,7 +47,6 @@ import org.osgi.service.component.annotations.Reference;
 
 import com.ibm.websphere.ras.Tr;
 import com.ibm.websphere.ras.TraceComponent;
-import com.ibm.ws.ffdc.annotation.FFDCIgnore;
 import com.ibm.ws.kernel.productinfo.ProductInfo;
 import com.ibm.ws.microprofile.health.internal.AppTracker;
 import com.ibm.ws.microprofile.health.services.HealthCheckBeanCallException;
@@ -316,7 +315,7 @@ public class HealthCheck40ServiceImpl implements HealthCheck40Service {
         if (IS_BETA_EDITION) {
             // Try server config first (Boolean), then fall back to env var (String)
             Boolean enableEndpointsConfig = (Boolean) properties.get(HealthCheckConstants.HEALTH_SERVER_CONFIG_ENABLE_ENDPOINTS);
-            
+
             // If server config not set, check environment variable
             if (enableEndpointsConfig == null) {
                 String envConfig = System.getenv(HealthCheckConstants.HEALTH_ENV_CONFIG_ENABLE_ENDPOINTS);
@@ -324,7 +323,7 @@ public class HealthCheck40ServiceImpl implements HealthCheck40Service {
                     enableEndpointsConfig = Boolean.valueOf(envConfig.trim());
                 }
             }
-            
+
             // Process the resolved config value
             if (enableEndpointsConfig != null) {
                 processEnableEndpointsConfig(enableEndpointsConfig);
@@ -463,8 +462,8 @@ public class HealthCheck40ServiceImpl implements HealthCheck40Service {
         if (configValue != null) {
             enableEndpoints = configValue.booleanValue();
 
-            // Only warn if user tries to disable endpoints (false) without file-based health checks enabled
-            // Don't warn for enableEndpoints=true since that's the default behavior anyway
+            // Only show warning if user tries to disable endpoints (false) without file-based health checks enabled
+            // Don't log warning for enableEndpoints=true since that's the default behavior anyway
             if (!isFileHealthCheckingEnabled() && !enableEndpoints) {
                 Tr.warning(tc, "enable.endpoints.config.without.file.health.check.CWMMH01013W");
             }
@@ -504,14 +503,14 @@ public class HealthCheck40ServiceImpl implements HealthCheck40Service {
         if (isValidSystemForFileHealthCheck) {
             // Store previous enableEndpoints value to detect changes
             boolean previousEnableEndpoints = enableEndpoints;
-            
+
             processCheckIntervalConfig((String) properties.get(HealthCheckConstants.HEALTH_SERVER_CONFIG_CHECK_INTERVAL));
             processStartupCheckIntervalConfig((String) properties.get(HealthCheckConstants.HEALTH_SERVER_CONFIG_STARTUP_CHECK_INTERVAL));
             processEnableEndpointsConfig((Boolean) properties.get(HealthCheckConstants.HEALTH_SERVER_CONFIG_ENABLE_ENDPOINTS));
 
             // Only execute WAB update if enableEndpoints actually changed
             if (previousEnableEndpoints != enableEndpoints) {
-                // Execute WAB configuration update asynchronously to avoid FFDC during component reconfiguration
+                // Execute WAB configuration update asynchronously to avoid FFDC of using invalid bundle context during component reconfiguration
                 ExecutorService executor = executorServiceRef.get();
                 if (executor != null) {
                     executor.execute(new Runnable() {
@@ -1113,7 +1112,7 @@ public class HealthCheck40ServiceImpl implements HealthCheck40Service {
             }
 
             BundleContext bundleContext = context.getBundleContext();
-            
+
             // Check if BundleContext is still valid before attempting to register service
             // This prevents IllegalStateException during component reconfiguration
             try {
@@ -1125,7 +1124,7 @@ public class HealthCheck40ServiceImpl implements HealthCheck40Service {
                 }
                 return;
             }
-            
+
             Dictionary<String, String> props = new Hashtable<String, String>();
             props.put(WABConfiguration.CONTEXT_NAME, contextName);
             props.put(WABConfiguration.CONTEXT_PATH, contextPath);
