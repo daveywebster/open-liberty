@@ -12,6 +12,7 @@ wasliberty-aws-docker-remote/elastic/logstash:8.19.14
 wasliberty-ghcr-docker-remote/gvenzl/oracle-free:23.9-full-faststart
 wasliberty-ghcr-docker-remote/gvenzl/oracle-free:23.9-slim-faststart
 wasliberty-ghcr-docker-remote/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector:0.127.0
+wasliberty-ghcr-docker-remote/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector:0.150.1
 wasliberty-ghcr-docker-remote/openzipkin/zipkin-slim:3.6
 wasliberty-ghcr-docker-remote/testcontainers/ryuk:0.12.0
 wasliberty-ghcr-docker-remote/testcontainers/sshd:1.3.0
@@ -31,7 +32,6 @@ wasliberty-infrastructure-docker/letsencrypt/pebble-challtestsrv:v2.3.1
 wasliberty-infrastructure-docker/letsencrypt/pebble:v2.3.1
 wasliberty-infrastructure-docker/mariadb:10.3
 wasliberty-infrastructure-docker/otel/opentelemetry-collector-contrib:0.103.0
-wasliberty-infrastructure-docker/otel/opentelemetry-collector:0.74.0
 wasliberty-infrastructure-docker/ryanesch/acme-boulder:1.2
 wasliberty-infrastructure-docker/seleniarm/standalone-chromium:4.8.3
 wasliberty-infrastructure-docker/selenium/standalone-chrome:4.8.3
