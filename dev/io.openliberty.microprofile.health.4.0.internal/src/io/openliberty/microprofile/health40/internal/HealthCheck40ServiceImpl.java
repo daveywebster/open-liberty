@@ -14,15 +14,19 @@ package io.openliberty.microprofile.health40.internal;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Dictionary;
 import java.util.HashSet;
+import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 import javax.servlet.http.HttpServletRequest;
@@ -31,6 +35,8 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.health.HealthCheckResponse;
 import org.eclipse.microprofile.health.HealthCheckResponse.Status;
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.ServiceRegistration;
 import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -41,8 +47,11 @@ import org.osgi.service.component.annotations.Reference;
 
 import com.ibm.websphere.ras.Tr;
 import com.ibm.websphere.ras.TraceComponent;
+import com.ibm.ws.ffdc.annotation.FFDCIgnore;
+import com.ibm.ws.kernel.productinfo.ProductInfo;
 import com.ibm.ws.microprofile.health.internal.AppTracker;
 import com.ibm.ws.microprofile.health.services.HealthCheckBeanCallException;
+import com.ibm.wsspi.wab.configure.WABConfiguration;
 
 import io.openliberty.checkpoint.spi.CheckpointPhase;
 import io.openliberty.microprofile.health.internal.common.HealthCheckConstants;
@@ -210,6 +219,9 @@ public class HealthCheck40ServiceImpl implements HealthCheck40Service {
     protected void activate(ComponentContext cc, Map<String, Object> properties) {
 
         componentContext = cc;
+
+        // Initialize WAB configuration manager
+        wabConfigManager = new HealthWABConfigManager(HealthCheckConstants.HEALTH_CONTEXT_PATH_VAR_NAME, HealthCheckConstants.HEALTH_CONTEXT_PATH);
 
         processConfig();
 
@@ -546,7 +558,13 @@ public class HealthCheck40ServiceImpl implements HealthCheck40Service {
         if (TraceComponent.isAnyTracingEnabled() && tc.isDebugEnabled()) {
             Tr.debug(tc, "HealthCheckServiceImpl is deactivated");
         }
+
         stopAllTimers();
+
+        // Unregister WAB
+        if (wabConfigManager != null) {
+            wabConfigManager.deactivate();
+        }
     }
 
     /**
@@ -931,4 +949,159 @@ public class HealthCheck40ServiceImpl implements HealthCheck40Service {
         }
     }
 
+    /**
+     * Manages the WAB (Web Application Bundle) registration for health endpoints.
+     * When endpoints are disabled, the WAB is unregistered, making all health endpoints unavailable.
+     *
+     * The WAB bundle's Web-ContextPath is set to @healthContextPath in bnd.bnd.
+     * This manager registers a WABConfiguration service with the contextName="healthContextPath"
+     * and contextPath="/health" properties to configure the WAB's actual context path.
+     */
+    private static class HealthWABConfigManager {
+        private static final TraceComponent tc = Tr.register(HealthWABConfigManager.class);
+
+        private final String contextName;
+        private final String contextPath;
+        private ServiceRegistration<WABConfiguration> wabConfigReg;
+
+        /**
+         * Constructor
+         *
+         * @param contextName The context name matching the variable in Web-ContextPath (e.g., "healthContextPath")
+         * @param contextPath The actual context path value (e.g., "/health")
+         */
+        public HealthWABConfigManager(String contextName, String contextPath) {
+            this.contextName = contextName;
+            this.contextPath = contextPath;
+        }
+
+        /**
+         * Register the WAB configuration to make health endpoints available.
+         *
+         * @param context     Component context
+         * @param contextPath The context path to use
+         */
+        public void pushConfiguration(ComponentContext context, String contextPath) {
+            if (wabConfigReg != null) {
+                if (TraceComponent.isAnyTracingEnabled() && tc.isEventEnabled()) {
+                    Tr.event(tc, "Health WAB already registered", toString());
+                }
+                return;
+            }
+
+            BundleContext bundleContext = context.getBundleContext();
+            
+            // Check if BundleContext is still valid before attempting to register service
+            // This prevents IllegalStateException during component reconfiguration
+            try {
+                bundleContext.getBundle();
+            } catch (IllegalStateException e) {
+                // BundleContext is no longer valid - skip registration
+                if (TraceComponent.isAnyTracingEnabled() && tc.isDebugEnabled()) {
+                    Tr.debug(tc, "Skipping Health WAB registration - BundleContext no longer valid");
+                }
+                return;
+            }
+            
+            Dictionary<String, String> props = new Hashtable<String, String>();
+            props.put(WABConfiguration.CONTEXT_NAME, contextName);
+            props.put(WABConfiguration.CONTEXT_PATH, contextPath);
+
+            // WABConfiguration is a marker interface with no methods
+            // Configuration is done through service properties
+            WABConfiguration wabConfig = new WABConfiguration() {
+            };
+
+            wabConfigReg = bundleContext.registerService(WABConfiguration.class, wabConfig, props);
+
+            if (TraceComponent.isAnyTracingEnabled() && tc.isEventEnabled()) {
+                Tr.event(tc, "Health WAB registered", toString());
+            }
+        }
+
+        /**
+         * Unregister the WAB configuration to make health endpoints unavailable.
+         */
+        public void deactivate() {
+            if (wabConfigReg != null) {
+                try {
+                    wabConfigReg.unregister();
+                    if (TraceComponent.isAnyTracingEnabled() && tc.isEventEnabled()) {
+                        Tr.event(tc, "Health WAB unregistered", toString());
+                    }
+                } catch (IllegalStateException e) {
+                    // Service already unregistered or BundleContext no longer valid
+                    // This is expected during shutdown or dynamic updates
+                    if (TraceComponent.isAnyTracingEnabled() && tc.isDebugEnabled()) {
+                        Tr.debug(tc, "Unable to unregister Health WAB - already unregistered or BundleContext no longer valid", e);
+                    }
+                } finally {
+                    wabConfigReg = null;
+                }
+            }
+        }
+
+        /**
+         * Process the enableEndpoints configuration.
+         * Register or unregister the WAB based on the enabled flag.
+         *
+         * @param context Component context
+         * @param enabled Whether endpoints should be enabled
+         */
+        public void processEnableEndpoints(ComponentContext context, boolean enabled) {
+            if (TraceComponent.isAnyTracingEnabled() && tc.isEventEnabled()) {
+                Tr.event(tc, "Health enableEndpoints attribute updated: " + enabled + " WAB config=" + wabConfigReg);
+            }
+
+            // If enabled="false" and WAB has never started, no work to do
+            if (wabConfigReg == null && !enabled) {
+                return;
+            }
+
+            if (enabled) {
+                // Register WAB to make endpoints available
+                pushConfiguration(context, contextPath);
+            } else {
+                // Unregister WAB to make endpoints unavailable
+                deactivate();
+            }
+        }
+
+        /**
+         * Update the WAB configuration with new properties.
+         *
+         * @param props New properties
+         */
+        public void modified(Dictionary<String, String> props) {
+            if (wabConfigReg != null) {
+                wabConfigReg.setProperties(props);
+                if (TraceComponent.isAnyTracingEnabled() && tc.isEventEnabled()) {
+                    Tr.event(tc, "Health WAB modified", toString(), "props=" + props);
+                }
+            }
+        }
+
+        @Override
+        public String toString() {
+            return "HealthWABConfigManager [contextPath=" + contextPath + ", contextName=" + contextName +
+                   ", wabConfigReg=" + wabConfigReg + "]";
+        }
+    }
+
 }
+    /**
+     * Beta edition flag - checks if Liberty is running in beta mode
+     */
+    private static final boolean IS_BETA_EDITION = ProductInfo.getBetaEdition();
+
+    /**
+     * Controls whether health endpoints are enabled.
+     * Default is true. Only effective when file-based health checks are enabled.
+     */
+    private volatile boolean enableEndpoints = true;
+
+    /**
+     * WAB configuration manager for health endpoints
+     */
+    private HealthWABConfigManager wabConfigManager;
+
