@@ -215,10 +215,13 @@ public abstract class AbstractJSSEProvider implements JSSEProvider {
      */
     @Override
     public String[] getCiphersForSecurityLevel(boolean isClient, String securityLevel) {
-
-        if (TraceComponent.isAnyTracingEnabled() && tc.isDebugEnabled())
-            Tr.debug(tc, "getCiphersForSecurityLevel: Security Level is no longer in use and will be ignored. Will be defaulting to the effective JDK cipher list.", new Object[] { Boolean.valueOf(isClient), securityLevel });
-        
+        if (ProductInfo.getBetaEdition()) {
+            if (TraceComponent.isAnyTracingEnabled() && tc.isDebugEnabled())
+                Tr.debug(tc, "getCiphersForSecurityLevel: Security Level is no longer in use and will be ignored. Will be defaulting to the effective JDK cipher list.", new Object[] { Boolean.valueOf(isClient), securityLevel });
+        } else {
+            if (TraceComponent.isAnyTracingEnabled() && tc.isDebugEnabled())
+            Tr.debug(tc, "getCiphersForSecurityLevel: ", new Object[] { Boolean.valueOf(isClient), securityLevel });
+        }
 
         String[] supportedCiphers = null;
 
@@ -229,7 +232,12 @@ public abstract class AbstractJSSEProvider implements JSSEProvider {
             SSLServerSocketFactory factory = (SSLServerSocketFactory) SSLServerSocketFactory.getDefault();
             supportedCiphers = factory.getSupportedCipherSuites();
         }
-    return Constants.adjustSupportedCiphers(supportedCiphers, null);
+    if(ProductInfo.getBetaEdition()){ 
+        return Constants.adjustSupportedCiphers(supportedCiphers, null);
+    }
+    else{
+        return Constants.adjustSupportedCiphersToSecurityLevel(supportedCiphers, securityLevel);
+        }
     }
 
     /*
