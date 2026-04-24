@@ -116,8 +116,20 @@ public class LibertySSLEngineWrapper extends SSLEngine {
     @Override
     public String[] getSupportedCipherSuites() {
     
-        return Constants.adjustSupportedCiphers(delegate.getSupportedCipherSuites(), null);
-     
+    if (ProductInfo.getBetaEdition()){
+        String enabledCiphers = props.getProperty(Constants.SSLPROP_ENABLED_CIPHERS);
+        if (tc.isDebugEnabled())
+                Tr.debug(tc, "enabledCiphers from properties is " + enabledCiphers);
+        return Constants.adjustSupportedCiphers(delegate.getSupportedCipherSuites(), enabledCiphers);
+     } else {
+        String securityLevel = props.getProperty(Constants.SSLPROP_SECURITY_LEVEL);
+        if (tc.isDebugEnabled())
+            Tr.debug(tc, "securityLevel from properties is " + securityLevel);
+        if (securityLevel == null)
+            securityLevel = "HIGH";
+
+        return Constants.adjustSupportedCiphersToSecurityLevel(delegate.getSupportedCipherSuites(), securityLevel);
+    }
     
     }
 
@@ -136,9 +148,14 @@ public class LibertySSLEngineWrapper extends SSLEngine {
      */
     private String[] getEnabledCipherSuitesFromConfig(Properties props) {
         String enabledCiphers = props.getProperty(Constants.SSLPROP_ENABLED_CIPHERS);
-        // Use Constants.adjustSupportedCiphers to process cipher modifiers (+/-) and wildcards (*)
-        return Constants.adjustSupportedCiphers(getSupportedCipherSuites(), enabledCiphers);
-        
+        if (enabledCiphers != null && !enabledCiphers.isEmpty()) {
+            return enabledCiphers.split("[,\\s]+");
+        } else {
+            if (tc.isDebugEnabled())
+                Tr.debug(tc, "com.ibm.ssl.enabledCipherSuites has not been configured.");
+
+            return null;
+        }
     }
 
     @Override
