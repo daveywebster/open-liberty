@@ -1050,7 +1050,12 @@ public class JPAPersistenceManagerImpl extends AbstractPersistenceManager implem
             return new TranRequest<JobExecution>(em) {
                 @Override
                 public JobExecution call() {
-                    JobExecutionEntity exec = entityMgr.find(JobExecutionEntity.class, jobExecutionId);
+                    final JobExecutionEntity exec = entityMgr.createQuery(
+                            "SELECT j FROM JobExecutionEntity j WHERE j.jobExecId = :id",
+                            JobExecutionEntity.class)
+                            .setParameter("id", jobExecutionId)
+                            .setLockMode(LockModeType.PESSIMISTIC_WRITE) // Lock JobExecution FIRST
+                            .getSingleResult();
                     if (exec == null) {
                         throw new NoSuchJobExecutionException("No job execution found for id = " + jobExecutionId);
                     }
