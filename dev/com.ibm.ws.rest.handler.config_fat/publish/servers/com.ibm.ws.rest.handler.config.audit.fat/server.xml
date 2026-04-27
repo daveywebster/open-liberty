@@ -70,7 +70,7 @@
   <databaseStore id="unavailableDBStore">
     <dataSource id="unavailableDS">
       <jdbcDriver libraryRef="H2"/>
-      <properties.h2 URL="jdbc:h2:file:unavailabledb;IF_EXISTS=TRUE;DB_CLOSE_DELAY=-1"/>
+      <properties.h2 URL="jdbc:h2:file:unavailabledb;IFEXISTS=TRUE;DB_CLOSE_DELAY=-1"/>
     </dataSource>
   </databaseStore>
 
