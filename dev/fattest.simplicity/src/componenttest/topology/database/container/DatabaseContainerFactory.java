@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2019, 2025 IBM Corporation and others.
+ * Copyright (c) 2019, 2026 IBM Corporation and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License 2.0
  * which accompanies this distribution, and is available at
@@ -76,12 +76,40 @@ public class DatabaseContainerFactory {
     }
 
     /**
+     * Used for <b>database rotation testing</b>.
+     *
+     * Reads the {fat.bucket.db.type} system property and
+     * returns a container based on that property.
+     * [Postgres, DB2, Oracle, SQLServer, Derby]
+     *
+     * If {fat.bucket.db.type} is not set with a value,
+     * default to H2.
+     *
+     * @return                          JdbcDatabaseContainer - The test container.
+     *
+     * @throws IllegalArgumentException - if databaseRotation is not set on tested.features,
+     *                                      or database type {fat.bucket.db.type} is unsupported.
+     */
+    public static JdbcDatabaseContainer<?> createH2() throws IllegalArgumentException {
+        return create(DatabaseContainerType.H2);
+    }
+
+    /**
      * @see #create()
      *
      *      Uses the latest version of Derby Embedded
      */
     public static JdbcDatabaseContainer<?> createLatest() throws IllegalArgumentException {
         return create(DatabaseContainerType.DerbyJava17Plus);
+    }
+
+    /**
+     * @see #create()
+     *
+     *      Uses the latest version of H2
+     */
+    public static JdbcDatabaseContainer<?> createLatestH2() throws IllegalArgumentException {
+        return create(DatabaseContainerType.H2Java11Plus);
     }
 
     /**

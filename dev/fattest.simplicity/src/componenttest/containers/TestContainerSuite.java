@@ -117,7 +117,7 @@ public class TestContainerSuite {
 
         // Levels
         // Container logs: debug
-        System.setProperty("org.slf4j.simpleLogger.log.tc", "debug");
+        System.setProperty("org.slf4j.simpleLogger.log.tc", "all");
         // Jakarta Transformer: disabled
         System.setProperty("org.slf4j.simpleLogger.log.Transformer", "off");
         // Testcontainers configuration/lifecycle: debug
