@@ -84,6 +84,8 @@ import com.ibm.ws.jbatch.test.dbservlet.DbServletClient;
 
 import componenttest.common.apiservices.Bootstrap;
 import componenttest.common.apiservices.BootstrapProperty;
+import componenttest.topology.database.container.DatabaseContainerType;
+import componenttest.topology.database.container.DatabaseContainerUtil;
 import componenttest.topology.impl.LibertyServer;
 import componenttest.topology.utils.HttpUtils;
 import componenttest.topology.utils.HttpUtils.HTTPRequestMethod;
@@ -132,6 +134,39 @@ public class BatchRestUtils {
             builder = builder.add(key, props.getProperty(key));
         }
         return builder.build();
+    }
+
+    /*
+     * Change the schema value to user1 in case of a oracle database,
+     * or dbuser1 in the case of a sql server database
+     * 
+     * If oracle, set keyGenerationStrategy to "IDENTITY" since it seems to want to use a sequence by default
+     * and I want to avoid extra steps to create the sequence.
+     */
+    public static void updateDatabaseStoreIfNecessary(LibertyServer server, DatabaseContainerType containerType) throws Exception {
+
+        ServerConfiguration config = server.getServerConfiguration();
+        Bootstrap bs = Bootstrap.getInstance();
+        
+        if(containerType == DatabaseContainerType.Oracle ||
+        		containerType == DatabaseContainerType.SQLServer) {
+      
+            String user1 = bs.getValue(BootstrapProperty.DB_USER1.getPropertyName());
+            for (DatabaseStore ds : config.getDatabaseStores()) {
+            	 ds.setSchema(user1);
+                
+            	 //No schema for Oracle with the test containers
+                if(containerType == DatabaseContainerType.Oracle) {
+                    ds.setKeyGenerationStrategy("IDENTITY");
+                    ds.setSchema(null);
+                }
+            } 
+            
+            server.updateServerConfiguration(config);
+            if (server.isStarted()) {
+                server.waitForConfigUpdateInLogUsingMark(null);
+            }
+        }
     }
     
     /*

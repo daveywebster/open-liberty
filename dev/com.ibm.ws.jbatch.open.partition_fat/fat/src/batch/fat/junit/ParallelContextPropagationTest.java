@@ -18,6 +18,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import com.ibm.ws.jbatch.test.BatchAppUtils;
+import com.ibm.ws.jbatch.test.BatchRestUtils;
 import com.ibm.ws.jbatch.test.FatUtils;
 
 import batch.fat.util.BatchFATHelper;
@@ -35,12 +36,15 @@ public class ParallelContextPropagationTest extends BatchFATHelper {
     private static final Class testClass = ParallelContextPropagationTest.class;
 
     @BeforeClass
+    @SuppressWarnings("deprecation")
     public static void setup() throws Exception {
         server = LibertyServerFactory.getLibertyServer("batchFAT");
         BatchFATHelper.setConfig(DFLT_SERVER_XML, testClass);
 
         DatabaseContainerUtil.setupDataSourceDatabaseProperties(server, FATSuite.jdbcContainer);
         server.addEnvVar("DB_DRIVER", DatabaseContainerType.valueOf(FATSuite.jdbcContainer).getDriverName());
+
+        BatchRestUtils.updateDatabaseStoreIfNecessary(server, DatabaseContainerType.valueOf(FATSuite.jdbcContainer));
 
         BatchAppUtils.addDropinsBatchFATWar(server);
         BatchAppUtils.addDropinsDbServletAppWar(server);

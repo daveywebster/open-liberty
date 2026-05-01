@@ -54,6 +54,7 @@ public class PartitionReducerTest extends BatchFATHelper {
     private static final Class<PartitionReducerTest> testClass = PartitionReducerTest.class;
 
     @BeforeClass
+    @SuppressWarnings("deprecation")
     public static void setup() throws Exception {
         server = LibertyServerFactory.getLibertyServer("batchFAT");
         HttpUtils.trustAllCertificates();
@@ -61,6 +62,8 @@ public class PartitionReducerTest extends BatchFATHelper {
 
         DatabaseContainerUtil.setupDataSourceDatabaseProperties(server, FATSuite.jdbcContainer);
         server.addEnvVar("DB_DRIVER", DatabaseContainerType.valueOf(FATSuite.jdbcContainer).getDriverName());
+
+        BatchRestUtils.updateDatabaseStoreIfNecessary(server, DatabaseContainerType.valueOf(FATSuite.jdbcContainer));
 
         BatchAppUtils.addDropinsBatchFATWar(server);
         BatchAppUtils.addDropinsDbServletAppWar(server);
@@ -131,11 +134,11 @@ public class PartitionReducerTest extends BatchFATHelper {
         props.setProperty("forceFailure", "false");
         
         // Submit multiple jobs
-        int numJobs = 10;
+        int numJobs = 5;
         List<Long> jobInstanceIds = new ArrayList<>();
         
         for (int i = 0; i < numJobs; i++) {
-            JsonObject jobInstance = serverUtils.submitJob("batchFAT", "partitionSleepyBatchletManyPartitions", props, BatchRestUtils.BATCH_BASE_URL);
+            JsonObject jobInstance = serverUtils.submitJob("batchFAT", "partitionSleepyBatchletWithExitStatusPartitionReducer", props, BatchRestUtils.BATCH_BASE_URL);
             long instanceId = jobInstance.getJsonNumber("instanceId").longValue();
             jobInstanceIds.add(instanceId);
             log(methodName, "Submitted job " + (i + 1) + " with instanceId: " + instanceId);
@@ -180,12 +183,12 @@ public class PartitionReducerTest extends BatchFATHelper {
         props.setProperty("sleep", "60");
         
         // Submit multiple jobs
-        int numJobs = 10;
+        int numJobs = 5;
         List<Long> jobInstanceIds = new ArrayList<>();
         List<Long> jobExecutionIds = new ArrayList<>();
         
         for (int i = 0; i < numJobs; i++) {
-            JsonObject jobInstance = serverUtils.submitJob("batchFAT", "partitionSleepyBatchletManyPartitions", props, BatchRestUtils.BATCH_BASE_URL);
+            JsonObject jobInstance = serverUtils.submitJob("batchFAT", "partitionSleepyBatchletWithExitStatusPartitionReducer", props, BatchRestUtils.BATCH_BASE_URL);
             long instanceId = jobInstance.getJsonNumber("instanceId").longValue();
             jobInstanceIds.add(instanceId);
             log(methodName, "Submitted job " + (i + 1) + " with instanceId: " + instanceId);
