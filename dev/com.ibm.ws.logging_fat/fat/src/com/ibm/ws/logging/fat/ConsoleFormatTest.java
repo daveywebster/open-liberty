@@ -28,8 +28,7 @@ import java.util.List;
 import java.util.Properties;
 import java.util.regex.Pattern;
 
-import org.junit.After;
-import org.junit.Before;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -95,9 +94,10 @@ public class ConsoleFormatTest {
         server.saveServerConfiguration();
     }
 
-    @Before
-    public void setupTestStart() throws Exception {
-
+    public void restoreServer() throws Exception {
+        if (server != null && server.isStarted()) {
+            server.stopServer(EXPECTED_FAILURES);
+        }
         if (server != null && !server.isStarted()) {
             // Restore the original server configuration, with the default settings
             server.restoreServerConfiguration();
@@ -105,8 +105,8 @@ public class ConsoleFormatTest {
         }
     }
 
-    @After
-    public void tearDown() throws Exception {
+    @AfterClass
+    public static void tearDown() throws Exception {
         if (server != null && server.isStarted()) {
             server.stopServer(EXPECTED_FAILURES);
         }
@@ -222,7 +222,7 @@ public class ConsoleFormatTest {
      */
     @Test
     public void testSimpleFormatSetInBootstrapProperties() throws Exception {
-
+        restoreServer();
         // Get the bootstrap.properties file and store the original content
         RemoteFile bootstrapFile = server.getServerBootstrapPropertiesFile();
         FileInputStream in = getFileInputStreamForRemoteFile(bootstrapFile);
@@ -244,6 +244,10 @@ public class ConsoleFormatTest {
             // Restore the initial contents of bootstrap.properties
             FileOutputStream out = getFileOutputStreamForRemoteFile(bootstrapFile, false);
             writeProperties(initialBootstrapProps, out);
+
+            // Restart the default server so the bootstrap properties is restored, to ensure other tests are run correctly.
+            Log.info(c, "testSimpleFormatSetInBootstrapProperties", "Restarting the server...");
+            restoreServer();
         }
     }
 
@@ -253,7 +257,7 @@ public class ConsoleFormatTest {
      */
     @Test
     public void testInvalidConsoleFormatSetInBootstrapProperties() throws Exception {
-
+        restoreServer();
         // Get the bootstrap.properties file and store the original content
         RemoteFile bootstrapFile = server.getServerBootstrapPropertiesFile();
         FileInputStream in = getFileInputStreamForRemoteFile(bootstrapFile);
@@ -279,6 +283,10 @@ public class ConsoleFormatTest {
             // Restore the initial contents of bootstrap.properties
             FileOutputStream out = getFileOutputStreamForRemoteFile(bootstrapFile, false);
             writeProperties(initialBootstrapProps, out);
+
+            // Restart the default server so the bootstrap properties is restored, to ensure other tests are run correctly.
+            Log.info(c, "testSimpleFormatSetInBootstrapProperties", "Restarting the server...");
+            restoreServer();
         }
     }
 
@@ -309,7 +317,7 @@ public class ConsoleFormatTest {
      */
     @Test
     public void testSimpleConsoleFormatWithSysOutSysErrMsgs() throws Exception {
-
+        restoreServer();
         // Retrieve the consoleLogFile RemoteFile
         RemoteFile consoleLogFile = server.getConsoleLogFile();
 
@@ -342,7 +350,7 @@ public class ConsoleFormatTest {
      */
     @Test
     public void testTBasicFormatWithClassMessage() throws Exception {
-
+        restoreServer();
         // Retrieve the consoleLogFile RemoteFile
         RemoteFile consoleLogFile = server.getConsoleLogFile();
 
@@ -404,16 +412,22 @@ public class ConsoleFormatTest {
         // Start the server with the server.env file configured with the consoleFormat=simple
         serverEnv.startServer();
 
-        // Retrieve the consoleLogFile RemoteFile
-        RemoteFile consoleLogFile = serverEnv.getConsoleLogFile();
+        try {
+            // Retrieve the consoleLogFile RemoteFile
+            RemoteFile consoleLogFile = serverEnv.getConsoleLogFile();
 
-        // Verify if the console logging format is not in the default dev format, and is in the simple format
-        List<String> lines = serverEnv.findStringsInLogs(SIMPLE_FORMAT_REGEX_PATTERN, consoleLogFile);
-        assertTrue("The console log is not in simple format.", lines.size() > 0);
+            // Verify if the console logging format is not in the default dev format, and is in the simple format
+            List<String> lines = serverEnv.findStringsInLogs(SIMPLE_FORMAT_REGEX_PATTERN, consoleLogFile);
+            assertTrue("The console log is not in simple format.", lines.size() > 0);
 
-        // Stop the serverEnv
-        if (serverEnv != null && serverEnv.isStarted()) {
-            serverEnv.stopServer(EXPECTED_FAILURES);
+        } finally {
+            // Stop the serverEnv here, to ensure proper clean up when failures occur.
+            if (serverEnv != null && serverEnv.isStarted()) {
+                serverEnv.stopServer(EXPECTED_FAILURES);
+            }
+
+            // Start the default server, to ensure other tests are run correctly.
+            restoreServer();
         }
     }
 
@@ -464,11 +478,14 @@ public class ConsoleFormatTest {
             // Restore the initial contents of bootstrap.properties
             FileOutputStream out = getFileOutputStreamForRemoteFile(bootstrapFile, false);
             writeProperties(initialBootstrapProps, out);
-        }
 
-        // Stop the serverEnv
-        if (serverEnv != null && serverEnv.isStarted()) {
-            serverEnv.stopServer(EXPECTED_FAILURES);
+            // Stop the serverEnv here, to ensure proper clean up when failures occur.
+            if (serverEnv != null && serverEnv.isStarted()) {
+                serverEnv.stopServer(EXPECTED_FAILURES);
+            }
+
+            // Start the default server, to ensure other tests are run correctly.
+            restoreServer();
         }
     }
 
@@ -539,6 +556,7 @@ public class ConsoleFormatTest {
         loggingObj.setConsoleFormat(consoleFormat);
         libertyServer.setMarkToEndOfLog(consoleLogFile);
         libertyServer.updateServerConfiguration(serverConfig);
+        Thread.sleep(1000);
         libertyServer.waitForConfigUpdateInLogUsingMark(null);
     }
 
