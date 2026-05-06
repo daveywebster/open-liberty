@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import componenttest.topology.impl.JavaInfo;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -412,11 +413,12 @@ public class ClientSSLHandshakeTest extends CommonTest {
                         effectiveCiphers.subList(0, Math.min(5, effectiveCiphers.size())));
             }
             
-            // Verify we have a reasonable number of ciphers in the JDK effective list.
-            // FIPS mode restricts the available cipher suites, resulting in fewer ciphers
-            // compared to non-FIPS mode where the JDK typically provides more cipher options.
+            // JDKs with version ?=11 are currently returning 30+ cipher entries.
+            // If FIPS140-3 is enabled we get 10+
+            // Oracle JDK 8 returning between 20 and 30.
             boolean isFipsEnabled = testServer.isFIPS140_3EnabledAndSupported();
-            int expectedMinCiphers = isFipsEnabled ? 10 : 30;
+            JavaInfo ji = JavaInfo.forServer(testServer);
+            int expectedMinCiphers = isFipsEnabled ? 10 : ji.majorVersion() == 8 ? 20 : 30;
             assertTrue("Expected JDK default cipher list to have at least " + expectedMinCiphers +
                     " ciphers (FIPS=" + isFipsEnabled + "), but found: " + effectiveCiphers.size(),
                     effectiveCiphers.size() >= expectedMinCiphers);
