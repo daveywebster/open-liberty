@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2021, 2022 IBM Corporation and others.
+ * Copyright (c) 2021, 2026 IBM Corporation and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License 2.0
  * which accompanies this distribution, and is available at
@@ -122,7 +122,7 @@ public class JCacheLoggedOutCookieCache implements LoggedOutCookieCache {
                     }
                     if (!(migrationWarningPrinted)) {
                         // Warn user that older version tokens exist in the JCache instance.
-                        Tr.warning(tc, "OLD_LOGOUT_TOKENS_MIGRATED_TO_HASHED", migratedCount);
+                        Tr.warning(tc, "OLD_LOGOUT_TOKENS_MIGRATED", migratedCount);
                         migrationWarningPrinted = true;
                     }
                 } catch (Exception e) {

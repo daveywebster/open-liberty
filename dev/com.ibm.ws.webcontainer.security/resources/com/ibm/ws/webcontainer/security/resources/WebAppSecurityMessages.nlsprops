@@ -1,5 +1,5 @@
 ###############################################################################
-# Copyright (c) 2011, 2021 IBM Corporation and others.
+# Copyright (c) 2011, 2026 IBM Corporation and others.
 # All rights reserved. This program and the accompanying materials
 # are made available under the terms of the Eclipse Public License 2.0
 # which accompanies this distribution, and is available at
@@ -163,13 +163,11 @@ JCACHE_PUT_FAILURE.useraction=Address the cause of the error.
 JCACHE_CONTAINSKEY_FAILURE=CWWKS9131E: The logged-out-cookie cache was unable to check the JCache cache for the cookie. The error is: {0}
 JCACHE_CONTAINSKEY_FAILURE.explanation=The logged-out-cookie cache encountered an error when it tried to check the JCache cache for the cookie. 
 JCACHE_CONTAINSKEY_FAILURE.useraction=Address the cause of the error.
-OLD_LOGOUT_TOKENS_MIGRATED_TO_HASHED=CWWKS9132W: Detected logged-out tokens of previous version. Please ensure all servers in your environment are upgraded to the latest version to avoid logged-out cache not being shared properly.
-OLD_LOGOUT_TOKENS_MIGRATED_TO_HASHED.explanation=The system detected logged-out tokens that were stored using an older format without hash encoding. These tokens have been automatically migrated to the new hashed format for improved security and consistency.
-OLD_LOGOUT_TOKENS_MIGRATED_TO_HASHED.useraction=Ensure that all servers in your cluster or environment are upgraded to the latest version that supports hashed token storage. Once all servers are upgraded, this migration will no longer be necessary.
+
+OLD_LOGOUT_TOKENS_MIGRATED=CWWKS9132W: Logged-out tokens with an older format are detected. For the logged-out cache to be shared properly, ensure all servers in your environment are upgraded to the latest version.
+OLD_LOGOUT_TOKENS_MIGRATED.explanation=The system detected logged-out tokens that have an older format. For improved security and consistency, logged-out tokens have been migrated to the newer format.
+OLD_LOGOUT_TOKENS_MIGRATED.useraction=To ensure that logged-out tokens use the most recent format, upgrade all servers in your cluster or environment to the latest version.
 
 JCACHE_MIGRATION_FAILURE=CWWKS9133E: The logged-out-cookie cache encountered an error while migrating old tokens to hashed versions. The error is: {0}
 JCACHE_MIGRATION_FAILURE.explanation=The logged-out-cookie cache encountered an error during the one-time migration of old logged-out tokens to the new hashed format.
 JCACHE_MIGRATION_FAILURE.useraction=Review the error message and server logs to determine the cause of the failure. The migration will be retried on the next server restart.
-LOGOUT_TOKEN_CACHE_SIZE_DOUBLED_BY_MIGRATION=CWWKS9134W: Migrated {0} tokens out of a total cache size of {1} entries. If your cache has a size limit configured, older entries may be evicted.
-LOGOUT_TOKEN_CACHE_SIZE_DOUBLED_BY_MIGRATION.explanation=The migration process creates new hashed versions of existing logged-out tokens while keeping the old versions temporarily. This doubles the number of entries in the cache during the migration period.
-LOGOUT_TOKEN_CACHE_SIZE_DOUBLED_BY_MIGRATION.useraction=Consider increasing your cache size limit to accommodate both old and new token formats during the migration period. Once all servers are upgraded and the old tokens expire, the cache size will return to normal.
