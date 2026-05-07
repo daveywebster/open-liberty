@@ -848,7 +848,7 @@ public abstract class QueryInfo {
                            Map<Object, Object> jpqlParams,
                            PageRequest pageReq,
                            List<Sort<Object>> sortsOverride) {
-        DataVersionCompatibility compat = entityInfo.builder.provider.compat;
+        DataVersionCompatibility compat = entityInfo.factory.provider.compat;
 
         QueryInfo info = compat.createQueryInfo(producer, //
                                                 repositoryInterface, //
@@ -1575,7 +1575,7 @@ public abstract class QueryInfo {
         if (trace && tc.isEntryEnabled())
             Tr.entry(this, tc, "find", type);
 
-        DataVersionCompatibility compat = entityInfo.builder.provider.compat;
+        DataVersionCompatibility compat = entityInfo.factory.provider.compat;
         Limit limit = null;
         int max = maxResults;
         PageRequest pageReq = null;
@@ -2654,7 +2654,7 @@ public abstract class QueryInfo {
 
         String o = entityVar;
         String o_ = entityVar_;
-        DataVersionCompatibility compat = entityInfo.builder.provider.compat;
+        DataVersionCompatibility compat = entityInfo.factory.provider.compat;
 
         Boolean isNamePresent = null; // unknown
         Parameter[] params = null;
@@ -2911,7 +2911,7 @@ public abstract class QueryInfo {
         StringBuilder q = new StringBuilder(200);
         String o = entityVar;
 
-        String[] cols, selections = entityInfo.builder.provider.compat.getSelections(method);
+        String[] cols, selections = entityInfo.factory.provider.compat.getSelections(method);
         if (selections.length == 0) {
             cols = null;
         } else if (type == FIND_AND_DELETE) {
@@ -2969,7 +2969,7 @@ public abstract class QueryInfo {
 
                     String[] names = new String[recordComponents.length];
                     for (int i = 0; i < recordComponents.length; i++) {
-                        String[] select = entityInfo.builder.provider.compat //
+                        String[] select = entityInfo.factory.provider.compat //
                                         .getSelections(recordComponents[i]);
                         if (select == null || select.length == 0)
                             names[i] = recordComponents[i].getName();
@@ -4291,7 +4291,7 @@ public abstract class QueryInfo {
      *         method parameters.
      */
     private int locateSpecialParameters(Class<?>[] paramTypes) {
-        DataVersionCompatibility compat = entityInfo.builder.provider.compat;
+        DataVersionCompatibility compat = entityInfo.factory.provider.compat;
         Set<Class<?>> specialParamTypes = compat.specialParamTypes();
         int specialParamsStartAt = paramTypes.length; // not found yet
 
@@ -4333,7 +4333,7 @@ public abstract class QueryInfo {
      */
     @Trivial
     final Object loggable(Object value) {
-        return entityInfo.builder.provider.loggable(repositoryInterface,
+        return entityInfo.factory.provider.loggable(repositoryInterface,
                                                     method,
                                                     value);
     }
@@ -4348,7 +4348,7 @@ public abstract class QueryInfo {
      */
     @Trivial
     final String loggableAppend(String prefix, Object... possibleSuffix) {
-        return entityInfo.builder.provider.loggableAppend(repositoryInterface,
+        return entityInfo.factory.provider.loggableAppend(repositoryInterface,
                                                           method,
                                                           prefix,
                                                           possibleSuffix);

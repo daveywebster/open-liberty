@@ -77,7 +77,7 @@ public class RepositoryImpl<R> implements InvocationHandler {
     /**
      * Creates EntityAgent and EntityManager instances.
      */
-    private final EntityManagerBuilder builder;
+    private final EntityHandlerFactory factory;
 
     /**
      * Indicates if the bean for the repository has been disposed.
@@ -117,7 +117,7 @@ public class RepositoryImpl<R> implements InvocationHandler {
      * @param provider              OSGi service for the built-in Jakarta Data
      *                                  provider for EclipseLink.
      * @param extension             CDI extension for the Jakarta Data provider.
-     * @param builder               Builder of EntityManager instances.
+     * @param factory               Creates EntityAgent and EntityManager
      * @param repositoryInterface   The repository interface.
      * @param primaryEntityClass    The primary entity class for the repository.
      *                                  Null if the repository does not have one.
@@ -127,17 +127,17 @@ public class RepositoryImpl<R> implements InvocationHandler {
      */
     public RepositoryImpl(DataProvider provider,
                           DataExtension extension,
-                          EntityManagerBuilder builder,
+                          EntityHandlerFactory factory,
                           Class<R> repositoryInterface,
                           Class<?> primaryEntityClass,
                           Map<Class<?>, List<QueryInfo>> queriesPerEntityClass) {
-        this.builder = builder;
+        this.factory = factory;
 
-        // EntityManagerBuilder implementations guarantee that the future
+        // EntityHandlerFactory implementations guarantee that the future
         // in the following map will be completed even if an error occurs
         this.primaryEntityInfoFuture = primaryEntityClass == null //
                         ? null //
-                        : builder.entityInfoMap.computeIfAbsent(primaryEntityClass,
+                        : factory.entityInfoMap.computeIfAbsent(primaryEntityClass,
                                                                 EntityInfo::newFuture);
         this.provider = provider;
         this.repositoryInterface = repositoryInterface;
@@ -161,7 +161,7 @@ public class RepositoryImpl<R> implements InvocationHandler {
                 entitylessQueryInfos = entry.getValue();
             } else {
                 CompletableFuture<EntityInfo> entityInfoFuture = //
-                                builder.entityInfoMap.computeIfAbsent(entityClass,
+                                factory.entityInfoMap.computeIfAbsent(entityClass,
                                                                       EntityInfo::newFuture);
                 entityInfoFutures.add(entityInfoFuture);
 
@@ -287,11 +287,11 @@ public class RepositoryImpl<R> implements InvocationHandler {
      * jakarta.persistence.PersistenceException (and subclasses).
      *
      * @param original exception to possibly replace.
-     * @param emb      entity manager builder.
+     * @param factory  creates EntityAgent and EntityManager
      * @return exception to replace with, if any. Otherwise, the original.
      */
     @Trivial
-    static RuntimeException failure(Exception original, EntityManagerBuilder emb) {
+    static RuntimeException failure(Exception original, EntityHandlerFactory factory) {
         final boolean trace = TraceComponent.isAnyTracingEnabled();
         RuntimeException x = null;
         if (original instanceof PersistenceException) {
@@ -302,7 +302,7 @@ public class RepositoryImpl<R> implements InvocationHandler {
                 String sqlState = null;
                 if (cause instanceof SQLException c) {
                     sqlState = c.getSQLState();
-                    if (emb.isConnectionError(c))
+                    if (factory.isConnectionError(c))
                         x = new DataConnectionException(original);
                 }
                 if (x == null)
@@ -395,19 +395,19 @@ public class RepositoryImpl<R> implements InvocationHandler {
         Class<?> type = info.method.getReturnType();
 
         if (EntityManager.class.equals(type)) {
-            resource = builder.getEntityManager(stateful);
+            resource = factory.getEntityManager(stateful);
             resourceAutoCloses = stateful;
         } else if (DataSource.class.equals(type)) {
-            resource = builder.getDataSource(info.method, repositoryInterface);
+            resource = factory.getDataSource(info.method, repositoryInterface);
         } else if (Connection.class.equals(type)) {
             try {
-                resource = builder.getDataSource(info.method, repositoryInterface) //
+                resource = factory.getDataSource(info.method, repositoryInterface) //
                                 .getConnection();
             } catch (SQLException x) {
                 throw new DataConnectionException(x);
             }
         } else if ("jakarta.persistence.EntityAgent".equals(type.getName())) {
-            resource = builder.getEntityAgent();
+            resource = factory.getEntityAgent();
         }
 
         if (resource == null)
@@ -459,7 +459,7 @@ public class RepositoryImpl<R> implements InvocationHandler {
     public void introspect(PrintWriter writer, String indent) {
 
         writer.println(indent + "RepositoryImpl@" + Integer.toHexString(hashCode()));
-        writer.println(indent + "  builder: " + builder);
+        writer.println(indent + "  factory: " + factory);
         writer.println(indent + "  isDisposed? " + isDisposed);
         writer.println(indent + "  primary entity future: " + primaryEntityInfoFuture);
         writer.println(indent + "  provider: " + provider);
@@ -588,8 +588,8 @@ public class RepositoryImpl<R> implements InvocationHandler {
 
                 if (queryType != RESOURCE_ACCESS)
                     eh = stateful || queryInfo.entityInfo.simulateStateless() //
-                                    ? builder.getEntityManager(stateful) //
-                                    : builder.getEntityAgent();
+                                    ? factory.getEntityManager(stateful) //
+                                    : factory.getEntityAgent();
 
                 returnValue = switch (queryType) {
                     case FIND, FIND_AND_DELETE -> queryInfo.find(eh, txStatus, args);
@@ -679,7 +679,7 @@ public class RepositoryImpl<R> implements InvocationHandler {
             return returnValue;
         } catch (Throwable x) {
             if (!isDefaultMethod && x instanceof Exception)
-                x = failure((Exception) x, builder);
+                x = failure((Exception) x, factory);
             if (trace && tc.isEntryEnabled())
                 Tr.exit(this, tc, "invoke " + repositoryInterface.getSimpleName() +
                                   '.' + method.getName(),

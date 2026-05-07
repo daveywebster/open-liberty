@@ -210,13 +210,13 @@ public class PageImpl<T> implements Page<T> {
                       queryInfo.jpqlCount,
                       queryInfo.jpql);
 
-        EntityManagerBuilder builder = queryInfo.entityInfo.builder;
+        EntityHandlerFactory factory = queryInfo.entityInfo.factory;
         boolean stateful = queryInfo.producer.stateful();
         AutoCloseable entityHandler = null;
         try {
             entityHandler = stateful || queryInfo.entityInfo.simulateStateless() //
-                            ? builder.getEntityManager(stateful) //
-                            : builder.getEntityAgent();
+                            ? factory.getEntityManager(stateful) //
+                            : factory.getEntityAgent();
 
             if (TraceComponent.isAnyTracingEnabled() && tc.isDebugEnabled())
                 Tr.debug(this, tc, "query for count: " + queryInfo.jpqlCount);
@@ -228,13 +228,13 @@ public class PageImpl<T> implements Page<T> {
 
             return query.getSingleResult();
         } catch (Exception x) {
-            throw RepositoryImpl.failure(x, builder);
+            throw RepositoryImpl.failure(x, factory);
         } finally {
             if (!stateful && entityHandler != null)
                 try {
                     entityHandler.close();
                 } catch (Exception x) {
-                    throw RepositoryImpl.failure(x, builder);
+                    throw RepositoryImpl.failure(x, factory);
                 }
         }
     }
