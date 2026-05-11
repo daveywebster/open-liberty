@@ -11,13 +11,7 @@
 #     IBM Corporation - initial API and implementation
 #*******************************************************************************
 
-# Include common test packages
--include= test.bnd
-
-# Version-specific packages only
--privatepackage: ${-tests-common},\
-    com.ibm.ws.jpa.tests.spec10.callback.jpa21
-
-suite.name=com.ibm.ws.jpa.tests.spec10.callback.jpa21.FATSuite
-
-tested.features: jpa-2.1, jpaContainer-2.1, ejbLite-3.2, servlet-3.1, jdbc-4.1, jndi-1.0, databaserotation
+-tests-common: \
+    com.ibm.ws.jpa.tests.spec10.callback.tests,\
+    com.ibm.ws.jpa.fvt.callback.*,\
+    jpahelper.databasemanagement

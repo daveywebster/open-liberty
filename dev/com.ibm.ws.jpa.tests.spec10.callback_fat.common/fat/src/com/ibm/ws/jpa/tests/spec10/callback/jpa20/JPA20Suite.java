@@ -18,6 +18,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
 
+import com.ibm.ws.jpa.tests.spec10.callback.tests.AbstractFATSuite;
 import com.ibm.ws.jpa.tests.spec10.callback.tests.Callback_EJB;
 import com.ibm.ws.jpa.tests.spec10.callback.tests.Callback_Web;
 
@@ -25,10 +26,12 @@ import componenttest.rules.repeater.RepeatTests;
 
 @RunWith(Suite.class)
 @SuiteClasses({
-    JPA20Suite.class, 
-    componenttest.custom.junit.runner.AlwaysPassesTest.class
+    Callback_EJB.class,
+    Callback_Web.class
 })
-public class FATSuite{
-  
-}
+public class JPA20Suite extends AbstractFATSuite {
 
+    @ClassRule
+    public static RepeatTests r = RepeatTests.with(new RepeatWithJPA20());
+
+}
