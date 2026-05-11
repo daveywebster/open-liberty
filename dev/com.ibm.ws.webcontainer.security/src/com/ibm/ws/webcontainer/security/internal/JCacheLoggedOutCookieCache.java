@@ -13,8 +13,10 @@
 package com.ibm.ws.webcontainer.security.internal;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 import javax.cache.Cache;
 
@@ -34,8 +36,10 @@ public class JCacheLoggedOutCookieCache implements LoggedOutCookieCache {
 
     private static final TraceComponent tc = Tr.register(JCacheLoggedOutCookieCache.class, "LoggedOutCookieCache", TraceConstants.MESSAGE_BUNDLE);
     private final CacheService cacheService;
+    private static final int SHA512_DIGEST_LENGTH = 64;
     private volatile boolean migrationCompleted = false;
     private volatile boolean migrationWarningPrinted = false;
+    private volatile boolean migrationErrorPrinted = false;
 
     public JCacheLoggedOutCookieCache(CacheService cacheService) {
         this.cacheService = cacheService;
@@ -73,64 +77,57 @@ public class JCacheLoggedOutCookieCache implements LoggedOutCookieCache {
                 return;
             }
 
-            // First pass: Collect all entries to avoid modifying cache during iteration
-            List<String> keysToMigrate = new ArrayList<>();
+            // Collect entries to migrate and build the batch update map
+            Map<Object, Object> entriesToMigrate = new HashMap<>();
             int skippedCount = 0;
-            
+
             for (Cache.Entry<Object, Object> entry : cache) {
                 try {
                     Object key = entry.getKey();
                     String keyStr = (String) key;
 
                     // Check if the key is NOT prefixed with "LOGOUT:"
-                    if (!keyStr.startsWith(LoggedOutCookieCacheHelper.LOGOUT_KEY_PREFIX)) {
-                        keysToMigrate.add(keyStr);
+                    if (!(keyStr.startsWith(LoggedOutCookieCacheHelper.LOGOUT_KEY_PREFIX))) {
+                        // Process(hash or append prefix) and add to migration map
+                        String hashedKey;
+                        boolean isJWTLoggedOutToken = Base64Coder.base64DecodeString(keyStr).length <= SHA512_DIGEST_LENGTH;
+                        if (isJWTLoggedOutToken) {
+                            // For JWT LoggedOutTokens, we are hashing them already with sha512, so we just need to add the prefix
+                            hashedKey = LoggedOutCookieCacheHelper.LOGOUT_KEY_PREFIX + keyStr;
+                        } else {
+                            // Generate the hashed version of the key
+                            hashedKey = LoggedOutCookieCacheHelper.generateTokenHashKey(keyStr);
+                        }
+                        
+                        entriesToMigrate.put(hashedKey, "");
+
+                        if (tc.isDebugEnabled()) {
+                            Tr.debug(tc, "Migrated old token to hashed version: " + keyStr.substring(0, 20) + "... -> " + hashedKey);
+                        }
+                        if (!(migrationWarningPrinted)) {
+                            // Warn user that older version tokens exist in the JCache instance.
+                            Tr.warning(tc, "OLD_LOGOUT_TOKENS_MIGRATED");
+                            migrationWarningPrinted = true;
+                        }
                     } else {
-                        // this implies the migration logic is already being run in other nodes, skip migration logic above
                         skippedCount++;
                         if (tc.isDebugEnabled()) {
                             Tr.debug(tc, "Hashed token exists in cache: " + keyStr);
                         }
                     }
                 } catch (Exception e) {
-                    // Log and continue with next entry
-                    if (tc.isDebugEnabled()) {
-                        Tr.debug(tc, "Error processing cache entry during migration", e);
+                    // Log error and continue with next entry
+                    if (!(migrationErrorPrinted)) {
+                        Tr.error(tc, "JCACHE_MIGRATION_FAILURE", e);
+                        migrationErrorPrinted = true;
                     }
                 }
             }
-
-            // Second pass: Migrate collected keys
-            int migratedCount = 0;
-            for (String keyStr : keysToMigrate) {
-                try {
-                    int SHA512_DIGEST_LENGTH = 64;
-                    String hashedKey;
-                    boolean isJWTLoggedOutToken = Base64Coder.base64DecodeString(keyStr).length <= SHA512_DIGEST_LENGTH;
-                    if (isJWTLoggedOutToken) {
-                        // For JWT LoggedOutTokens, we are hashing them already with sha512, so we just need to add the prefix
-                        hashedKey = LoggedOutCookieCacheHelper.LOGOUT_KEY_PREFIX + keyStr;
-                    } else {
-                        // Generate the hashed version of the key
-                        hashedKey = LoggedOutCookieCacheHelper.generateTokenHashKey(keyStr);
-                    }
-                    cache.put(hashedKey, "");
-                    migratedCount++;
-
-                    if (tc.isDebugEnabled()) {
-                        Tr.debug(tc, "Migrated old token to hashed version: " + keyStr.substring(0, 20) + " -> " + hashedKey);
-                    }
-                    if (!(migrationWarningPrinted)) {
-                        // Warn user that older version tokens exist in the JCache instance.
-                        Tr.warning(tc, "OLD_LOGOUT_TOKENS_MIGRATED", migratedCount);
-                        migrationWarningPrinted = true;
-                    }
-                } catch (Exception e) {
-                    // Log and continue with next entry
-                    if (tc.isDebugEnabled()) {
-                        Tr.debug(tc, "Error migrating cache entry", e);
-                    }
-                }
+            
+            // Batch insert all migrated entries
+            int migratedCount = entriesToMigrate.size();
+            if (!entriesToMigrate.isEmpty()) {
+                cache.putAll(entriesToMigrate);
             }
 
             migrationCompleted = true;
@@ -140,8 +137,9 @@ public class JCacheLoggedOutCookieCache implements LoggedOutCookieCache {
             }
 
         } catch (Exception e) {
-            if (tc.isErrorEnabled()) {
+            if (!(migrationErrorPrinted)) {
                 Tr.error(tc, "JCACHE_MIGRATION_FAILURE", e);
+                migrationErrorPrinted = true;
             }
         }
     }
