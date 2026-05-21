@@ -111,7 +111,6 @@ public class LibertyUpgradeCodec implements UpgradeCodecFactory {
                     request.headers().set(HttpConversionUtil.ExtensionHeaderNames.STREAM_ID.text(), 1);
                     if (Constants.SPEC_INITIAL_WINDOW_SIZE != httpConfig.getH2ConnectionWindowSize()) {
                         // window update sets the difference between what the client has (default) and the new value.
-                        // TODO Should this actually be a difference from the settings value instead of the spec size itself since that's the part where the ohter endpoint has the established info
                         int updateSize = httpConfig.getH2ConnectionWindowSize() - Constants.SPEC_INITIAL_WINDOW_SIZE;
                         try {
                              ((DefaultHttp2LocalFlowController) handler.decoder().flowController()).incrementWindowSize(handler.decoder().connection().connectionStream(),
@@ -171,43 +170,28 @@ public class LibertyUpgradeCodec implements UpgradeCodecFactory {
         Http2Settings initialSettings = new Http2Settings().maxConcurrentStreams(httpConfig.getH2MaxConcurrentStreams()).maxFrameSize(httpConfig.getH2MaxFrameSize());
         if (httpConfig.getH2SettingsInitialWindowSize() != Constants.SPEC_INITIAL_WINDOW_SIZE)
             initialSettings.initialWindowSize(httpConfig.getH2SettingsInitialWindowSize());
-        // int frameWindowSize = httpConfig.getH2ResetFramesWindow() / 1000; // Frame window divided by 1000 because our httpOption is in ms precision but Netty's is in seconds
         InboundHttp2ToHttpAdapterBuilder builder = new InboundHttp2ToHttpAdapterBuilder(connection).propagateSettings(false).maxContentLength(Integer.MAX_VALUE).validateHttpHeaders(false);
         if (maxContentlength >= 0)
             builder.maxContentLength(maxContentlength);
         else
             maxContentlength = Integer.MAX_VALUE;
         LibertyInboundHttp2ToHttpAdapter listener = new LibertyInboundHttp2ToHttpAdapter(connection, maxContentlength, false, false, channel, httpConfig);
-        
-        
+
         // Create encoder with same configuration as builder would
         DefaultHttp2FrameWriter frameWriter = new DefaultHttp2FrameWriter(Http2HeadersEncoder.NEVER_SENSITIVE, true);
-
-        // Things to check
-        // DefaultHttp2FrameReader not using maxHeaderListSize? NOT NEEDED
-        // Do we want frame logger eventually? MAYBE
-        // DefaultHttp2FrameWriter do we need encoderIgnoreMaxHeaderListSize? YES
-        // Do we need Http2ControlFrameLimitEncoder? YES, default of Http2CodecUtil.DEFAULT_MAX_QUEUED_CONTROL_FRAMES
-        // DefaultHttp2ConnectionDecoder with three params should be enough
-
         DefaultHttp2ConnectionEncoder defaultEncoder = new DefaultHttp2ConnectionEncoder(
             connection, 
             frameWriter
         );
-
         Http2ConnectionEncoder wrappedEncoder = new Http2ControlFrameLimitEncoder(defaultEncoder, Http2CodecUtil.DEFAULT_MAX_QUEUED_CONTROL_FRAMES);
 
-        // Wrap with millisecond tracking (this is the ONLY new behavior)
-        wrappedEncoder = new MillisecondRstEncoderWrapper(
+        // Wrap with millisecond tracking for Liberty logic reusing the listener as the tracker
+        wrappedEncoder = new LibertyResetEncoderWrapper(
             wrappedEncoder,
             listener
         );
 
-        // It needs to be this way!!!!
-        // DefaultHttp2FrameReader reader = new DefaultHttp2FrameReader(new LibertyDefaultHttp2HeadersDecoder(true,
-        // 		Long.MAX_VALUE, maxHeaderBlockSize, limitFieldSize, limitNumHeaders));
-
-        // Create default decoder with listener
+        // Create default decoder with reader using Liberty HTTP options
         DefaultHttp2ConnectionDecoder defaultDecoder = new DefaultHttp2ConnectionDecoder(
             connection,
             wrappedEncoder,
@@ -225,24 +209,11 @@ public class LibertyUpgradeCodec implements UpgradeCodecFactory {
         // Build with custom encoder
         HttpToHttp2ConnectionHandler handler = new HttpToHttp2ConnectionHandlerBuilder()
             .frameListener(listener)
-            // .decoder(defaultDecoder)
-            // .encoder(wrappedEncoder)  // Custom encoder
             .initialSettings(initialSettings)
             .decoderEnforceMaxRstFramesPerWindow(0, 0) // Force disable since logic is already done in custom listener
-            .limitFieldSize(httpConfig.getLimitOfFieldSize())
-            .limitNumHeaders(httpConfig.getLimitOnNumberOfHeaders())
-            .maxHeaderBlockSize(httpConfig.getH2MaxHeaderBlockSize())
             .codec(defaultDecoder, wrappedEncoder)
             .build();
 
-
-
-        
-        
-        
-        
-        
-        // HttpToHttp2ConnectionHandler handler = new HttpToHttp2ConnectionHandlerBuilder().frameListener(listener).connection(connection).initialSettings(initialSettings).encoderIgnoreMaxHeaderListSize(true).decoderEnforceMaxRstFramesPerWindow(0, 0).encoderEnforceMaxRstFramesPerWindow(httpConfig.getH2MaxResetFrames(), frameWindowSize).limitFieldSize(httpConfig.getLimitOfFieldSize()).limitNumHeaders(httpConfig.getLimitOnNumberOfHeaders()).maxHeaderBlockSize(httpConfig.getH2MaxHeaderBlockSize()).build();
         if (!httpConfig.getH2LimitWindowUpdateFrames()) {
             // Execute this in event loop due to assertions
             channel.eventLoop().execute(() -> {
@@ -259,11 +230,11 @@ public class LibertyUpgradeCodec implements UpgradeCodecFactory {
         return handler;
     }
 
-    private class MillisecondRstEncoderWrapper extends DecoratingHttp2ConnectionEncoder {
+    private class LibertyResetEncoderWrapper extends DecoratingHttp2ConnectionEncoder {
         private final ResetFrameTracker tracker;
         private Http2LifecycleManager lifecycleManager;
         
-        public MillisecondRstEncoderWrapper(Http2ConnectionEncoder delegate, ResetFrameTracker libertyAdapter) {
+        public LibertyResetEncoderWrapper(Http2ConnectionEncoder delegate, ResetFrameTracker libertyAdapter) {
             super(delegate);
             this.tracker = libertyAdapter;
         }
