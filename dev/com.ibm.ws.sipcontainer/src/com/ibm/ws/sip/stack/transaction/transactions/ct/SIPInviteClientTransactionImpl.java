@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2008, 2021 IBM Corporation and others.
+ * Copyright (c) 2008, 2026 IBM Corporation and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License 2.0
  * which accompanies this distribution, and is available at
@@ -27,7 +27,6 @@ import com.ibm.ws.sip.stack.transaction.transactions.SIPTransactionHelper;
 import com.ibm.ws.sip.stack.transaction.transport.SIPTransportException;
 import com.ibm.ws.sip.stack.transaction.util.ApplicationProperties;
 import com.ibm.ws.sip.stack.util.SipStackUtil;
-import com.ibm.ws.sip.container.tu.TransactionUserImpl;
 
 import jain.protocol.ip.sip.SipParseException;
 import jain.protocol.ip.sip.SipProvider;
@@ -438,15 +437,10 @@ public class SIPInviteClientTransactionImpl
 				"Timer C fired on transaction " + toString());
 		}
 		updateSipTimersInvocationsPMICounter();
-		if (getState() == STATE_CALLING) {
+		if (getState() == STATE_PROCEEDING) {
 			notifyTransactionTimeoutToUA();
 			destroyTransaction();
 		}
-		if (getState() == STATE_PROCEEDING) {
-			//terminateUndelyingClientTransactions();
-                        notifyTransactionTimeoutToUA();
-                        destroyTransaction();
-                }
 	}
 	
 	/**

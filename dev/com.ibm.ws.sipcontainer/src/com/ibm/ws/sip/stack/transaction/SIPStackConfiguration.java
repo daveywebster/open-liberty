@@ -689,6 +689,7 @@ public class SIPStackConfiguration
 	public int getTimerC() {
 		return m_timerC;
 	}
+
 	/** @return Timer D - Wait time for INVITE response retransmits */
 	public int getTimerD() {
 		return m_timerD;
