@@ -21,6 +21,7 @@ import javax.resource.ResourceException;
 import com.ibm.ejs.cm.logger.TraceWriter;
 import com.ibm.websphere.ras.Tr;
 import com.ibm.websphere.ras.TraceComponent;
+import com.ibm.ws.jdbc.internal.PropertyService;
 import com.ibm.ws.rsadapter.AdapterUtil;
 
 /**
@@ -67,7 +68,7 @@ public class H2Helper extends DatabaseHelper {
     @Override
     public PrintWriter getPrintWriter() throws ResourceException {
         if (genPw == null)
-            genPw = new PrintWriter(new TraceWriter(h2Tc), true);
+            genPw = new PrintWriter(new FilteringTraceWriter(h2Tc), true);
         return genPw;
     }
 
@@ -106,8 +107,95 @@ public class H2Helper extends DatabaseHelper {
      */
     @Override
     public boolean shouldTraceBeDisabled(WSRdbManagedConnectionImpl mc) {
-        return TraceComponent.isAnyTracingEnabled() && 
-               !h2Tc.isDebugEnabled() && 
+        return TraceComponent.isAnyTracingEnabled() &&
+               !h2Tc.isDebugEnabled() &&
                mc.mcf.loggingEnabled;
+    }
+
+    /**
+     * Extension of TraceWriter that filters sensitive information from H2 driver logs.
+     * Filters exact H2 Type:/Content: pairs for password and url values.
+     */
+    private static class FilteringTraceWriter extends TraceWriter {
+        private enum PendingFilter {
+            NONE,
+            PASSWORD,
+            URL
+        }
+
+        private static final String PASSWORD_TYPE = "password";
+        private static final String URL_TYPE = "url";
+        private static final String TYPE_PREFIX = "Type: ";
+        private static final String CONTENT_PREFIX = "Content: ";
+        private static final String FILTERED_VALUE = "******";
+
+        private PendingFilter pendingFilter = PendingFilter.NONE;
+        private final com.ibm.ejs.ras.TraceComponent traceDestination;
+
+        public FilteringTraceWriter(com.ibm.ejs.ras.TraceComponent dest) {
+            super(dest);
+            this.traceDestination = dest;
+        }
+
+        @Override
+        protected void formatTrace() {
+            final String str = toString();
+            int start = 0;
+
+            for (int end = str.indexOf('\n'); end >= 0; start = end + 1, end = str.indexOf('\n', start)) {
+                String line = str.substring(start, end);
+                com.ibm.websphere.ras.Tr.debug(traceDestination, filterLine(line));
+            }
+
+            getBuffer().delete(0, start);
+        }
+
+        /**
+         * Filters a single line based on exact H2 Type:/Content: pairs.
+         * Type: password masks the following Content: line.
+         * Type: url filters the following Content: line using existing URL filtering.
+         */
+        private String filterLine(String line) {
+            String trimmed = line.trim();
+
+            if (trimmed.startsWith(TYPE_PREFIX)) {
+                String propertyType = trimmed.substring(TYPE_PREFIX.length()).trim();
+                if (PASSWORD_TYPE.equals(propertyType)) {
+                    pendingFilter = PendingFilter.PASSWORD;
+                } else if (URL_TYPE.equals(propertyType)) {
+                    pendingFilter = PendingFilter.URL;
+                } else {
+                    pendingFilter = PendingFilter.NONE;
+                }
+                return line;
+            }
+
+            if (trimmed.startsWith(CONTENT_PREFIX)) {
+                String content = trimmed.substring(CONTENT_PREFIX.length()).trim();
+                PendingFilter filterToApply = pendingFilter;
+                pendingFilter = PendingFilter.NONE;
+
+                switch (filterToApply) {
+                    case PASSWORD:
+                        return withOriginalIndentation(line, CONTENT_PREFIX + FILTERED_VALUE);
+                    case URL:
+                        return withOriginalIndentation(line, CONTENT_PREFIX + PropertyService.filterURL(content));
+                    case NONE:
+                    default:
+                        if (content.startsWith("jdbc:")) {
+                            return withOriginalIndentation(line, CONTENT_PREFIX + PropertyService.filterURL(content));
+                        }
+                        return line;
+                }
+            }
+
+            pendingFilter = PendingFilter.NONE;
+            return line;
+        }
+
+        private String withOriginalIndentation(String line, String replacement) {
+            int prefixIndex = line.indexOf(CONTENT_PREFIX);
+            return prefixIndex > 0 ? line.substring(0, prefixIndex) + replacement : replacement;
+        }
     }
 }

@@ -12,9 +12,17 @@
  *******************************************************************************/
 package test.jakarta.data.validation;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
+import java.util.List;
+
 import org.jboss.shrinkwrap.api.spec.WebArchive;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TestRule;
 import org.junit.runner.RunWith;
 
 import com.ibm.websphere.simplicity.ShrinkHelper;
@@ -45,6 +53,49 @@ public class H2Test extends FATServletClient {
 
     @AfterClass
     public static void tearDown() throws Exception {
+        
+        /**
+         * Test that passwords are not leaked in H2 logwriter output.
+         * The H2 logwriter is enabled via bootstrap.properties with:
+         * com.ibm.ws.h2.logwriter=all
+         *
+         * This test verifies that the password "dbpwd1" used in the
+         * DataSourceDefinition is not leaked in the trace logs.
+         */
+
+        // Explicitly verify that the password "dbpwd1" is not in trace.log
+        List<String> passwordsInTrace = server.findStringsInLogsAndTrace("dbpwd1");
+        assertEquals("Password 'dbpwd1' should not appear in trace.log",
+                     0, passwordsInTrace.size());
+
+        // Verify that H2 logwriter output exists (shows trace is enabled)
+        List<String> h2LogWriterOutput = server.findStringsInLogsAndTrace("com\\.ibm\\.ws\\.h2\\.logwriter");
+        assertTrue("H2 logwriter output should be present in trace.log",
+                   !h2LogWriterOutput.isEmpty());
+
+        // Verify exact Type:/Content: password filtering behavior
+        List<String> passwordTypeLines = server.findStringsInLogsAndTrace("Type: password");
+        assertTrue("Type: password should be present in trace.log",
+                   !passwordTypeLines.isEmpty());
+
+        List<String> filteredPasswords = server.findStringsInLogsAndTrace("Content: \\*\\*\\*\\*\\*\\*");
+        assertTrue("Filtered password markers (Content: ******) should be present in trace.log",
+                   !filteredPasswords.isEmpty());
+
+        // Verify exact Type:/Content: URL filtering behavior
+        List<String> urlTypeLines = server.findStringsInLogsAndTrace("Type: url");
+        assertTrue("Type: url should be present in trace.log",
+                   !urlTypeLines.isEmpty());
+
+        List<String> filteredUrls = server.findStringsInLogsAndTrace("Content: jdbc:h2:\\*\\*\\*\\*");
+        assertTrue("Filtered URL markers (Content: jdbc:h2:****) should be present in trace.log",
+                   !filteredUrls.isEmpty());
+
+        List<String> unfilteredJdbcUrls = server.findStringsInLogsAndTrace("Content: jdbc:h2:(?!\\*\\*\\*\\*).*");
+        assertEquals("Unfiltered H2 JDBC URLs should not appear in trace.log",
+                     0, unfilteredJdbcUrls.size());
+
         server.stopServer();
     }
+
 }
