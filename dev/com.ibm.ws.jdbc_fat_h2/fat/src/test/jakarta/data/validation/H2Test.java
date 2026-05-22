@@ -87,11 +87,11 @@ public class H2Test extends FATServletClient {
         assertTrue("Type: url should be present in trace.log",
                    !urlTypeLines.isEmpty());
 
-        List<String> filteredUrls = server.findStringsInLogsAndTrace("Content: jdbc:h2:\\*\\*\\*\\*");
-        assertTrue("Filtered URL markers (Content: jdbc:h2:****) should be present in trace.log",
+        List<String> filteredUrls = server.findStringsInLogsAndTrace("Content: jdbc:h2:mem:\\*\\*\\*\\*");
+        assertTrue("Filtered URL markers (Content: jdbc:h2:mem:****) should be present in trace.log",
                    !filteredUrls.isEmpty());
 
-        List<String> unfilteredJdbcUrls = server.findStringsInLogsAndTrace("Content: jdbc:h2:(?!\\*\\*\\*\\*).*");
+        List<String> unfilteredJdbcUrls = server.findStringsInLogsAndTrace("Content: jdbc:h2:mem:(?!\\*\\*\\*\\*).*");
         assertEquals("Unfiltered H2 JDBC URLs should not appear in trace.log",
                      0, unfilteredJdbcUrls.size());
 
