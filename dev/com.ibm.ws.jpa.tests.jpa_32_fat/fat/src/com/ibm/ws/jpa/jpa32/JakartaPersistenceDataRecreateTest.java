@@ -69,6 +69,11 @@ public class JakartaPersistenceDataRecreateTest {
         //Setup server DataSource properties
         DatabaseContainerUtil.setupDataSourceProperties(server, testContainer);
 
+        int appStartTimeout = server.getAppStartTimeout();
+        if (appStartTimeout < (180 * 1000)) {
+            server.setAppStartTimeout(180 * 1000);
+        }
+        
         createApplication(SPECLEVEL);
         server.startServer();
     }
