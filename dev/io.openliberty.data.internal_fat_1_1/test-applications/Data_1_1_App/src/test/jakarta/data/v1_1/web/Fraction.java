@@ -26,6 +26,8 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.ForeignKey;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.NamedAttributeNode;
+import jakarta.persistence.NamedEntityGraph;
 
 /**
  * Entity for representing fractions less than 1, such as 3/4 or 5/6.
@@ -33,6 +35,8 @@ import jakarta.persistence.JoinColumn;
  * and various other attribute types that we will want test coverage for.
  */
 @Entity
+@NamedEntityGraph(name = "EagerlyLoadRoundedValues",
+                  attributeNodes = @NamedAttributeNode("rounded"))
 public class Fraction {
 
     @Embedded
