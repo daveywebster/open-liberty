@@ -18,6 +18,7 @@ import static io.openliberty.data.internal.QueryType.LC_DELETE;
 import static io.openliberty.data.internal.QueryType.LC_UPDATE;
 import static io.openliberty.data.internal.QueryType.LC_UPDATE_MERGE;
 import static io.openliberty.data.internal.QueryType.MERGE;
+import static io.openliberty.data.internal.QueryType.NATIVE;
 import static io.openliberty.data.internal.QueryType.PERSIST;
 import static io.openliberty.data.internal.QueryType.REFRESH;
 import static io.openliberty.data.internal.QueryType.REMOVE;
@@ -83,6 +84,7 @@ import jakarta.data.repository.Delete;
 import jakarta.data.repository.Insert;
 import jakarta.data.repository.Is;
 import jakarta.data.repository.JakartaQuery;
+import jakarta.data.repository.NativeQuery;
 import jakarta.data.repository.OrderBy;
 import jakarta.data.repository.Query;
 import jakarta.data.repository.QueryOptions;
@@ -957,13 +959,16 @@ public class QueryInfo_1_1 extends QueryInfo {
     @Override
     @Trivial
     protected String getQueryAnnoValue() {
-        if (methodTypeAnno instanceof Query query)
+        if (methodTypeAnno instanceof Query query) {
             return query.value();
-        else if (methodTypeAnno instanceof JakartaQuery query)
+        } else if (methodTypeAnno instanceof JakartaQuery query) {
             return query.value();
-        // TODO NativeQuery?
-        else
+        } else if (methodTypeAnno instanceof NativeQuery query) {
+            type = NATIVE;
+            return query.value();
+        } else {
             return null;
+        }
     }
 
     /**

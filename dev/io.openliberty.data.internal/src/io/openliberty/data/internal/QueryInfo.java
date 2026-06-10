@@ -21,6 +21,7 @@ import static io.openliberty.data.internal.QueryType.FIND_AND_DELETE;
 import static io.openliberty.data.internal.QueryType.LC_DELETE;
 import static io.openliberty.data.internal.QueryType.LC_UPDATE;
 import static io.openliberty.data.internal.QueryType.LC_UPDATE_MERGE;
+import static io.openliberty.data.internal.QueryType.NATIVE;
 import static io.openliberty.data.internal.QueryType.QM_DELETE;
 import static io.openliberty.data.internal.QueryType.QM_UPDATE;
 import static io.openliberty.data.internal.Util.SORT_PARAM_TYPES;
@@ -312,7 +313,7 @@ public abstract class QueryInfo {
      * NONE_QUERY_LANGUAGE_ONLY
      * NONE_STATIC_SORT_ONLY
      */
-    private int[] sortPositions = NONE;
+    int[] sortPositions = NONE;
 
     /**
      * Ordered list of Sort criteria, which can be defined
@@ -1562,72 +1563,22 @@ public abstract class QueryInfo {
         if (trace && tc.isEntryEnabled())
             Tr.entry(this, tc, "find", type);
 
-        DataVersionCompatibility compat = entityInfo.factory.provider.compat;
-        Limit limit = null;
-        int max = maxResults;
-        PageRequest pageReq = null;
-        Object restriction = null;
-        List<Sort<Object>> sortList = null;
-
-        // The first method parameters are used as query parameters.
-        // Beyond that, they can have other purposes such as
-        // pagination and sorting.
-        for (int i = specialParamsStartAt; i < (args == null ? 0 : args.length); i++) {
-            Object param = args[i];
-            if (param instanceof Limit) {
-                if (max == 0 && limit == null && pageReq == null)
-                    max = (limit = (Limit) param).maxResults();
-                else
-                    throw Fail.methodParamIncompat(this, param, limit, pageReq);
-            } else if (param instanceof Order) {
-                @SuppressWarnings("unchecked")
-                Iterable<Sort<Object>> order = (Iterable<Sort<Object>>) param;
-                sortList = supplySorts(sortList, order);
-            } else if (param instanceof PageRequest) {
-                if (max == 0 && pageReq == null && limit == null)
-                    max = (pageReq = (PageRequest) param).size();
-                else
-                    throw Fail.methodParamIncompat(this, param, limit, pageReq);
-            } else if (param instanceof Sort) {
-                @SuppressWarnings("unchecked")
-                List<Sort<Object>> newList = supplySorts(sortList, (Sort<Object>) param);
-                sortList = newList;
-            } else if (param instanceof Sort[]) {
-                @SuppressWarnings("unchecked")
-                List<Sort<Object>> newList = supplySorts(sortList, (Sort<Object>[]) param);
-                sortList = newList;
-            } else if (compat.isRestriction(param)) {
-                if (restriction == null)
-                    restriction = param;
-                else
-                    throw Fail.duplicateSpecialParam(this, "Restriction");
-            } else if (param == null) {
-                // ignore null for empty Sort...
-                boolean isSort = false;
-                for (int s = 0; s < sortPositions.length; s++)
-                    isSort |= sortPositions[s] == i;
-                if (!isSort)
-                    // BasicRepository.findAll requires NullPointerException
-                    throw Fail.nullMethodParameter(this, i);
-            } else {
-                throw Fail.extraMethodParam(this, i);
-            }
-        }
+        QueryCustomization qc = QueryCustomization.from(this, args);
 
         Map<Integer, Object> deferredConstraints;
-        if (args == null || args.length == 0 ||
-            methodTypeAnno == null || methodTypeAnno instanceof Query)
+        if (args != null && args.length > 0 &&
+            (methodTypeAnno instanceof Find ||
+             methodTypeAnno instanceof Delete))
+            deferredConstraints = getDeferredConstraints(qc.restriction() != null,
+                                                         args);
+        else // Query, JakartaQuery, NativeQuery, or Query-by-Method-Name
             deferredConstraints = NO_CONSTRAINTS_DEFERRED;
-        else
-            deferredConstraints = getDeferredConstraints(restriction != null, args);
-        boolean requiresNewQuery = restriction != null ||
+
+        boolean requiresNewQuery = qc.restriction() != null ||
                                    !deferredConstraints.isEmpty();
 
-        if (sortList == null && sortPositions.length > 0)
-            sortList = sorts;
-
-        if (sortList == null || sortList.isEmpty()) {
-            if (pageReq != null)
+        if (qc.sorts() == null || qc.sorts().isEmpty()) {
+            if (qc.pageRequest() != null)
                 requireOrderedPagination(args);
         } else {
             requiresNewQuery = true;
@@ -1641,16 +1592,14 @@ public abstract class QueryInfo {
 
         QueryInfo queryInfo = requiresNewQuery //
                         ? copy(deferredConstraints, //
-                               restriction, //
+                               qc.restriction(), //
                                addedJPQLParams = new LinkedHashMap<>(), //
-                               pageReq, //
-                               sortList) //
+                               qc.pageRequest(), //
+                               qc.sorts()) //
                         : this;
 
-        Object returnValue = queryInfo.find(limit,
-                                            max,
-                                            pageReq,
-                                            eh,
+        Object returnValue = queryInfo.find(eh,
+                                            qc,
                                             txStatus,
                                             args,
                                             deferredConstraints,
@@ -1681,10 +1630,9 @@ public abstract class QueryInfo {
      * Execute a repository find query, and possibly also a delete operation
      * if find-and-delete.
      *
-     * @param limit               Limit, if a repository method parameter
-     * @param max                 maximum number of results to return
-     * @param pageReq             PageRequest, if a repository method parameter
      * @param entityHandler       EntityAgent or EntityManager
+     * @param qc                  Query customization from special parameters and
+     *                                First and OrderBy annotations/keywords
      * @param txStatus            transaction status.
      * @param args                method parameters.
      * @param deferredConstraints map of method parameter index to non-Literal
@@ -1696,10 +1644,8 @@ public abstract class QueryInfo {
      * @throws Exception if an error occurs.
      */
     @Trivial // em, txStatus, and method args have already been logged if loggable
-    private Object find(Limit limit,
-                        int max,
-                        PageRequest pageReq,
-                        AutoCloseable entityHandler,
+    private Object find(AutoCloseable entityHandler,
+                        QueryCustomization qc,
                         int txStatus,
                         Object[] args,
                         Map<Integer, Object> deferredConstraints,
@@ -1707,14 +1653,14 @@ public abstract class QueryInfo {
         final boolean trace = TraceComponent.isAnyTracingEnabled();
         if (trace && tc.isEntryEnabled())
             Tr.entry(this, tc, "find",
-                     "Limit: " + limit,
-                     "max results: " + max,
-                     "PageRequest: " + pageReq,
                      "non-literal Constraints at: " + deferredConstraints.keySet(),
                      "added JPQL params: " + (addedJPQLParams == null //
                                      ? null //
                                      : addedJPQLParams.keySet()));
 
+        Limit limit = qc.limit();
+        int max = qc.maxResults();
+        PageRequest pageReq = qc.pageRequest();
         Object returnValue;
 
         if (CursoredPage.class.equals(multiType)) {
@@ -1768,139 +1714,7 @@ public abstract class QueryInfo {
                 query.setFirstResult(startAt);
             }
 
-            if (multiType != null && BaseStream.class.isAssignableFrom(multiType)) {
-                Stream<?> stream;
-                // TODO 1.1 getResultStream can be used for stateful repositories
-                //if (txStatus == Status.STATUS_NO_TRANSACTION)
-                stream = query.getResultList().stream();
-                //else
-                //    stream = query.getResultStream();
-                if (Stream.class.equals(multiType))
-                    returnValue = stream;
-                else if (IntStream.class.equals(multiType))
-                    returnValue = stream.mapToInt(this::toInt);
-                else if (LongStream.class.equals(multiType))
-                    returnValue = stream.mapToLong(this::toLong);
-                else if (DoubleStream.class.equals(multiType))
-                    returnValue = stream.mapToDouble(this::toDouble);
-                else
-                    throw Fail.resultConversion(this, List.class.getName(), null);
-            } else {
-                List<?> results = query.getResultList();
-
-                if (trace) {
-                    Tr.debug(this, tc, "result list type: " +
-                                       (results == null ? null : results.getClass().toGenericString()));
-                    if (results != null && !results.isEmpty()) {
-                        Object r0 = results.get(0);
-                        Tr.debug(this, tc, "type of first result: " +
-                                           (r0 == null ? null : r0.getClass().toGenericString()));
-                    }
-                }
-
-                if (type == FIND_AND_DELETE)
-                    delete(results, entityHandler);
-
-                if (results.isEmpty() && isOptional) {
-                    returnValue = null;
-                } else if (multiType == null && entityInfo.entityClass.equals(singleType)) {
-                    returnValue = oneResult(results);
-                } else if (multiType != null &&
-                           multiType.isInstance(results) &&
-                           (results.isEmpty() || singleType.isInstance(results.get(0)) &&
-                                                 !(results.get(0) instanceof Object[]))) {
-                    returnValue = results;
-                } else if (multiType != null && Iterable.class.isAssignableFrom(multiType)) {
-                    returnValue = convertToIterable(results,
-                                                    multiType,
-                                                    singleType,
-                                                    query);
-                } else if (Iterator.class.equals(multiType)) {
-                    returnValue = results.iterator();
-                } else if (returnArrayType != null) {
-                    int size = results.size();
-                    Object firstNonNullResult = null;
-                    for (Object result : results)
-                        if (result != null) {
-                            firstNonNullResult = result;
-                            break;
-                        }
-                    if (firstNonNullResult == null
-                        || type == FIND_AND_DELETE
-                        || returnArrayType != Object.class &&
-                           returnArrayType.isInstance(firstNonNullResult)
-                        || returnArrayType.isPrimitive() &&
-                           Util.isWrapperClassFor(returnArrayType,
-                                                  firstNonNullResult.getClass())) {
-                        returnValue = Array.newInstance(returnArrayType, size);
-                        int i = 0;
-                        for (Object result : results)
-                            Array.set(returnValue, i++, result);
-                    } else if (firstNonNullResult.getClass().isArray()) {
-                        if (trace && tc.isDebugEnabled())
-                            Tr.debug(this, tc, "convert " + firstNonNullResult.getClass().getName() +
-                                               " to " + returnArrayType.getName());
-                        if (returnArrayType.isArray()) {
-                            // convert List<Object[]> to array of array
-                            returnValue = Array.newInstance(returnArrayType, size);
-                            int i = 0;
-                            for (Object result : results)
-                                if (result == null) {
-                                    Array.set(returnValue, i++, result);
-                                } else {
-                                    // Object[] needs conversion to returnArrayType
-                                    Class<?> subarrayType = returnArrayType.getComponentType();
-                                    int len = Array.getLength(result);
-                                    Object subarray = Array.newInstance(subarrayType, len);
-                                    for (int j = 0; j < len; j++) {
-                                        Object element = Array.get(result, j);
-                                        if (!subarrayType.isInstance(element))
-                                            element = convert(element, subarrayType, true);
-                                        Array.set(subarray, j, element);
-                                    }
-                                    Array.set(returnValue, i++, subarray);
-                                }
-                        } else if (size == 1) {
-                            // convert size 1 List<Object[]> to array
-                            if (isOptional &&
-                                firstNonNullResult.getClass().equals(singleType))
-                                returnValue = firstNonNullResult;
-                            else {
-                                int len = Array.getLength(firstNonNullResult);
-                                returnValue = Array.newInstance(returnArrayType, len);
-                                for (int i = 0; i < len; i++) {
-                                    Object element = Array.get(firstNonNullResult, i);
-                                    if (!returnArrayType.isInstance(element))
-                                        element = convert(element, returnArrayType, true);
-                                    Array.set(returnValue, i, element);
-                                }
-                            }
-                        } else {
-                            // List<Object[]> with multiple Object[] elements
-                            // cannot convert to a one dimensional array
-                            throw Fail.nonUniqueResult(this, size);
-                        }
-                    } else {
-                        String resultInfo = loggableAppend(firstNonNullResult.getClass().getName(),
-                                                           " (", firstNonNullResult, ")");
-                        throw Fail.resultConversion(this, resultInfo, null);
-                    }
-                } else if (results.isEmpty()) {
-                    throw Fail.emptyResult(this);
-                } else { // single result of other type
-                    if (Iterable.class.isAssignableFrom(singleType) &&
-                        !(results.get(0) instanceof Iterable))
-                        // workaround for EclipseLink wrongly returning
-                        // ElementCollection as separate individual elements
-                        // as shown in #30575
-                        returnValue = results;
-                    else
-                        returnValue = oneResult(results);
-                    if (returnValue != null &&
-                        !singleType.isAssignableFrom(returnValue.getClass()))
-                        returnValue = convert(returnValue, singleType, true);
-                }
-            }
+            returnValue = getQueryResults(entityHandler, qc, query, txStatus);
         }
 
         if (trace && tc.isEntryEnabled())
@@ -3379,6 +3193,166 @@ public abstract class QueryInfo {
     protected abstract String getQueryAnnoValue();
 
     /**
+     * Obtain the query results and convert the type as needed. This method does
+     * not include packaging results into an Optional or completion stage.
+     *
+     * @param entityHandler EntityAgent or EntityManager (both are EntityHandler)
+     * @param qc            special parameters combined with equivalent method
+     *                          annotations
+     * @param query         the query
+     * @param txStatus      transaction status
+     * @return successful results of the query
+     * @throws exception if unsuccessful
+     */
+    private Object getQueryResults(AutoCloseable entityHandler,
+                                   QueryCustomization qc,
+                                   jakarta.persistence.Query query,
+                                   int txStatus) throws Exception {
+        final boolean trace = TraceComponent.isAnyTracingEnabled();
+        Object returnValue;
+        if (multiType != null && BaseStream.class.isAssignableFrom(multiType)) {
+            Stream<?> stream;
+            // TODO 1.1 getResultStream can be used for stateful repositories
+            //if (txStatus == Status.STATUS_NO_TRANSACTION)
+            stream = query.getResultList().stream();
+            //else
+            //    stream = query.getResultStream();
+            if (Stream.class.equals(multiType))
+                returnValue = stream;
+            else if (IntStream.class.equals(multiType))
+                returnValue = stream.mapToInt(this::toInt);
+            else if (LongStream.class.equals(multiType))
+                returnValue = stream.mapToLong(this::toLong);
+            else if (DoubleStream.class.equals(multiType))
+                returnValue = stream.mapToDouble(this::toDouble);
+            else
+                throw Fail.resultConversion(this, List.class.getName(), null);
+        } else {
+            List<?> results = query.getResultList();
+
+            if (trace) {
+                Tr.debug(this, tc,
+                         "result list type: " + (results == null ? null //
+                                         : results.getClass().toGenericString()));
+                if (results != null && !results.isEmpty()) {
+                    Object r0 = results.get(0);
+                    Tr.debug(this, tc,
+                             "type of first result: " + (r0 == null ? null //
+                                             : r0.getClass().toGenericString()));
+                }
+            }
+
+            if (type == FIND_AND_DELETE)
+                delete(results, entityHandler);
+
+            if (results.isEmpty() && isOptional) {
+                returnValue = null;
+            } else if (multiType == null && entityInfo.entityClass.equals(singleType)) {
+                returnValue = oneResult(results);
+            } else if (multiType != null &&
+                       multiType.isInstance(results) &&
+                       (results.isEmpty() || singleType.isInstance(results.get(0)) &&
+                                             !(results.get(0) instanceof Object[]))) {
+                returnValue = results;
+            } else if (multiType != null && Iterable.class.isAssignableFrom(multiType)) {
+                returnValue = convertToIterable(results,
+                                                multiType,
+                                                singleType,
+                                                query);
+            } else if (Iterator.class.equals(multiType)) {
+                returnValue = results.iterator();
+            } else if (returnArrayType != null) {
+                int size = results.size();
+                Object firstNonNullResult = null;
+                for (Object result : results)
+                    if (result != null) {
+                        firstNonNullResult = result;
+                        break;
+                    }
+                if (firstNonNullResult == null
+                    || type == FIND_AND_DELETE
+                    || returnArrayType != Object.class &&
+                       returnArrayType.isInstance(firstNonNullResult)
+                    || returnArrayType.isPrimitive() &&
+                       Util.isWrapperClassFor(returnArrayType,
+                                              firstNonNullResult.getClass())) {
+                    returnValue = Array.newInstance(returnArrayType, size);
+                    int i = 0;
+                    for (Object result : results)
+                        Array.set(returnValue, i++, result);
+                } else if (firstNonNullResult.getClass().isArray()) {
+                    if (trace && tc.isDebugEnabled())
+                        Tr.debug(this, tc, "convert " +
+                                           firstNonNullResult.getClass().getName() +
+                                           " to " + returnArrayType.getName());
+                    if (returnArrayType.isArray()) {
+                        // convert List<Object[]> to array of array
+                        returnValue = Array.newInstance(returnArrayType, size);
+                        int i = 0;
+                        for (Object result : results)
+                            if (result == null) {
+                                Array.set(returnValue, i++, result);
+                            } else {
+                                // Object[] needs conversion to returnArrayType
+                                Class<?> subarrayType = //
+                                                returnArrayType.getComponentType();
+                                int len = Array.getLength(result);
+                                Object subarray = Array.newInstance(subarrayType,
+                                                                    len);
+                                for (int j = 0; j < len; j++) {
+                                    Object element = Array.get(result, j);
+                                    if (!subarrayType.isInstance(element))
+                                        element = convert(element, subarrayType, true);
+                                    Array.set(subarray, j, element);
+                                }
+                                Array.set(returnValue, i++, subarray);
+                            }
+                    } else if (size == 1) {
+                        // convert size 1 List<Object[]> to array
+                        if (isOptional &&
+                            firstNonNullResult.getClass().equals(singleType))
+                            returnValue = firstNonNullResult;
+                        else {
+                            int len = Array.getLength(firstNonNullResult);
+                            returnValue = Array.newInstance(returnArrayType, len);
+                            for (int i = 0; i < len; i++) {
+                                Object element = Array.get(firstNonNullResult, i);
+                                if (!returnArrayType.isInstance(element))
+                                    element = convert(element, returnArrayType, true);
+                                Array.set(returnValue, i, element);
+                            }
+                        }
+                    } else {
+                        // List<Object[]> with multiple Object[] elements
+                        // cannot convert to a one dimensional array
+                        throw Fail.nonUniqueResult(this, size);
+                    }
+                } else {
+                    String resultInfo = loggableAppend(firstNonNullResult //
+                                    .getClass().getName(),
+                                                       " (", firstNonNullResult, ")");
+                    throw Fail.resultConversion(this, resultInfo, null);
+                }
+            } else if (results.isEmpty()) {
+                throw Fail.emptyResult(this);
+            } else { // single result of other type
+                if (Iterable.class.isAssignableFrom(singleType) &&
+                    !(results.get(0) instanceof Iterable))
+                    // workaround for EclipseLink wrongly returning
+                    // ElementCollection as separate individual elements
+                    // as shown in #30575
+                    returnValue = results;
+                else
+                    returnValue = oneResult(results);
+                if (returnValue != null &&
+                    !singleType.isAssignableFrom(returnValue.getClass()))
+                    returnValue = convert(returnValue, singleType, true);
+            }
+        }
+        return returnValue;
+    }
+
+    /**
      * Identifies the repository method type based on life cycle annotations.
      * For example (Insert, Update, Save, Delete, Detach, Merge, ...).
      */
@@ -3491,7 +3465,10 @@ public abstract class QueryInfo {
             if (type == null && queryAnnoValue == null)
                 identifyType();
 
-            if (queryAnnoValue != null) { // query language methods
+            if (type == NATIVE) { // native query language method
+                initNativeQueryLanguage(queryAnnoValue,
+                                        compat);
+            } else if (queryAnnoValue != null) { // query language method
                 initQueryLanguage(queryAnnoValue,
                                   entityInfos,
                                   repository.primaryEntityInfoFuture,
@@ -3614,7 +3591,44 @@ public abstract class QueryInfo {
     }
 
     /**
-     * Initializes query information based on the Query annotation.
+     * Initializes query information based on the NativeQuery annotation.
+     *
+     * @param ql     NativeQuery.value() might be SQL or something else
+     * @param compat isolates Jakarta Data version-dependent behavior
+     */
+    private void initNativeQueryLanguage(String ql,
+                                         DataVersionCompatibility compat) {
+        Parameter[] params = method.getParameters();
+        Set<Class<?>> specialParamTypes = compat.specialParamTypes();
+        for (int i = 0; i < params.length; i++) {
+            Class<?> paramType = params[i].getType();
+            if (specialParamTypes.contains(paramType)) {
+                if (i < specialParamsStartAt)
+                    specialParamsStartAt = i;
+                // Reject all special parameters on native queries until we
+                // determine which, if any, can be supported
+                throw new UnsupportedOperationException //
+                ("The " + method.getName() + " method of the " +
+                 repositoryInterface.getName() + " repository cannot have a " +
+                 paramType.getSimpleName() + " parameter because the method is " +
+                 "annotated " + "@NativeQuery" + "."); // TODO NLS
+            } else if (i > specialParamsStartAt) {
+                throw exc(UnsupportedOperationException.class,
+                          "CWWKD1098.spec.param.position.err",
+                          method.getName(),
+                          repositoryInterface.getName(),
+                          params[specialParamsStartAt].getName(),
+                          Util.names(specialParamTypes));
+            }
+        }
+
+        jpqlParamCount = specialParamsStartAt;
+
+        jpql = ql;
+    }
+
+    /**
+     * Initializes query information based on the Query or JakartaQuery annotation.
      *
      * @param ql                      Query.value() might be JPQL or JDQL
      * @param entityInfos             map of entity name to entity information.
@@ -4246,7 +4260,7 @@ public abstract class QueryInfo {
 
         boolean isFindAndDelete = isOptional
                                   || multiType != null
-                                  || !Util.RETURN_TYPES_FOR_DELETE_ONLY.contains(singleType);
+                                  || !Util.RETURN_TYPES_FOR_UPDATE_COUNT.contains(singleType);
 
         if (TraceComponent.isAnyTracingEnabled() && tc.isDebugEnabled())
             Tr.debug(this, tc, "isFindAndDelete? " + isFindAndDelete +
@@ -4436,6 +4450,107 @@ public abstract class QueryInfo {
 
         if (trace && tc.isEntryEnabled())
             Tr.exit(this, tc, "merge", loggable(returnValue));
+        return returnValue;
+    }
+
+    /**
+     * Run a native query and return the result(s) if any.
+     *
+     * @param entityHandler EntityAgent or EntityManager (both are EntityHandler)
+     * @param txStatus      transaction status
+     * @param args          method parameters
+     * @return results, after wrapping in an Optional or CompletionStage if
+     *         required by the repository method signature
+     * @throws Exception if an error occurs
+     */
+    @Trivial // eh, txStatus, and method args have already been logged if loggable
+    Object nativeQuery(AutoCloseable entityHandler,
+                       int txStatus,
+                       Object... args) throws Exception {
+        final boolean trace = TraceComponent.isAnyTracingEnabled();
+        if (trace && tc.isEntryEnabled())
+            Tr.entry(this, tc, "nativeQuery");
+
+        QueryCustomization qc = QueryCustomization.from(this, args);
+        PageRequest pageReq = qc.pageRequest();
+        Object returnValue;
+
+        if (CursoredPage.class.equals(multiType)) {
+            throw new UnsupportedOperationException(); // TODO
+        } else if (Page.class.equals(multiType)) {
+            throw new UnsupportedOperationException(); // TODO
+        } else if (pageReq != null &&
+                   !PageRequest.Mode.OFFSET.equals(pageReq.mode())) {
+            throw Fail.pageModeIncompatible(this, pageReq);
+        } else {
+            if (trace && tc.isDebugEnabled())
+                Tr.debug(this, tc, "nativeQuery",
+                         jpql,
+                         entityInfo.entityClass.getName());
+
+            // TODO how do you know if it is a query or update?
+            // The following generalization is not precise enough:
+            int max = qc.maxResults();
+            boolean mightHaveUpdateCount = max == 0 && // not specified
+                                           multiType == null &&
+                                           Util.RETURN_TYPES_FOR_UPDATE_COUNT //
+                                                           .contains(singleType)
+                                           &&
+                                           !jpql.trim().regionMatches(true, 0, "SELECT", 0, 6);
+
+            jakarta.persistence.Query query;
+            if (mightHaveUpdateCount) {
+                // TODO UPDATE
+                query = ((EntityManager) entityHandler).createNativeQuery(jpql);
+            } else {
+                // TODO QUERY
+                query = ((EntityManager) entityHandler).createNativeQuery(jpql, singleType);
+
+                Limit limit = qc.limit();
+                int startAt = limit != null //
+                                ? computeOffset(limit) //
+                                : pageReq != null //
+                                                ? computeOffset(pageReq) //
+                                                : 0;
+
+                if (max > 0) {
+                    if (trace && tc.isDebugEnabled())
+                        Tr.debug(tc, "limit max results to " + max);
+                    query.setMaxResults(max);
+                }
+                if (startAt > 0) {
+                    if (trace && tc.isDebugEnabled())
+                        Tr.debug(tc, "start at (0-based) position " + startAt);
+                    query.setFirstResult(startAt);
+                }
+            }
+
+            setParameters(query, args, Collections.emptyMap(), null);
+
+            if (mightHaveUpdateCount)
+                returnValue = query.executeUpdate();
+            else
+                returnValue = getQueryResults(entityHandler, qc, query, txStatus);
+        }
+
+        if (isOptional) {
+            returnValue = returnValue == null
+                          || returnValue instanceof Collection &&
+                             ((Collection<?>) returnValue).isEmpty()
+                          || returnValue instanceof Page
+                             && !((Page<?>) returnValue).hasContent() //
+                                             ? Optional.empty() //
+                                             : Optional.of(returnValue);
+        }
+
+        Class<?> returnType = method.getReturnType();
+        if (CompletableFuture.class.equals(returnType) ||
+            CompletionStage.class.equals(returnType)) {
+            returnValue = CompletableFuture.completedFuture(returnValue);
+        }
+
+        if (trace && tc.isEntryEnabled())
+            Tr.exit(this, tc, "nativeQuery", loggable(returnValue));
         return returnValue;
     }
 
@@ -5681,8 +5796,8 @@ public abstract class QueryInfo {
      * @return the combined list that the sort criteria was added to.
      */
     @Trivial
-    private List<Sort<Object>> supplySorts(List<Sort<Object>> combined,
-                                           Iterable<Sort<Object>> additional) {
+    List<Sort<Object>> supplySorts(List<Sort<Object>> combined,
+                                   Iterable<Sort<Object>> additional) {
         Iterator<Sort<Object>> addIt = additional.iterator();
         boolean hasIdClass = entityInfo.idClassAttributeAccessors != null;
         if (combined == null && addIt.hasNext())
@@ -5718,8 +5833,8 @@ public abstract class QueryInfo {
      * @return the combined list that the sort criteria was added to.
      */
     @Trivial
-    private List<Sort<Object>> supplySorts(List<Sort<Object>> combined,
-                                           @SuppressWarnings("unchecked") Sort<Object>... additional) {
+    List<Sort<Object>> supplySorts(List<Sort<Object>> combined,
+                                   @SuppressWarnings("unchecked") Sort<Object>... additional) {
         boolean hasIdClass = entityInfo.idClassAttributeAccessors != null;
         if (combined == null && additional.length > 0)
             combined = sorts == null ? new ArrayList<>() : new ArrayList<>(sorts);
